@@ -102,7 +102,42 @@
                             </div>
                         </div>
                         
-                        <div style="margin-top: var(--spacing-8);">
+                        <!-- Compliance Declaration -->
+                        <div class="form-group" style="margin-top: var(--spacing-8);">
+                            <div class="compliance-declaration">
+                                <h4>Compliance Declaration</h4>
+                                <div class="declaration-content">
+                                    <p>I have read the Company's Personal Dealing Policy and believe that the above transaction(s) comply with its requirements. I declare that:</p>
+                                    <ul>
+                                        <li><strong>(i)</strong> I will not buy or sell the investment(s) listed above on a day in which the Company has a pending "buy" or "sell" order in the same investment(s) until that order is executed or withdrawn;</li>
+                                        <li><strong>(ii)</strong> I will not buy or sell the investment(s) listed above within one trading day before (where I am aware of a forthcoming client transaction) or after trading in those investment(s) on behalf of a client unless the client order(s) have been fully executed and any conflicts of interest have been removed;</li>
+                                        <li><strong>(iii)</strong> I will not buy or sell the investment(s) listed above within one trading day before (where I am aware of a forthcoming recommendation) or after a recommendation on those investment(s) is made or proposed by the Company unless the client order(s) have been fully executed and any conflicts of interest have been removed;</li>
+                                        <li><strong>(iv)</strong> the requested investment(s) will not result in a misuse of inside information or in any conflict of interest or impropriety with regards to any client.</li>
+                                    </ul>
+                                    
+                                    <div class="important-notes">
+                                        <div class="note-item">
+                                            <strong>Market Orders:</strong> Permission is effective only on the trading day you receive approval.
+                                        </div>
+                                        <div class="note-item">
+                                            <strong>Limit Price Orders:</strong> Permission is effective for five (5) trading days including the trading day you receive approval.
+                                        </div>
+                                        <div class="note-item">
+                                            <strong>Holding Requirement:</strong> Relevant Persons must hold all personal investments for at least 30 calendar days as required pursuant to the FMCC (SFC).
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group inline" style="margin-top: var(--spacing-6);">
+                                    <input type="checkbox" id="complianceAgreement" name="complianceAgreement" class="compliance-checkbox" required>
+                                    <label class="compliance-label" for="complianceAgreement">
+                                        I have read and agree to the above declaration and compliance requirements
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: var(--spacing-6);">
                             <button type="submit" class="btn btn-primary" id="submitBtn">Submit Request</button>
                         </div>
                         </form>

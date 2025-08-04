@@ -518,6 +518,14 @@ class TradingApp {
             return;
         }
         
+        // Check compliance agreement checkbox
+        const complianceCheckbox = document.getElementById('complianceAgreement');
+        if (!complianceCheckbox.checked) {
+            this.showNotification('Please read and agree to the compliance declaration', 'error');
+            complianceCheckbox.focus();
+            return;
+        }
+        
         const formData = new FormData(e.target);
         const data = Object.fromEntries(formData.entries());
 
