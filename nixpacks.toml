@@ -1,12 +1,8 @@
 [phases.setup]
-nixPkgs = ['nodejs_18', 'python3', 'python3Packages.pip']
+nixPkgs = ['nodejs_18']
 
 [phases.install]
-cmds = [
-    'npm ci --only=production',
-    'python3 -m venv venv',
-    'source venv/bin/activate && pip install yfinance pandas numpy requests multitasking platformdirs pytz frozendict peewee beautifulsoup4 curl_cffi protobuf websockets'
-]
+cmds = ['npm ci --only=production']
 
 [phases.build]
 cmds = ['echo "Build phase completed"']

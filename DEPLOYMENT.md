@@ -1,105 +1,168 @@
-# 🚀 Trading Compliance Portal - Deployment Guide
+# Railway Deployment Guide
 
-## Quick Start
+## Step-by-Step Railway Deployment Instructions
 
-### 1. Clone Repository
-```bash
-git clone <your-github-url>
-cd trading_approval
+### Prerequisites
+1. GitHub account with the repository
+2. Railway account (sign up at railway.app)
+3. Basic understanding of environment variables
+
+### Step 1: Connect to Railway
+
+1. **Visit Railway**: Go to [railway.app](https://railway.app)
+2. **Sign in**: Use your GitHub account to sign in
+3. **New Project**: Click "New Project"
+4. **Deploy from GitHub**: Select "Deploy from GitHub repo"
+5. **Select Repository**: Choose your trading approval repository
+6. **Deploy**: Click "Deploy Now"
+
+Railway will automatically:
+- Detect it's a Node.js application
+- Use the `nixpacks.toml` configuration
+- Install dependencies with `npm ci --only=production`
+- Start the app with `npm start`
+
+### Step 2: Configure Environment Variables
+
+In your Railway project dashboard:
+
+1. **Go to Variables tab**
+2. **Add the following variables**:
+
+#### Required Variables:
 ```
-
-### 2. Install Dependencies
-```bash
-npm install
-pip install -r requirements.txt
-```
-
-### 3. Environment Setup
-```bash
-cp .env.example .env
-# Edit .env with your configuration
-```
-
-### 4. Start Application
-```bash
-npm start
-```
-
-## Environment Variables
-
-### Required Configuration
-```env
-# Microsoft Azure AD (Required for employee authentication)
-MSAL_CLIENT_ID=your_azure_app_client_id
-MSAL_CLIENT_SECRET=your_azure_app_client_secret  
-MSAL_TENANT_ID=your_azure_tenant_id
-REDIRECT_URI=http://localhost:3001/auth/callback
-
-# Admin Access (Change in production!)
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD=your_secure_password
-
-# Security
-SESSION_SECRET=your_random_session_secret
-
-# Application
-PORT=3001
 NODE_ENV=production
+SESSION_SECRET=your-super-secure-random-key-at-least-32-chars
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=your-secure-admin-password-here
+PORT=3000
 ```
 
-## Azure AD Setup (Required)
+#### Optional Microsoft 365 Integration:
+```
+AZURE_CLIENT_ID=your-azure-client-id
+AZURE_CLIENT_SECRET=your-azure-client-secret
+AZURE_TENANT_ID=your-azure-tenant-id
+REDIRECT_URI=https://your-app-name.up.railway.app/api/auth/microsoft/callback
+POST_LOGOUT_REDIRECT_URI=https://your-app-name.up.railway.app
+```
 
-1. **Register App**: Azure Portal → Azure AD → App registrations → New
-2. **Set Redirect URI**: `http://your-domain.com/auth/callback`
-3. **API Permissions**: Add Microsoft Graph → User.Read, email, profile
-4. **Client Secret**: Generate and copy to .env
-5. **Copy IDs**: Client ID and Tenant ID to .env
+#### Optional Email Configuration:
+```
+EMAIL_USER=your-email@company.com
+EMAIL_PASS=your-app-password
+EMAIL_FROM=compliance@company.com
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+```
 
-## Production Deployment
+### Step 3: Generate Secure Secrets
 
-### Railway/Heroku
-1. Connect GitHub repository
-2. Set environment variables in platform dashboard
-3. Enable Python buildpack for stock data service
-4. Deploy automatically on push to main branch
+For `SESSION_SECRET`, generate a secure random string:
+```bash
+# Using Node.js
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
-### Manual Server
-1. Install Node.js 16+ and Python 3.7+
-2. Clone repository and install dependencies
-3. Set production environment variables
-4. Use PM2 for process management:
-   ```bash
-   npm install -g pm2
-   pm2 start src/app.js --name "trading-portal"
-   ```
+# Or use online generator (use a trusted one)
+# Or create your own: minimum 32 characters, mix of letters, numbers, symbols
+```
 
-## Database
+### Step 4: Get Your App URL
 
-- **Development**: SQLite (auto-created)
-- **Production**: SQLite (included) or upgrade to PostgreSQL
-- **Initialization**: Automatic with default data
+1. **In Railway Dashboard**: Your app URL will be shown in the deployment section
+2. **Format**: Usually `https://your-app-name.up.railway.app`
+3. **Custom Domain**: You can add a custom domain in the Settings tab
+
+### Step 5: Microsoft 365 Setup (Optional)
+
+If you want Single Sign-On:
+
+1. **Azure Portal**: Go to [portal.azure.com](https://portal.azure.com)
+2. **App Registrations**: Create new registration
+3. **Redirect URI**: Add your Railway URL + `/api/auth/microsoft/callback`
+4. **Certificates & Secrets**: Create a client secret
+5. **Copy Values**: Client ID, Client Secret, Tenant ID to Railway environment variables
+
+### Step 6: First Access
+
+1. **Visit Your App**: Go to your Railway URL
+2. **Admin Login**: Use the credentials you set in environment variables
+3. **Change Passwords**: Immediately change default admin password
+4. **Add Restricted Stocks**: Use admin panel to add any restricted stocks
+5. **Test Employee Flow**: Create a test trading request
+
+### Step 7: Monitoring
+
+Railway provides:
+- **Logs**: View application logs in real-time
+- **Metrics**: CPU, memory, network usage
+- **Health Checks**: Automatic monitoring via `/health` endpoint
+- **Deployments**: History of all deployments
+
+### Step 8: Database Persistence
+
+The SQLite database is automatically persistent on Railway. The database will:
+- Initialize empty on first run
+- Retain all data between deployments
+- Create backup automatically
+- Scale with your usage
 
 ## Security Checklist
 
-- ✅ Change default admin credentials
-- ✅ Use secure session secret (32+ characters)
-- ✅ Configure proper Azure AD redirect URI
-- ✅ Enable HTTPS in production
-- ✅ Set NODE_ENV=production
+Before going live:
 
-## Monitoring & Logs
+- [ ] Change default admin password
+- [ ] Set strong SESSION_SECRET
+- [ ] Configure HTTPS (automatic on Railway)
+- [ ] Review admin user permissions
+- [ ] Test Microsoft 365 integration if enabled
+- [ ] Add restricted stocks as needed
+- [ ] Test employee and admin workflows
 
-The application includes comprehensive audit logging:
-- All user activities logged with Hong Kong timezone
-- Admin actions tracked with detailed context
-- CSV export capabilities for compliance
-- Real-time system activity monitoring
+## Troubleshooting
+
+### Common Issues:
+
+1. **App won't start**: Check environment variables are set correctly
+2. **Microsoft 365 login fails**: Verify redirect URIs match exactly
+3. **Database issues**: Check logs for SQLite errors
+4. **Health check fails**: Ensure `/health` endpoint responds
+
+### Checking Logs:
+
+1. Go to Railway dashboard
+2. Click on your project
+3. Select "Deployments" tab
+4. Click "View Logs" on latest deployment
+
+### Getting Help:
+
+- Check Railway documentation
+- Review application logs
+- Verify environment variable values
+- Test health check endpoint: `https://your-app.railway.app/health`
+
+## Production Checklist
+
+- [ ] Application deployed successfully
+- [ ] Health check endpoint responding
+- [ ] Admin login working
+- [ ] Environment variables configured
+- [ ] Microsoft 365 integration tested (if enabled)
+- [ ] Admin password changed from default
+- [ ] Restricted stocks configured
+- [ ] Employee workflow tested
+- [ ] Admin approval/rejection workflow tested
+- [ ] Audit logging working
+- [ ] CSV export functional
 
 ## Support
 
-- **Stock Data**: Automatic via yfinance (no API key needed)
-- **Authentication**: Microsoft 365 corporate accounts only
-- **Database**: Auto-initializes with compliance settings
-- **Audit**: Complete activity logging built-in
+If you encounter issues during deployment:
 
-Ready for production! 🎉
+1. Check the Railway logs first
+2. Verify all environment variables
+3. Test the health endpoint
+4. Review the application logs for specific errors
+
+Your Trading Compliance Portal is now ready for production use on Railway!

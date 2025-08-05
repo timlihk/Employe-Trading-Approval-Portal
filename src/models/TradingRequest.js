@@ -14,27 +14,38 @@ class TradingRequest {
         share_price_usd,
         total_value_usd,
         exchange_rate,
-        trading_type 
+        trading_type,
+        estimated_value, // For server-side simple requests
       } = requestData;
+      
+      // Handle both old complex format and new simple format
+      const finalSharePrice = share_price || (estimated_value ? (estimated_value / shares) : null);
+      const finalTotalValue = total_value || estimated_value;
       
       const sql = `
         INSERT INTO trading_requests (
           employee_email, stock_name, ticker, shares, 
           share_price, total_value, currency, share_price_usd, 
-          total_value_usd, exchange_rate, trading_type
+          total_value_usd, exchange_rate, trading_type, status, created_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', datetime('now', 'utc'))
       `;
       
-      database.getDb().run(sql, [
+      const params = [
         employee_email.toLowerCase(), stock_name, ticker, shares, 
-        share_price, total_value, currency, share_price_usd,
-        total_value_usd, exchange_rate, trading_type
-      ], function(err) {
+        finalSharePrice, finalTotalValue, currency, share_price_usd || finalSharePrice,
+        total_value_usd || finalTotalValue, exchange_rate || 1, trading_type
+      ];
+      
+      database.getDb().run(sql, params, function(err) {
         if (err) {
           reject(err);
         } else {
-          resolve({ id: this.lastID, ...requestData });
+          resolve({ 
+            id: this.lastID,
+            status: 'pending',
+            ...requestData 
+          });
         }
       });
     });
@@ -44,7 +55,7 @@ class TradingRequest {
     return new Promise((resolve, reject) => {
       const sql = `
         UPDATE trading_requests 
-        SET status = ?, rejection_reason = ?, processed_at = CURRENT_TIMESTAMP
+        SET status = ?, rejection_reason = ?, processed_at = datetime('now', 'utc')
         WHERE id = ?
       `;
       
@@ -86,6 +97,38 @@ class TradingRequest {
     });
   }
 
+  static findByEmail(email) {
+    return new Promise((resolve, reject) => {
+      const sql = 'SELECT * FROM trading_requests WHERE LOWER(employee_email) = ? ORDER BY created_at ASC';
+      
+      database.getDb().all(sql, [email.toLowerCase()], (err, rows) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(rows);
+        }
+      });
+    });
+  }
+
+  static escalate(id, escalationReason) {
+    return new Promise((resolve, reject) => {
+      const sql = `
+        UPDATE trading_requests 
+        SET escalated = 1, escalation_reason = ?, escalated_at = CURRENT_TIMESTAMP, status = 'pending'
+        WHERE id = ?
+      `;
+      
+      database.getDb().run(sql, [escalationReason, id], function(err) {
+        if (err) {
+          reject(err);
+        } else {
+          resolve({ changes: this.changes });
+        }
+      });
+    });
+  }
+
   static getUniqueTeamMembers() {
     return new Promise((resolve, reject) => {
       const sql = 'SELECT DISTINCT LOWER(employee_email) as employee_email FROM trading_requests ORDER BY employee_email';
@@ -120,7 +163,17 @@ class TradingRequest {
         params.push(filters.end_date);
       }
 
-      sql += ' ORDER BY created_at ASC';
+      if (filters.ticker) {
+        sql += ' AND UPPER(ticker) = ?';
+        params.push(filters.ticker.toUpperCase());
+      }
+
+      if (filters.trading_type) {
+        sql += ' AND LOWER(trading_type) = ?';
+        params.push(filters.trading_type.toLowerCase());
+      }
+
+      sql += ' ORDER BY created_at DESC';
 
       database.getDb().all(sql, params, (err, rows) => {
         if (err) {

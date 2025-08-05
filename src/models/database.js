@@ -15,7 +15,7 @@ class Database {
           ticker TEXT UNIQUE NOT NULL,
           company_name TEXT NOT NULL,
           exchange TEXT,
-          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          created_at DATETIME DEFAULT (datetime('now', 'utc'))
         )
       `);
 
@@ -35,7 +35,7 @@ class Database {
           trading_type TEXT NOT NULL CHECK(trading_type IN ('buy', 'sell')),
           status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'approved', 'rejected')),
           rejection_reason TEXT,
-          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          created_at DATETIME DEFAULT (datetime('now', 'utc')),
           processed_at DATETIME
         )
       `);
@@ -43,6 +43,40 @@ class Database {
       // Add new columns to existing table if they don't exist
       this.db.run(`ALTER TABLE trading_requests ADD COLUMN share_price DECIMAL(10,2)`, (err) => {
         // Ignore error if column already exists
+      });
+      
+      // Add escalation columns
+      this.db.run(`ALTER TABLE trading_requests ADD COLUMN escalated BOOLEAN DEFAULT 0`, (err) => {
+        // Ignore error if column already exists
+      });
+      
+      this.db.run(`ALTER TABLE trading_requests ADD COLUMN escalation_reason TEXT`, (err) => {
+        // Ignore error if column already exists
+      });
+      
+      this.db.run(`ALTER TABLE trading_requests ADD COLUMN escalated_at DATETIME`, (err) => {
+        // Ignore error if column already exists
+      });
+      
+      // Add custom ID column for alphanumeric trade IDs
+      this.db.run(`PRAGMA table_info(trading_requests)`, (err, rows) => {
+        if (!err) {
+          // Check if custom_id column exists
+          this.db.all(`PRAGMA table_info(trading_requests)`, (pragmaErr, columns) => {
+            if (!pragmaErr) {
+              const hasCustomId = columns && columns.some(col => col.name === 'custom_id');
+              if (!hasCustomId) {
+                this.db.run(`ALTER TABLE trading_requests ADD COLUMN custom_id TEXT`, (alterErr) => {
+                  if (alterErr) {
+                    console.error('Error adding custom_id column:', alterErr);
+                  } else {
+                    console.log('Successfully added custom_id column to trading_requests table');
+                  }
+                });
+              }
+            }
+          });
+        }
       });
       this.db.run(`ALTER TABLE trading_requests ADD COLUMN total_value DECIMAL(15,2)`, (err) => {
         // Ignore error if column already exists
@@ -72,7 +106,7 @@ class Database {
           ip_address TEXT,
           user_agent TEXT,
           session_id TEXT,
-          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          created_at DATETIME DEFAULT (datetime('now', 'utc'))
         )
       `);
 
@@ -83,8 +117,8 @@ class Database {
           setting_value TEXT NOT NULL,
           description TEXT,
           updated_by TEXT NOT NULL,
-          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          created_at DATETIME DEFAULT (datetime('now', 'utc')),
+          updated_at DATETIME DEFAULT (datetime('now', 'utc'))
         )
       `);
 
@@ -99,7 +133,7 @@ class Database {
           ip_address TEXT,
           user_agent TEXT,
           session_id TEXT,
-          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+          created_at DATETIME DEFAULT (datetime('now', 'utc'))
         )
       `);
 
@@ -114,16 +148,8 @@ class Database {
         }
       });
 
-      // Only add default stocks if the table is completely empty (first time setup)
-      this.db.get('SELECT COUNT(*) as count FROM restricted_stocks', [], (err, row) => {
-        if (!err && row.count === 0) {
-          console.log('Initializing default restricted stocks (first time setup)...');
-          this.db.run(`
-            INSERT INTO restricted_stocks (ticker, company_name) 
-            VALUES ('TSLA', 'Tesla Inc.'), ('NVDA', 'NVIDIA Corporation'), ('META', 'Meta Platforms Inc.')
-          `);
-        }
-      });
+      // Initialize with no default restricted stocks for production
+      // Restricted stocks will be added by administrators as needed
 
       // Initialize default compliance settings
       this.db.get('SELECT COUNT(*) as count FROM compliance_settings', [], (err, row) => {
