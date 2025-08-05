@@ -1952,7 +1952,8 @@ app.get('/admin-restricted-stocks', async (req, res) => {
                 <div class="header-content">
                     <div>
                         <h1>Trading Compliance Portal</h1>
-                        <div class="header-subtitle">Administrator Dashboard</div>
+                        <div class="header-subtitle">Inspiration Capital Management Limited</div>
+                        <div style="font-size: var(--font-size-sm); color: var(--gs-neutral-500); margin-top: var(--spacing-1);">Administrator Dashboard</div>
                     </div>
                 </div>
             </header>
@@ -2667,7 +2668,8 @@ app.get('/admin-requests', async (req, res) => {
                 <div class="header-content">
                     <div>
                         <h1>Trading Compliance Portal</h1>
-                        <div class="header-subtitle">Administrator Dashboard</div>
+                        <div class="header-subtitle">Inspiration Capital Management Limited</div>
+                        <div style="font-size: var(--font-size-sm); color: var(--gs-neutral-500); margin-top: var(--spacing-1);">Administrator Dashboard</div>
                     </div>
                 </div>
             </header>
