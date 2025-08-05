@@ -1737,7 +1737,8 @@ app.get('/employee-history', async (req, res) => {
                 <div class="header-content">
                     <div>
                         <h1>Trading Compliance Portal</h1>
-                        <div class="header-subtitle">Pre-Trading Approval & Risk Management System</div>
+                        <div class="header-subtitle">Inspiration Capital Management Limited</div>
+                        <div style="font-size: var(--font-size-sm); color: var(--gs-neutral-500); margin-top: var(--spacing-1);">Pre-Trading Approval & Risk Management System</div>
                     </div>
                 </div>
             </header>
