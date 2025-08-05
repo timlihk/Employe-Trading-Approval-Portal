@@ -6,11 +6,20 @@ const session = require('express-session');
 const path = require('path');
 const msal = require('@azure/msal-node');
 
-// MSAL Configuration
-const { msalConfig, REDIRECT_URI, POST_LOGOUT_REDIRECT_URI } = require('./config/msalConfig');
+// MSAL Configuration (only if Azure credentials are provided)
+let cca = null;
+let REDIRECT_URI = null;
+let POST_LOGOUT_REDIRECT_URI = null;
 
-// Create msal application object
-const cca = new msal.ConfidentialClientApplication(msalConfig);
+if (process.env.AZURE_CLIENT_ID && process.env.AZURE_CLIENT_SECRET && process.env.AZURE_TENANT_ID) {
+  const { msalConfig, REDIRECT_URI: redirectUri, POST_LOGOUT_REDIRECT_URI: postLogoutUri } = require('./config/msalConfig');
+  cca = new msal.ConfidentialClientApplication(msalConfig);
+  REDIRECT_URI = redirectUri;
+  POST_LOGOUT_REDIRECT_URI = postLogoutUri;
+  console.log('Microsoft 365 SSO enabled');
+} else {
+  console.log('Microsoft 365 SSO disabled - using email-based authentication');
+}
 
 // Initialize database on startup
 const database = require('./models/database');
@@ -312,17 +321,35 @@ app.get('/employee-login', (req, res) => {
   res.send(loginHTML);
 });
 
-// Employee authentication route - redirect to Microsoft 365 only
+// Employee authentication route
 app.post('/employee-authenticate', (req, res) => {
-  // Employee authentication now only through Microsoft 365
-  res.redirect('/api/auth/microsoft/login');
+  if (cca) {
+    // Microsoft 365 SSO enabled
+    res.redirect('/api/auth/microsoft/login');
+  } else {
+    // Email-based authentication
+    const { email, name } = req.body;
+    
+    if (!email || !name) {
+      return res.redirect('/employee-login?error=missing_fields');
+    }
+    
+    // Set up employee session
+    req.session.employee = {
+      email: email.trim(),
+      name: name.trim(),
+      authMethod: 'email'
+    };
+    
+    res.redirect('/employee-dashboard');
+  }
 });
 
 // Microsoft 365 Authentication Routes
 app.get('/api/auth/microsoft/login', async (req, res) => {
   try {
-    // Check if Azure credentials are configured
-    if (!process.env.AZURE_CLIENT_ID || process.env.AZURE_CLIENT_ID === 'your-azure-client-id') {
+    // Check if Microsoft SSO is enabled
+    if (!cca) {
       // Azure not configured, show configuration message
       const configHTML = `
       <!DOCTYPE html>
@@ -397,6 +424,10 @@ app.get('/api/auth/microsoft/login', async (req, res) => {
 
 // Microsoft 365 callback route
 app.get('/api/auth/microsoft/callback', async (req, res) => {
+  if (!cca) {
+    return res.redirect('/?error=sso_not_configured');
+  }
+  
   try {
     const tokenRequest = {
       code: req.query.code,
@@ -480,6 +511,14 @@ app.get('/api/auth/microsoft/callback', async (req, res) => {
 
 // Microsoft 365 logout helper
 app.get('/api/auth/microsoft/logout', (req, res) => {
+  if (!cca || !POST_LOGOUT_REDIRECT_URI) {
+    // If SSO not configured, just clear session and redirect
+    req.session.destroy(() => {
+      res.redirect('/?message=logged_out');
+    });
+    return;
+  }
+  
   const logoutUri = `https://login.microsoftonline.com/${process.env.AZURE_TENANT_ID}/oauth2/v2.0/logout?post_logout_redirect_uri=${encodeURIComponent(POST_LOGOUT_REDIRECT_URI)}`;
   
   // Clear session
