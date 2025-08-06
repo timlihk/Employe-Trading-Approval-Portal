@@ -930,6 +930,31 @@ function formatHongKongTime(date = new Date(), includeTime = false) {
   }
 }
 
+// Format datetime for Excel CSV export (no comma, Excel-compatible format)
+function formatExcelDateTime(date = new Date()) {
+  let utcDate;
+  
+  if (typeof date === 'string') {
+    // Database timestamp string - explicitly treat as UTC by appending 'Z'
+    utcDate = new Date(date + 'Z');
+  } else {
+    utcDate = date;
+  }
+  
+  // Convert UTC to Hong Kong time (UTC+8)
+  const hkTime = new Date(utcDate.getTime() + (8 * 60 * 60 * 1000));
+  
+  // Format: YYYY-MM-DD HH:MM:SS (Excel recognizes this format)
+  const year = hkTime.getUTCFullYear();
+  const month = (hkTime.getUTCMonth() + 1).toString().padStart(2, '0');
+  const day = hkTime.getUTCDate().toString().padStart(2, '0');
+  const hour = hkTime.getUTCHours().toString().padStart(2, '0');
+  const minute = hkTime.getUTCMinutes().toString().padStart(2, '0');
+  const second = hkTime.getUTCSeconds().toString().padStart(2, '0');
+  
+  return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
+}
+
 
 // Yahoo Finance API ticker validation
 async function validateTickerWithYahoo(ticker) {
@@ -1928,7 +1953,7 @@ app.get('/employee-export-history', async (req, res) => {
     // Generate CSV content
     const csvHeaders = 'Request ID,Date & Time (HK),Company,Ticker,Action,Shares,Share Price USD,Total Value USD,Currency,Status,Created At\n';
     const csvRows = requests.map(request => {
-      const date = formatHongKongTime(new Date(request.created_at), true);
+      const date = formatExcelDateTime(new Date(request.created_at));
       const sharePrice = parseFloat(request.share_price_usd || request.share_price || 0).toFixed(2);
       const totalValue = parseFloat(request.total_value_usd || request.estimated_value || 0).toFixed(2);
       
@@ -2329,7 +2354,7 @@ app.get('/admin-export-restricted-stocks-changelog', async (req, res) => {
     
     changelog.forEach(log => {
       const details = JSON.parse(log.details || '{}');
-      const date = formatHongKongTime(new Date(log.created_at), true);
+      const date = formatExcelDateTime(new Date(log.created_at));
       const action = log.action.replace('_restricted_stock', '').replace('_', ' ').toUpperCase();
       const ticker = details.ticker || log.target_id || '';
       const companyName = (details.company_name || '').replace(/"/g, '""'); // Escape quotes for CSV
@@ -2840,9 +2865,9 @@ app.get('/admin-export-trading-requests', async (req, res) => {
     let csvContent = 'Request ID,Date Created,Employee Email,Stock Name,Ticker,Trading Type,Shares,Estimated Value,Status,Escalated,Escalation Reason,Processed Date\n';
     
     requests.forEach(request => {
-      const createdDate = formatHongKongTime(new Date(request.created_at), true);
+      const createdDate = formatExcelDateTime(new Date(request.created_at));
       const processedDate = request.processed_at ? 
-        formatHongKongTime(new Date(request.processed_at), true) : 'Not Processed';
+        formatExcelDateTime(new Date(request.processed_at)) : 'Not Processed';
       const escalated = request.escalated ? 'Yes' : 'No';
       const escalationReason = (request.escalation_reason || '').replace(/"/g, '""').replace(/\n/g, ' '); // Escape quotes and newlines for CSV
       const stockName = (request.stock_name || '').replace(/"/g, '""');
