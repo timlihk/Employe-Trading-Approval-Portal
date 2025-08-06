@@ -880,12 +880,14 @@ app.get('/employee-dashboard', (req, res) => {
 
 // Employee logout route
 app.get('/employee-logout', (req, res) => {
-  // Check if user logged in via Microsoft 365
-  if (req.session.employee && req.session.employee.authMethod === 'microsoft365') {
-    // Redirect to Microsoft 365 logout
+  // Check if user logged in via Microsoft 365 and SSO is properly configured
+  if (req.session.employee && req.session.employee.authMethod === 'microsoft365' && 
+      process.env.POST_LOGOUT_REDIRECT_URI && 
+      process.env.POST_LOGOUT_REDIRECT_URI.startsWith('http')) {
+    // Redirect to Microsoft 365 logout only if properly configured
     res.redirect('/api/auth/microsoft/logout');
   } else {
-    // Regular logout - clear session
+    // Regular logout or fallback for misconfigured SSO - clear session
     req.session.destroy((err) => {
       if (err) {
         console.error('Error destroying session:', err);
