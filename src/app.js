@@ -590,21 +590,34 @@ app.get('/admin-login', (req, res) => {
 });
 
 // Admin authentication route
-app.post('/admin-authenticate', (req, res) => {
-  const { username, password } = req.body;
-  
-  // Check credentials
-  const adminUsername = process.env.ADMIN_USERNAME || 'admin';
-  const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
-  
-  if (username === adminUsername && password === adminPassword) {
-    // Set admin session
-    req.session.adminAuthenticated = true;
-    req.session.admin = { username: username };
+app.post('/admin-authenticate', async (req, res) => {
+  try {
+    const { username, password } = req.body;
     
-    // Redirect to admin dashboard
-    res.redirect('/admin-dashboard');
-  } else {
+    // Validate input
+    if (!username || !password) {
+      return res.status(400).send('Username and password are required');
+    }
+    
+    // Check credentials
+    const adminUsername = process.env.ADMIN_USERNAME || 'admin';
+    const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+    
+    if (username === adminUsername && password === adminPassword) {
+      // Set admin session
+      req.session.adminAuthenticated = true;
+      req.session.admin = { username: username };
+      
+      // Save session before redirect
+      req.session.save((err) => {
+        if (err) {
+          console.error('Session save error:', err);
+          return res.status(500).send('Session error. Please try again.');
+        }
+        // Redirect to admin dashboard
+        res.redirect('/admin-dashboard');
+      });
+    } else {
     // Invalid credentials - show error
     const errorHTML = `
     <!DOCTYPE html>
@@ -649,6 +662,10 @@ app.post('/admin-authenticate', (req, res) => {
     </html>`;
     
     res.status(401).send(errorHTML);
+    }
+  } catch (error) {
+    console.error('Admin authentication error:', error);
+    res.status(500).send('An error occurred during authentication. Please try again.');
   }
 });
 
