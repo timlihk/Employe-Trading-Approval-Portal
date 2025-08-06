@@ -2778,7 +2778,7 @@ app.get('/admin-export-trading-requests', async (req, res) => {
       const escalated = request.escalated ? 'Yes' : 'No';
       const escalationReason = (request.escalation_reason || '').replace(/"/g, '""').replace(/\n/g, ' '); // Escape quotes and newlines for CSV
       const stockName = (request.stock_name || '').replace(/"/g, '""');
-      const estimatedValue = parseFloat(request.estimated_value || 0).toFixed(2);
+      const estimatedValue = parseFloat(request.total_value_usd || request.total_value || 0).toFixed(2);
       
       csvContent += `"${request.id}","${createdDate}","${request.employee_email}","${stockName}","${request.ticker}","${request.trading_type.toUpperCase()}","${request.shares}","$${estimatedValue}","${request.status.toUpperCase()}","${escalated}","${escalationReason}","${processedDate}"\n`;
     });
