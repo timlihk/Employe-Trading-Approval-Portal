@@ -591,6 +591,9 @@ app.get('/admin-login', (req, res) => {
 
 // Admin authentication route
 app.post('/admin-authenticate', async (req, res) => {
+  console.log('Admin authenticate route hit');
+  console.log('Request body:', req.body);
+  
   try {
     const { username, password } = req.body;
     
@@ -2826,10 +2829,34 @@ app.use((err, req, res, next) => {
 });
 
 app.use((req, res) => {
-  res.status(404).json({ 
-    success: false, 
-    message: 'Route not found' 
-  });
+  // Check if request accepts HTML (browser request) vs JSON (API request)
+  if (req.accepts('html')) {
+    res.status(404).send(`
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Page Not Found</title>
+          <link rel="stylesheet" href="/styles-modern.css">
+      </head>
+      <body>
+          <div class="container">
+              <div style="text-align: center; padding: 100px 20px;">
+                  <h1>404 - Page Not Found</h1>
+                  <p>The page you are looking for does not exist.</p>
+                  <a href="/" class="btn btn-primary" style="margin-top: 20px;">Go Home</a>
+              </div>
+          </div>
+      </body>
+      </html>
+    `);
+  } else {
+    res.status(404).json({ 
+      success: false, 
+      message: 'Route not found' 
+    });
+  }
 });
 
 const PORT = process.env.PORT || 3001;
