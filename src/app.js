@@ -936,7 +936,19 @@ async function validateTickerWithYahoo(ticker) {
   try {
     // Use Yahoo Finance query API to validate ticker and get basic info
     const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}`;
-    const response = await fetch(url);
+    
+    // Add timeout to prevent hanging
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+    
+    const response = await fetch(url, {
+      signal: controller.signal,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    });
+    clearTimeout(timeoutId);
+    
     const data = await response.json();
     
     if (data && data.chart && data.chart.result && data.chart.result.length > 0) {
@@ -985,7 +997,14 @@ async function getExchangeRate(fromCurrency, toCurrency = 'USD') {
   try {
     // Use a free exchange rate API (exchangerate-api.com)
     // In production, you might want to use a paid service for better reliability
-    const response = await fetch(`https://api.exchangerate-api.com/v4/latest/${fromCurrency}`);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+    
+    const response = await fetch(`https://api.exchangerate-api.com/v4/latest/${fromCurrency}`, {
+      signal: controller.signal
+    });
+    clearTimeout(timeoutId);
+    
     const data = await response.json();
     
     if (data && data.rates && data.rates[toCurrency]) {
@@ -1283,7 +1302,36 @@ app.post('/preview-trade', async (req, res) => {
     
   } catch (error) {
     console.error('Error in trade preview:', error);
-    res.status(500).send('Error processing trade preview');
+    console.error('Error details:', error.message, error.stack);
+    
+    // More specific error handling
+    if (error.message && error.message.includes('ticker')) {
+      return res.redirect(`/employee-dashboard?error=${encodeURIComponent('Unable to validate ticker. Please try again.')}`);
+    }
+    
+    // Generic error page
+    const errorHTML = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Error - Trading Portal</title>
+        <link rel="stylesheet" href="/styles-modern.css">
+    </head>
+    <body>
+        <div class="container">
+            <div style="text-align: center; padding: 100px 20px;">
+                <h1>Error Processing Request</h1>
+                <p>We encountered an error while processing your trade preview.</p>
+                <p>Please try again or contact support if the issue persists.</p>
+                <a href="/employee-dashboard" class="btn btn-primary" style="margin-top: 20px;">Back to Dashboard</a>
+            </div>
+        </div>
+    </body>
+    </html>`;
+    
+    res.status(500).send(errorHTML);
   }
 });
 
