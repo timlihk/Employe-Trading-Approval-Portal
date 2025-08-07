@@ -812,7 +812,7 @@ app.get('/admin-dashboard', (req, res) => {
                       </div>
                   </div>
                   <div class="card-body">
-                      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: var(--spacing-6); margin: var(--spacing-6) 0;">
+                      <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--spacing-6); margin: var(--spacing-6) 0;">
                           <div class="dashboard-card">
                               <div class="dashboard-icon">📊</div>
                               <h4>Restricted Trading List</h4>
@@ -825,6 +825,13 @@ app.get('/admin-dashboard', (req, res) => {
                               <h4>Trading Requests</h4>
                               <p>View and manage employee trading requests and approval status</p>
                               <a href="/admin-requests" class="btn btn-primary" style="text-decoration: none; display: inline-block;">View Requests</a>
+                          </div>
+                          
+                          <div class="dashboard-card">
+                              <div class="dashboard-icon">💾</div>
+                              <h4>Database Backup</h4>
+                              <p>Download a complete backup of the database to your local machine</p>
+                              <a href="/admin-backup-database" class="btn btn-primary" style="text-decoration: none; display: inline-block;">Download Backup</a>
                           </div>
                       </div>
                   </div>
@@ -3042,6 +3049,146 @@ app.get('/admin-export-trading-requests', async (req, res) => {
   } catch (error) {
     console.error('Error exporting trading requests:', error);
     res.status(500).send('Error exporting trading requests');
+  }
+});
+
+// Admin backup database route
+app.get('/admin-backup-database', async (req, res) => {
+  // Check admin authentication
+  if (!req.session.adminAuthenticated) {
+    return res.redirect('/admin-login?error=authentication_required');
+  }
+  
+  try {
+    const { exec } = require('child_process');
+    const util = require('util');
+    const execPromise = util.promisify(exec);
+    
+    // Get current timestamp for filename
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+    const filename = `trading-backup-${timestamp}.sql`;
+    
+    // Create the pg_dump command with proper formatting
+    const pgDumpCommand = `pg_dump "${process.env.DATABASE_URL}" --no-owner --no-privileges --clean --if-exists`;
+    
+    console.log(`Executing database backup for admin: ${req.session.admin?.username || 'admin'}`);
+    
+    try {
+      const { stdout, stderr } = await execPromise(pgDumpCommand);
+      
+      if (stderr && !stderr.includes('warning')) {
+        console.error('pg_dump stderr:', stderr);
+        throw new Error(stderr);
+      }
+      
+      // Set headers for SQL file download
+      res.setHeader('Content-Type', 'application/sql');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Length', Buffer.byteLength(stdout));
+      
+      // Log backup activity
+      const AuditLog = require('./models/AuditLog');
+      await AuditLog.logActivity(
+        req.session.admin?.username || 'admin@company.com',
+        'admin',
+        'backup_database',
+        'system',
+        null,
+        JSON.stringify({
+          filename: filename,
+          size_bytes: Buffer.byteLength(stdout),
+          timestamp: new Date().toISOString()
+        }),
+        req.ip,
+        req.get('User-Agent'),
+        req.sessionID
+      );
+      
+      // Send the SQL dump
+      res.send(stdout);
+      
+    } catch (cmdError) {
+      console.error('pg_dump execution error:', cmdError);
+      
+      // Fallback: Try using direct PostgreSQL connection for export
+      const database = require('./models/database');
+      const pool = database.getPool();
+      
+      // Generate SQL export manually
+      let sqlDump = `-- Trading Compliance Database Backup
+-- Generated: ${new Date().toISOString()}
+-- Database: PostgreSQL
+-- Warning: This is a simplified backup. For full backup, ensure pg_dump is available.
+
+`;
+      
+      // Get all table data
+      const tables = [
+        'restricted_stocks',
+        'trading_requests', 
+        'audit_logs',
+        'compliance_settings',
+        'restricted_stock_changelog'
+      ];
+      
+      for (const table of tables) {
+        sqlDump += `\n-- Table: ${table}\n`;
+        sqlDump += `DELETE FROM ${table};\n`;
+        
+        const result = await pool.query(`SELECT * FROM ${table}`);
+        
+        if (result.rows.length > 0) {
+          const columns = Object.keys(result.rows[0]);
+          
+          for (const row of result.rows) {
+            const values = columns.map(col => {
+              const val = row[col];
+              if (val === null) return 'NULL';
+              if (typeof val === 'string') return `'${val.replace(/'/g, "''")}'`;
+              if (val instanceof Date) return `'${val.toISOString()}'`;
+              return val;
+            });
+            
+            sqlDump += `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${values.join(', ')});\n`;
+          }
+        }
+      }
+      
+      // Set headers and send
+      res.setHeader('Content-Type', 'application/sql');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.send(sqlDump);
+    }
+    
+  } catch (error) {
+    console.error('Error creating database backup:', error);
+    res.status(500).send(`
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Backup Error</title>
+          <link rel="stylesheet" href="/styles-modern.css">
+      </head>
+      <body>
+          <div class="container">
+              <div class="card" style="margin-top: 50px; max-width: 600px; margin-left: auto; margin-right: auto;">
+                  <div class="card-header">
+                      <h3 class="card-title">❌ Backup Failed</h3>
+                  </div>
+                  <div class="card-body">
+                      <p>Unable to create database backup. This might be because pg_dump is not available in the Railway environment.</p>
+                      <p>Error: ${error.message}</p>
+                      <div style="margin-top: 20px;">
+                          <a href="/admin-dashboard" class="btn btn-primary">Back to Dashboard</a>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      </body>
+      </html>
+    `);
   }
 });
 
