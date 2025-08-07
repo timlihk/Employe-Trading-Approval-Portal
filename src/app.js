@@ -111,6 +111,49 @@ app.get('/session-test', (req, res) => {
   });
 });
 
+// Database status endpoint for admin debugging
+app.get('/db-status', async (req, res) => {
+  // Check admin authentication
+  if (!req.session.adminAuthenticated) {
+    return res.status(401).json({ error: 'Admin authentication required' });
+  }
+  
+  try {
+    const db = database.getDb();
+    const stats = await new Promise((resolve, reject) => {
+      db.all(`
+        SELECT 
+          (SELECT COUNT(*) FROM trading_requests) as total_requests,
+          (SELECT COUNT(*) FROM restricted_stocks) as total_restricted_stocks,
+          (SELECT COUNT(*) FROM audit_logs) as total_audit_logs
+      `, (err, rows) => {
+        if (err) reject(err);
+        else resolve(rows[0]);
+      });
+    });
+    
+    const path = require('path');
+    const fs = require('fs');
+    const dataDir = process.env.RAILWAY_VOLUME_MOUNT_PATH || path.join(__dirname, '..');
+    const dbPath = path.join(dataDir, 'trading.db');
+    const dbStats = fs.statSync(dbPath);
+    
+    res.json({
+      database_status: 'connected',
+      database_path: dbPath,
+      database_size: `${(dbStats.size / 1024).toFixed(2)} KB`,
+      database_modified: dbStats.mtime,
+      record_counts: stats,
+      warning: 'Database is stored locally and will be lost on redeploy without persistent storage!'
+    });
+  } catch (error) {
+    res.status(500).json({
+      database_status: 'error',
+      error: error.message
+    });
+  }
+});
+
 app.get('/', (req, res) => {
   console.log('Root route accessed');
   

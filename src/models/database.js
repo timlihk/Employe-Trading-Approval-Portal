@@ -1,9 +1,30 @@
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+const fs = require('fs');
 
 class Database {
   constructor() {
-    this.db = new sqlite3.Database(path.join(__dirname, '../../trading.db'));
+    // Use Railway Volume path if available, otherwise local path
+    const dataDir = process.env.RAILWAY_VOLUME_MOUNT_PATH || path.join(__dirname, '../..');
+    const dbPath = path.join(dataDir, 'trading.db');
+    const dbExists = fs.existsSync(dbPath);
+    
+    // Ensure data directory exists
+    if (!fs.existsSync(dataDir)) {
+      fs.mkdirSync(dataDir, { recursive: true });
+    }
+    
+    if (!dbExists) {
+      console.warn('⚠️  WARNING: Database file does not exist. Creating new database.');
+      if (!process.env.RAILWAY_VOLUME_MOUNT_PATH) {
+        console.warn('⚠️  Data will be lost on Railway redeploy without persistent storage!');
+        console.warn('⚠️  Set up Railway Volume to persist data across deployments.');
+      }
+    } else {
+      console.log('✅ Using existing database at:', dbPath);
+    }
+    
+    this.db = new sqlite3.Database(dbPath);
     this.init();
   }
 
