@@ -138,7 +138,7 @@ class AdminController {
    * Get admin requests page
    */
   getRequests = catchAsync(async (req, res) => {
-    const { message } = req.query;
+    const { message, sort_by = 'id', sort_order = 'DESC' } = req.query;
     let banner = '';
     
     if (message === 'request_approved') {
@@ -147,8 +147,8 @@ class AdminController {
       banner = generateNotificationBanner('Trading request rejected successfully', 'success');
     }
 
-    const pendingRequests = await TradingRequest.getPendingRequests();
-    const escalatedRequests = await TradingRequest.getEscalatedRequests();
+    const pendingRequests = await TradingRequest.getPendingRequests(sort_by, sort_order);
+    const escalatedRequests = await TradingRequest.getEscalatedRequests(sort_by, sort_order);
 
     // Build table rows for pending requests
     const pendingRows = pendingRequests.map(request => `
@@ -197,17 +197,27 @@ class AdminController {
       </tr>
     `).join('');
 
+    // Generate sorting controls
+    const currentSortBy = req.query.sort_by || 'id';
+    const currentSortOrder = req.query.sort_order || 'DESC';
+    const sortingControls = generateSortingControls('/admin-requests', currentSortBy, currentSortOrder, req.query);
+
     const requestsContent = `
       ${banner}
-      <div style="margin-bottom: var(--spacing-6); text-align: right;">
-        <a href="/admin-export-trading-requests" class="btn btn-outline" style="text-decoration: none;">
-          📥 Export All Requests (CSV)
-        </a>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-6);">
+        <div>
+          ${sortingControls}
+        </div>
+        <div>
+          <a href="/admin-export-trading-requests" class="btn btn-outline" style="text-decoration: none;">
+            📥 Export All Requests (CSV)
+          </a>
+        </div>
       </div>
       
       <div class="card">
         <div class="card-header">
-          <h3 class="card-title">Pending Requests (${pendingRequests.length})</h3>
+          <h3 class="card-title">Pending Requests (${pendingRequests.length}) - Sorted by ${getSortDisplayName(currentSortBy)} ${currentSortOrder === 'DESC' ? '↓' : '↑'}</h3>
         </div>
         <div class="card-body">
           ${pendingRequests.length > 0 ? `
@@ -444,8 +454,10 @@ class AdminController {
    * Export trading requests as CSV
    */
   exportTradingRequests = catchAsync(async (req, res) => {
-    // Get all trading requests (sorted by ID DESC - most recent first)
-    const requests = await TradingRequest.getAll();
+    const { sort_by = 'id', sort_order = 'DESC' } = req.query;
+    
+    // Get all trading requests with current sorting
+    const requests = await TradingRequest.getAll(sort_by, sort_order);
     
     const timestamp = formatHongKongTime(new Date(), true).replace(/[/:,\s]/g, '-');
     const filename = `trading-requests-export-${timestamp}.csv`;
@@ -518,7 +530,7 @@ class AdminController {
   });
 }
 
-// Helper function
+// Helper functions
 function formatHongKongTime(date = new Date(), includeTime = false) {
   let utcDate;
   
@@ -546,6 +558,50 @@ function formatHongKongTime(date = new Date(), includeTime = false) {
     
     return `${day}/${month}/${year}`;
   }
+}
+
+function getSortDisplayName(sortBy) {
+  const displayNames = {
+    'id': 'Request ID',
+    'created_at': 'Date',
+    'ticker': 'Ticker',
+    'employee_email': 'Employee'
+  };
+  return displayNames[sortBy] || 'Request ID';
+}
+
+function generateSortingControls(baseUrl, currentSortBy, currentSortOrder, queryParams = {}) {
+  // Remove existing sort parameters
+  const cleanParams = { ...queryParams };
+  delete cleanParams.sort_by;
+  delete cleanParams.sort_order;
+  
+  const queryString = new URLSearchParams(cleanParams).toString();
+  const baseQuery = queryString ? `${baseUrl}?${queryString}&` : `${baseUrl}?`;
+
+  return `
+    <div style="display: flex; align-items: center; gap: var(--spacing-3);">
+      <span style="font-weight: 600; color: var(--gs-neutral-700);">Sort by:</span>
+      <select id="sortBy" onchange="updateSort()" style="padding: 6px 10px; border: 1px solid var(--gs-neutral-300); border-radius: var(--radius);">
+        <option value="id" ${currentSortBy === 'id' ? 'selected' : ''}>Request ID</option>
+        <option value="created_at" ${currentSortBy === 'created_at' ? 'selected' : ''}>Date</option>
+        <option value="ticker" ${currentSortBy === 'ticker' ? 'selected' : ''}>Ticker</option>
+        <option value="employee_email" ${currentSortBy === 'employee_email' ? 'selected' : ''}>Employee</option>
+      </select>
+      <select id="sortOrder" onchange="updateSort()" style="padding: 6px 10px; border: 1px solid var(--gs-neutral-300); border-radius: var(--radius);">
+        <option value="DESC" ${currentSortOrder === 'DESC' ? 'selected' : ''}>↓ Descending</option>
+        <option value="ASC" ${currentSortOrder === 'ASC' ? 'selected' : ''}>↑ Ascending</option>
+      </select>
+    </div>
+    
+    <script>
+      function updateSort() {
+        const sortBy = document.getElementById('sortBy').value;
+        const sortOrder = document.getElementById('sortOrder').value;
+        window.location.href = '${baseQuery}sort_by=' + sortBy + '&sort_order=' + sortOrder;
+      }
+    </script>
+  `;
 }
 
 module.exports = new AdminController();

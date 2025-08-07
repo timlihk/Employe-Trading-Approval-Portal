@@ -85,7 +85,7 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'none'"], // Disable all JavaScript for pure HTML app
+      scriptSrc: ["'self'", "'unsafe-inline'"], // Allow inline scripts for sorting functionality
       imgSrc: ["'self'", "data:"],
     },
   },

@@ -164,20 +164,22 @@ class TradingRequestService {
   }
 
   /**
-   * Get trading requests for an employee with filters
+   * Get trading requests for an employee with filters and sorting
    */
-  async getEmployeeRequests(employeeEmail, filters = {}) {
+  async getEmployeeRequests(employeeEmail, filters = {}, sortBy = 'id', sortOrder = 'DESC') {
     try {
       const requestFilters = {
         employee_email: employeeEmail,
         ...filters
       };
 
-      return await TradingRequest.getFilteredHistory(requestFilters);
+      return await TradingRequest.getFilteredHistory(requestFilters, sortBy, sortOrder);
     } catch (error) {
       logger.error('Error fetching employee requests', {
         employee: employeeEmail,
         filters,
+        sortBy,
+        sortOrder,
         error: error.message
       });
       throw new AppError('Unable to fetch trading requests', 500);

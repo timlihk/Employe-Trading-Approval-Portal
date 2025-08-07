@@ -94,7 +94,7 @@ class EmployeeController {
    * Get employee history
    */
   getHistory = catchAsync(async (req, res) => {
-    const { message, start_date, end_date, ticker, trading_type } = req.query;
+    const { message, start_date, end_date, ticker, trading_type, sort_by = 'id', sort_order = 'DESC' } = req.query;
     const employeeEmail = req.session.employee.email;
     
     let banner = '';
@@ -109,7 +109,7 @@ class EmployeeController {
     if (ticker) filters.ticker = ticker.toUpperCase();
     if (trading_type) filters.trading_type = trading_type;
 
-    const requests = await TradingRequestService.getEmployeeRequests(employeeEmail, filters);
+    const requests = await TradingRequestService.getEmployeeRequests(employeeEmail, filters, sort_by, sort_order);
 
     // Generate table rows
     const tableRows = requests.map(request => {
@@ -148,8 +148,18 @@ class EmployeeController {
       `;
     });
 
+    // Generate sorting controls
+    const currentSortBy = req.query.sort_by || 'id';
+    const currentSortOrder = req.query.sort_order || 'DESC';
+    const sortingControls = generateSortingControls('/employee-history', currentSortBy, currentSortOrder, req.query);
+
     const historyContent = `
       ${banner}
+      
+      <!-- Sorting Controls -->
+      <div style="margin-bottom: var(--spacing-4); padding: var(--spacing-4); background: var(--gs-neutral-50); border-radius: var(--radius); border: 1px solid var(--gs-neutral-200);">
+        ${sortingControls}
+      </div>
       
       <!-- Filters Card -->
       <div class="card" style="margin-bottom: var(--spacing-6);">
@@ -195,7 +205,7 @@ class EmployeeController {
       <!-- Results Card -->
       <div class="card">
         <div class="card-header">
-          <h3 class="card-title">Trading Request History (${requests.length} requests)</h3>
+          <h3 class="card-title">Trading Request History (${requests.length} requests) - Sorted by ${getSortDisplayName(currentSortBy)} ${currentSortOrder === 'DESC' ? '↓' : '↑'}</h3>
         </div>
         <div class="card-body">
           ${requests.length > 0 ? `
@@ -327,7 +337,7 @@ class EmployeeController {
    * Export employee history as CSV
    */
   exportHistory = catchAsync(async (req, res) => {
-    const { start_date, end_date, ticker, trading_type } = req.query;
+    const { start_date, end_date, ticker, trading_type, sort_by = 'id', sort_order = 'DESC' } = req.query;
     const employeeEmail = req.session.employee.email;
     
     // Build filters
@@ -337,7 +347,7 @@ class EmployeeController {
     if (ticker) filters.ticker = ticker.toUpperCase();
     if (trading_type) filters.trading_type = trading_type;
 
-    const requests = await TradingRequestService.getEmployeeRequests(employeeEmail, filters);
+    const requests = await TradingRequestService.getEmployeeRequests(employeeEmail, filters, sort_by, sort_order);
 
     // Create filename with filters
     let filterSuffix = '';
@@ -372,7 +382,7 @@ class EmployeeController {
   });
 }
 
-// Helper function
+// Helper functions
 function formatHongKongTime(date = new Date(), includeTime = false) {
   let utcDate;
   
@@ -400,6 +410,49 @@ function formatHongKongTime(date = new Date(), includeTime = false) {
     
     return `${day}/${month}/${year}`;
   }
+}
+
+function getSortDisplayName(sortBy) {
+  const displayNames = {
+    'id': 'Request ID',
+    'created_at': 'Date',
+    'ticker': 'Ticker',
+    'employee_email': 'Employee'
+  };
+  return displayNames[sortBy] || 'Request ID';
+}
+
+function generateSortingControls(baseUrl, currentSortBy, currentSortOrder, queryParams = {}) {
+  // Remove existing sort parameters
+  const cleanParams = { ...queryParams };
+  delete cleanParams.sort_by;
+  delete cleanParams.sort_order;
+  
+  const queryString = new URLSearchParams(cleanParams).toString();
+  const baseQuery = queryString ? `${baseUrl}?${queryString}&` : `${baseUrl}?`;
+
+  return `
+    <div style="display: flex; align-items: center; gap: var(--spacing-3);">
+      <span style="font-weight: 600; color: var(--gs-neutral-700);">Sort by:</span>
+      <select id="sortBy" onchange="updateSort()" style="padding: 6px 10px; border: 1px solid var(--gs-neutral-300); border-radius: var(--radius);">
+        <option value="id" ${currentSortBy === 'id' ? 'selected' : ''}>Request ID</option>
+        <option value="created_at" ${currentSortBy === 'created_at' ? 'selected' : ''}>Date</option>
+        <option value="ticker" ${currentSortBy === 'ticker' ? 'selected' : ''}>Ticker</option>
+      </select>
+      <select id="sortOrder" onchange="updateSort()" style="padding: 6px 10px; border: 1px solid var(--gs-neutral-300); border-radius: var(--radius);">
+        <option value="DESC" ${currentSortOrder === 'DESC' ? 'selected' : ''}>↓ Descending</option>
+        <option value="ASC" ${currentSortOrder === 'ASC' ? 'selected' : ''}>↑ Ascending</option>
+      </select>
+    </div>
+    
+    <script>
+      function updateSort() {
+        const sortBy = document.getElementById('sortBy').value;
+        const sortOrder = document.getElementById('sortOrder').value;
+        window.location.href = '${baseQuery}sort_by=' + sortBy + '&sort_order=' + sortOrder;
+      }
+    </script>
+  `;
 }
 
 module.exports = new EmployeeController();

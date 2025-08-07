@@ -72,8 +72,14 @@ class TradingRequest extends BaseModel {
     return this.findById(id);
   }
 
-  static getAll() {
-    return this.findAll({}, 'id DESC');
+  static getAll(sortBy = 'id', sortOrder = 'DESC') {
+    const validSortColumns = ['id', 'created_at', 'ticker', 'employee_email'];
+    const validSortOrders = ['ASC', 'DESC'];
+    
+    const sortColumn = validSortColumns.includes(sortBy) ? sortBy : 'id';
+    const sortDirection = validSortOrders.includes(sortOrder.toUpperCase()) ? sortOrder.toUpperCase() : 'DESC';
+    
+    return this.findAll({}, `${sortColumn} ${sortDirection}`);
   }
 
   static findByEmail(email) {
@@ -116,7 +122,7 @@ class TradingRequest extends BaseModel {
     });
   }
 
-  static getFilteredHistory(filters) {
+  static getFilteredHistory(filters, sortBy = 'id', sortOrder = 'DESC') {
     return new Promise((resolve, reject) => {
       let sql = 'SELECT * FROM trading_requests WHERE 1=1';
       const params = [];
@@ -152,7 +158,14 @@ class TradingRequest extends BaseModel {
         paramIndex++;
       }
 
-      sql += ' ORDER BY id DESC';
+      // Add dynamic sorting
+      const validSortColumns = ['id', 'created_at', 'ticker', 'employee_email'];
+      const validSortOrders = ['ASC', 'DESC'];
+      
+      const sortColumn = validSortColumns.includes(sortBy) ? sortBy : 'id';
+      const sortDirection = validSortOrders.includes(sortOrder.toUpperCase()) ? sortOrder.toUpperCase() : 'DESC';
+      
+      sql += ` ORDER BY ${sortColumn} ${sortDirection}`;
 
       this.query(sql, params).then(rows => {
         resolve(rows);
@@ -162,9 +175,15 @@ class TradingRequest extends BaseModel {
     });
   }
 
-  static getPendingRequests() {
+  static getPendingRequests(sortBy = 'id', sortOrder = 'DESC') {
     return new Promise((resolve, reject) => {
-      const sql = 'SELECT * FROM trading_requests WHERE status = $1 ORDER BY id DESC';
+      const validSortColumns = ['id', 'created_at', 'ticker'];
+      const validSortOrders = ['ASC', 'DESC'];
+      
+      const sortColumn = validSortColumns.includes(sortBy) ? sortBy : 'id';
+      const sortDirection = validSortOrders.includes(sortOrder.toUpperCase()) ? sortOrder.toUpperCase() : 'DESC';
+      
+      const sql = `SELECT * FROM trading_requests WHERE status = $1 ORDER BY ${sortColumn} ${sortDirection}`;
       this.query(sql, ['pending']).then(rows => {
         resolve(rows);
       }).catch(err => {
@@ -173,9 +192,15 @@ class TradingRequest extends BaseModel {
     });
   }
 
-  static getEscalatedRequests() {
+  static getEscalatedRequests(sortBy = 'id', sortOrder = 'DESC') {
     return new Promise((resolve, reject) => {
-      const sql = 'SELECT * FROM trading_requests WHERE escalated = $1 AND status = $2 ORDER BY id DESC';
+      const validSortColumns = ['id', 'created_at', 'ticker'];
+      const validSortOrders = ['ASC', 'DESC'];
+      
+      const sortColumn = validSortColumns.includes(sortBy) ? sortBy : 'id';
+      const sortDirection = validSortOrders.includes(sortOrder.toUpperCase()) ? sortOrder.toUpperCase() : 'DESC';
+      
+      const sql = `SELECT * FROM trading_requests WHERE escalated = $1 AND status = $2 ORDER BY ${sortColumn} ${sortDirection}`;
       this.query(sql, [true, 'pending']).then(rows => {
         resolve(rows);
       }).catch(err => {
