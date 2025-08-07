@@ -452,7 +452,13 @@ function generateSortingControls(baseUrl, currentSortBy, currentSortOrder, query
       function applyEmployeeSort() {
         const sortBy = document.getElementById('employeeSortBy').value;
         const sortOrder = document.getElementById('employeeSortOrder').value;
-        window.location.href = '${baseQuery}sort_by=' + sortBy + '&sort_order=' + sortOrder;
+        
+        // Get current URL and update parameters
+        const url = new URL(window.location.href);
+        url.searchParams.set('sort_by', sortBy);
+        url.searchParams.set('sort_order', sortOrder);
+        
+        window.location.href = url.toString();
       }
     </script>
   `;
