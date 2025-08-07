@@ -19,7 +19,7 @@ class RestrictedStockChangelog {
           ticker, company_name, action, admin_email, reason,
           ip_address, user_agent, session_id
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       `;
       
       database.run(sql, [
@@ -49,30 +49,36 @@ class RestrictedStockChangelog {
     return new Promise((resolve, reject) => {
       let sql = 'SELECT * FROM restricted_stock_changelog WHERE 1=1';
       const params = [];
+      let paramIndex = 1;
 
       if (filters.ticker) {
-        sql += ' AND ticker = ?';
+        sql += ` AND ticker = $${paramIndex}`;
         params.push(filters.ticker);
+        paramIndex++;
       }
 
       if (filters.action) {
-        sql += ' AND action = ?';
+        sql += ` AND action = $${paramIndex}`;
         params.push(filters.action);
+        paramIndex++;
       }
 
       if (filters.admin_email) {
-        sql += ' AND admin_email = ?';
+        sql += ` AND admin_email = $${paramIndex}`;
         params.push(filters.admin_email);
+        paramIndex++;
       }
 
       if (filters.start_date) {
-        sql += ' AND DATE(created_at) >= ?';
+        sql += ` AND DATE(created_at) >= $${paramIndex}`;
         params.push(filters.start_date);
+        paramIndex++;
       }
 
       if (filters.end_date) {
-        sql += ' AND DATE(created_at) <= ?';
+        sql += ` AND DATE(created_at) <= $${paramIndex}`;
         params.push(filters.end_date);
+        paramIndex++;
       }
 
       sql += ' ORDER BY created_at DESC';
@@ -98,15 +104,18 @@ class RestrictedStockChangelog {
         WHERE 1=1
       `;
       const params = [];
+      let paramIndex = 1;
 
       if (filters.start_date) {
-        sql += ' AND DATE(created_at) >= ?';
+        sql += ` AND DATE(created_at) >= $${paramIndex}`;
         params.push(filters.start_date);
+        paramIndex++;
       }
 
       if (filters.end_date) {
-        sql += ' AND DATE(created_at) <= ?';
+        sql += ` AND DATE(created_at) <= $${paramIndex}`;
         params.push(filters.end_date);
+        paramIndex++;
       }
 
       database.get(sql, params).then(row => {

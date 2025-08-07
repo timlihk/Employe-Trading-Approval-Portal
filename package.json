@@ -29,7 +29,6 @@
     "nodemailer": "^7.0.5",
     "passport": "^0.7.0",
     "passport-azure-ad": "^4.3.5",
-    "pg": "^8.11.3",
-    "sqlite3": "^5.1.7"
+    "pg": "^8.11.3"
   }
 }

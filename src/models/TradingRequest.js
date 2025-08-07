@@ -28,7 +28,7 @@ class TradingRequest {
           share_price, total_value, currency, share_price_usd, 
           total_value_usd, exchange_rate, trading_type, status, created_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', datetime('now', 'utc'))
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, 'pending', CURRENT_TIMESTAMP)
       `;
       
       const params = [
@@ -53,8 +53,8 @@ class TradingRequest {
     return new Promise((resolve, reject) => {
       const sql = `
         UPDATE trading_requests 
-        SET status = ?, rejection_reason = ?, processed_at = datetime('now', 'utc')
-        WHERE id = ?
+        SET status = $1, rejection_reason = $2, processed_at = CURRENT_TIMESTAMP
+        WHERE id = $3
       `;
       
       database.run(sql, [status, rejection_reason, id]).then(result => {
@@ -67,7 +67,7 @@ class TradingRequest {
 
   static getById(id) {
     return new Promise((resolve, reject) => {
-      const sql = 'SELECT * FROM trading_requests WHERE id = ?';
+      const sql = 'SELECT * FROM trading_requests WHERE id = $1';
       
       database.get(sql, [id]).then(row => {
         resolve(row);
@@ -91,7 +91,7 @@ class TradingRequest {
 
   static findByEmail(email) {
     return new Promise((resolve, reject) => {
-      const sql = 'SELECT * FROM trading_requests WHERE LOWER(employee_email) = ? ORDER BY created_at ASC';
+      const sql = 'SELECT * FROM trading_requests WHERE LOWER(employee_email) = $1 ORDER BY created_at ASC';
       
       database.query(sql, [email.toLowerCase()]).then(rows => {
         resolve(rows);
@@ -105,8 +105,8 @@ class TradingRequest {
     return new Promise((resolve, reject) => {
       const sql = `
         UPDATE trading_requests 
-        SET escalated = true, escalation_reason = ?, escalated_at = datetime('now', 'utc'), status = 'pending'
-        WHERE id = ?
+        SET escalated = true, escalation_reason = $1, escalated_at = CURRENT_TIMESTAMP, status = 'pending'
+        WHERE id = $2
       `;
       
       database.run(sql, [escalationReason, id]).then(result => {
@@ -133,30 +133,36 @@ class TradingRequest {
     return new Promise((resolve, reject) => {
       let sql = 'SELECT * FROM trading_requests WHERE 1=1';
       const params = [];
+      let paramIndex = 1;
 
       if (filters.employee_email) {
-        sql += ' AND LOWER(employee_email) = ?';
+        sql += ` AND LOWER(employee_email) = $${paramIndex}`;
         params.push(filters.employee_email.toLowerCase());
+        paramIndex++;
       }
 
       if (filters.start_date) {
-        sql += ' AND DATE(created_at) >= ?';
+        sql += ` AND DATE(created_at) >= $${paramIndex}`;
         params.push(filters.start_date);
+        paramIndex++;
       }
 
       if (filters.end_date) {
-        sql += ' AND DATE(created_at) <= ?';
+        sql += ` AND DATE(created_at) <= $${paramIndex}`;
         params.push(filters.end_date);
+        paramIndex++;
       }
 
       if (filters.ticker) {
-        sql += ' AND UPPER(ticker) = ?';
+        sql += ` AND UPPER(ticker) = $${paramIndex}`;
         params.push(filters.ticker.toUpperCase());
+        paramIndex++;
       }
 
       if (filters.trading_type) {
-        sql += ' AND LOWER(trading_type) = ?';
+        sql += ` AND LOWER(trading_type) = $${paramIndex}`;
         params.push(filters.trading_type.toLowerCase());
+        paramIndex++;
       }
 
       sql += ' ORDER BY created_at DESC';
@@ -187,20 +193,24 @@ class TradingRequest {
         WHERE 1=1
       `;
       const params = [];
+      let paramIndex = 1;
 
       if (filters.employee_email) {
-        sql += ' AND LOWER(employee_email) = ?';
+        sql += ` AND LOWER(employee_email) = $${paramIndex}`;
         params.push(filters.employee_email.toLowerCase());
+        paramIndex++;
       }
 
       if (filters.start_date) {
-        sql += ' AND DATE(created_at) >= ?';
+        sql += ` AND DATE(created_at) >= $${paramIndex}`;
         params.push(filters.start_date);
+        paramIndex++;
       }
 
       if (filters.end_date) {
-        sql += ' AND DATE(created_at) <= ?';
+        sql += ` AND DATE(created_at) <= $${paramIndex}`;
         params.push(filters.end_date);
+        paramIndex++;
       }
 
       database.get(sql, params).then(row => {

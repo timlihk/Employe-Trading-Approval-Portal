@@ -5,7 +5,7 @@ class AuditLog {
     return new Promise((resolve, reject) => {
       const query = `
         INSERT INTO audit_logs (user_email, user_type, action, target_type, target_id, details, ip_address, user_agent, session_id)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       `;
       
       database.run(query, [userEmail.toLowerCase(), userType, action, targetType, targetId, details, ipAddress, userAgent, sessionId]).then(result => {
@@ -21,35 +21,42 @@ class AuditLog {
       let query = 'SELECT * FROM audit_logs';
       let params = [];
       let conditions = [];
+      let paramIndex = 1;
 
       if (filters.userEmail) {
-        conditions.push('LOWER(user_email) = ?');
+        conditions.push(`LOWER(user_email) = $${paramIndex}`);
         params.push(filters.userEmail.toLowerCase());
+        paramIndex++;
       }
 
       if (filters.userType) {
-        conditions.push('user_type = ?');
+        conditions.push(`user_type = $${paramIndex}`);
         params.push(filters.userType);
+        paramIndex++;
       }
 
       if (filters.action) {
-        conditions.push('action = ?');
+        conditions.push(`action = $${paramIndex}`);
         params.push(filters.action);
+        paramIndex++;
       }
 
       if (filters.targetType) {
-        conditions.push('target_type = ?');
+        conditions.push(`target_type = $${paramIndex}`);
         params.push(filters.targetType);
+        paramIndex++;
       }
 
       if (filters.startDate) {
-        conditions.push('created_at >= ?');
+        conditions.push(`created_at >= $${paramIndex}`);
         params.push(filters.startDate + ' 00:00:00');
+        paramIndex++;
       }
 
       if (filters.endDate) {
-        conditions.push('created_at <= ?');
+        conditions.push(`created_at <= $${paramIndex}`);
         params.push(filters.endDate + ' 23:59:59');
+        paramIndex++;
       }
 
       if (conditions.length > 0) {
@@ -59,7 +66,7 @@ class AuditLog {
       query += ' ORDER BY created_at DESC';
 
       if (filters.limit) {
-        query += ' LIMIT ?';
+        query += ` LIMIT $${paramIndex}`;
         params.push(filters.limit);
       }
 
@@ -87,15 +94,18 @@ class AuditLog {
       `;
       let params = [];
       let conditions = [];
+      let paramIndex = 1;
 
       if (filters.startDate) {
-        conditions.push('created_at >= ?');
+        conditions.push(`created_at >= $${paramIndex}`);
         params.push(filters.startDate + ' 00:00:00');
+        paramIndex++;
       }
 
       if (filters.endDate) {
-        conditions.push('created_at <= ?');
+        conditions.push(`created_at <= $${paramIndex}`);
         params.push(filters.endDate + ' 23:59:59');
+        paramIndex++;
       }
 
       if (conditions.length > 0) {
@@ -115,7 +125,7 @@ class AuditLog {
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
       
-      const query = 'DELETE FROM audit_logs WHERE created_at < ?';
+      const query = 'DELETE FROM audit_logs WHERE created_at < $1';
       
       database.run(query, [cutoffDate.toISOString()]).then(result => {
         resolve(result.changes);
@@ -129,9 +139,9 @@ class AuditLog {
     return new Promise((resolve, reject) => {
       const query = `
         SELECT * FROM audit_logs 
-        WHERE LOWER(user_email) = ? 
+        WHERE LOWER(user_email) = $1 
         ORDER BY created_at DESC 
-        LIMIT ?
+        LIMIT $2
       `;
       
       database.query(query, [userEmail.toLowerCase(), limit]).then(rows => {
@@ -149,9 +159,9 @@ class AuditLog {
       
       const query = `
         SELECT * FROM audit_logs 
-        WHERE created_at >= ? 
+        WHERE created_at >= $1 
         ORDER BY created_at DESC 
-        LIMIT ?
+        LIMIT $2
       `;
       
       database.query(query, [cutoffDate.toISOString(), limit]).then(rows => {
