@@ -19,7 +19,7 @@ class TradingRequestController {
 
     try {
       // Create trading request and get ticker info
-      const { request, tickerInfo } = await TradingRequestService.createTradingRequest(
+      const { request, tickerInfo, isRestricted, autoProcessed } = await TradingRequestService.createTradingRequest(
         { ticker, shares, trading_type },
         employeeEmail,
         ipAddress
@@ -30,13 +30,42 @@ class TradingRequestController {
       const localTotalValue = request.total_value || request.estimated_value || 0;
       const usdTotalValue = request.total_value_usd || localTotalValue;
 
-      // Render preview page
-      const previewContent = `
-        <div style="max-width: 600px; margin: 0 auto;">
+      // Generate status banner based on auto-processing result
+      let statusBanner = '';
+      let statusText = '';
+      let statusColor = '';
+      
+      if (request.status === 'approved') {
+        statusBanner = `
+          <div style="background: #d4edda; border: 1px solid #c3e6cb; padding: var(--spacing-4); border-radius: var(--radius); margin-bottom: var(--spacing-6); text-align: center;">
+            <h3 style="margin: 0; color: #155724;">✅ Request Automatically Approved</h3>
+            <p style="margin: var(--spacing-2) 0 0 0; color: #155724;">Your trading request has been automatically approved since ${ticker.toUpperCase()} is not on the restricted list.</p>
+          </div>`;
+        statusText = 'APPROVED';
+        statusColor = '#28a745';
+      } else if (request.status === 'rejected') {
+        statusBanner = `
+          <div style="background: #f8d7da; border: 1px solid #f5c6cb; padding: var(--spacing-4); border-radius: var(--radius); margin-bottom: var(--spacing-6); text-align: center;">
+            <h3 style="margin: 0; color: #721c24;">❌ Request Automatically Rejected</h3>
+            <p style="margin: var(--spacing-2) 0 0 0; color: #721c24;">Your trading request has been automatically rejected because ${ticker.toUpperCase()} is on the restricted trading list.</p>
+            <p style="margin: var(--spacing-2) 0 0 0; color: #721c24;"><strong>You can escalate this request with a business justification below.</strong></p>
+          </div>`;
+        statusText = 'REJECTED';
+        statusColor = '#dc3545';
+      } else {
+        statusBanner = `
           <div style="background: #e7f3ff; border: 1px solid #b3d9ff; padding: var(--spacing-4); border-radius: var(--radius); margin-bottom: var(--spacing-6); text-align: center;">
             <h3 style="margin: 0; color: var(--gs-dark-blue);">✅ Request Created Successfully</h3>
             <p style="margin: var(--spacing-2) 0 0 0; color: var(--gs-neutral-700);">Your trading request has been submitted and is pending approval.</p>
-          </div>
+          </div>`;
+        statusText = 'PENDING APPROVAL';
+        statusColor = '#ffc107';
+      }
+
+      // Render preview page
+      const previewContent = `
+        <div style="max-width: 600px; margin: 0 auto;">
+          ${statusBanner}
 
           <div class="card">
             <div class="card-header">
@@ -70,11 +99,42 @@ class TradingRequestController {
                 </div>
                 <div style="display: flex; justify-content: space-between; padding: var(--spacing-3); background: var(--gs-neutral-100); border-radius: var(--radius);">
                   <span style="font-weight: 600;">Status:</span>
-                  <span style="color: #ffc107; font-weight: 600;">PENDING APPROVAL</span>
+                  <span style="color: ${statusColor}; font-weight: 600;">${statusText}</span>
                 </div>
+                ${request.rejection_reason ? `
+                <div style="padding: var(--spacing-3); background: #f8d7da; border: 1px solid #f5c6cb; border-radius: var(--radius);">
+                  <span style="font-weight: 600; color: #721c24;">Rejection Reason:</span>
+                  <p style="margin: var(--spacing-1) 0 0 0; color: #721c24;">${request.rejection_reason}</p>
+                </div>` : ''}
               </div>
             </div>
           </div>
+
+          ${request.status === 'rejected' ? `
+          <div class="card" style="margin-top: var(--spacing-6);">
+            <div class="card-header">
+              <h3 class="card-title">🚀 Request Escalation</h3>
+            </div>
+            <div class="card-body">
+              <p style="margin-bottom: var(--spacing-4); color: var(--gs-neutral-700);">
+                If you have a valid business reason for this trade, you can escalate this request for admin review.
+              </p>
+              <form method="post" action="/submit-escalation">
+                <input type="hidden" name="requestId" value="${request.id}">
+                <div style="margin-bottom: var(--spacing-4);">
+                  <label style="display: block; margin-bottom: var(--spacing-2); font-weight: 600;">Business Justification:</label>
+                  <textarea name="escalation_reason" required rows="4" 
+                           placeholder="Please provide a detailed business justification for this trade..." 
+                           style="width: 100%; padding: var(--spacing-3); border: 1px solid var(--gs-neutral-300); border-radius: var(--radius); font-family: inherit; resize: vertical;"></textarea>
+                </div>
+                <div style="text-align: center;">
+                  <button type="submit" class="btn btn-primary" style="padding: var(--spacing-3) var(--spacing-6);">
+                    Submit Escalation Request
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>` : ''}
 
           <div style="margin-top: var(--spacing-6); text-align: center;">
             <a href="/employee-dashboard" class="btn btn-primary" style="padding: 15px 30px; font-size: 16px; text-decoration: none; margin-right: 20px;">

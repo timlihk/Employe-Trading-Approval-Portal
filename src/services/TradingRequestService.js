@@ -97,15 +97,25 @@ class TradingRequestService {
 
       // Check if stock is restricted
       const isRestricted = await this.checkRestrictedStatus(ticker.toUpperCase());
-      if (isRestricted) {
-        throw new AppError(`${ticker.toUpperCase()} is on the restricted trading list and cannot be traded`, 403);
-      }
 
       // Calculate estimated values
       const sharePrice = tickerValidation.regularMarketPrice || 0;
       const estimatedValue = sharePrice * parseInt(shares);
       
-      // Create trading request
+      // Determine initial status and rejection reason based on restricted list
+      let initialStatus = 'pending';
+      let rejectionReason = null;
+      
+      if (isRestricted) {
+        // Automatically reject restricted stocks
+        initialStatus = 'rejected';
+        rejectionReason = `${ticker.toUpperCase()} is on the restricted trading list. This request has been automatically rejected. You may escalate with a business justification if needed.`;
+      } else {
+        // Automatically approve non-restricted stocks
+        initialStatus = 'approved';
+      }
+      
+      // Create trading request with automatic status
       const tradingRequestData = {
         employee_email: employeeEmail.toLowerCase(),
         stock_name: tickerValidation.longName,
@@ -118,34 +128,46 @@ class TradingRequestService {
         total_value_usd: estimatedValue,
         exchange_rate: 1,
         trading_type: trading_type.toLowerCase(),
-        estimated_value: estimatedValue
+        estimated_value: estimatedValue,
+        status: initialStatus,
+        rejection_reason: rejectionReason,
+        processed_at: new Date().toISOString()
       };
 
       const request = await TradingRequest.create(tradingRequestData);
 
-      // Log the creation
+      // Log the creation with appropriate action
+      const logAction = isRestricted ? 'create_rejected_trading_request' : 'create_approved_trading_request';
+      const logDetails = isRestricted 
+        ? `Created ${trading_type} request for ${shares} shares of ${ticker.toUpperCase()} - AUTOMATICALLY REJECTED (restricted stock)`
+        : `Created ${trading_type} request for ${shares} shares of ${ticker.toUpperCase()} - AUTOMATICALLY APPROVED`;
+        
       await AuditLog.logActivity(
         employeeEmail,
         'employee',
-        'create_trading_request',
+        logAction,
         'trading_request',
         request.id,
-        `Created ${trading_type} request for ${shares} shares of ${ticker.toUpperCase()}`,
+        logDetails,
         ipAddress
       );
 
-      logger.info('Trading request created', {
+      logger.info('Trading request created with automatic processing', {
         requestId: request.id,
         employee: employeeEmail,
         ticker: ticker.toUpperCase(),
         shares,
         trading_type,
-        estimatedValue
+        estimatedValue,
+        status: initialStatus,
+        isRestricted
       });
 
       return {
         request,
-        tickerInfo: tickerValidation
+        tickerInfo: tickerValidation,
+        isRestricted,
+        autoProcessed: true
       };
       
     } catch (error) {
@@ -201,8 +223,8 @@ class TradingRequestService {
         throw new AppError('Unauthorized to escalate this request', 403);
       }
 
-      if (request.status !== 'pending') {
-        throw new AppError('Only pending requests can be escalated', 400);
+      if (request.status !== 'pending' && request.status !== 'rejected') {
+        throw new AppError('Only pending or rejected requests can be escalated', 400);
       }
 
       if (request.escalated) {
