@@ -3127,7 +3127,6 @@ app.get('/admin-backup-database', async (req, res) => {
         'restricted_stocks',
         'trading_requests', 
         'audit_logs',
-        'compliance_settings',
         'restricted_stock_changelog'
       ];
       

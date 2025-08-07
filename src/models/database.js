@@ -69,17 +69,6 @@ class Database {
         )
       `);
 
-      await this.pool.query(`
-        CREATE TABLE IF NOT EXISTS compliance_settings (
-          id SERIAL PRIMARY KEY,
-          setting_key VARCHAR(100) UNIQUE NOT NULL,
-          setting_value TEXT NOT NULL,
-          description TEXT,
-          updated_by VARCHAR(255) NOT NULL,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-      `);
 
       await this.pool.query(`
         CREATE TABLE IF NOT EXISTS restricted_stock_changelog (
@@ -96,21 +85,10 @@ class Database {
         )
       `);
 
-      // Initialize default compliance settings
-      const { rows } = await this.pool.query('SELECT COUNT(*) as count FROM compliance_settings');
-      if (parseInt(rows[0].count) === 0) {
-        console.log('Initializing default compliance settings...');
-        await this.pool.query(`
-          INSERT INTO compliance_settings (setting_key, setting_value, description, updated_by) VALUES
-          ('data_retention_days', '2555', 'Data retention period in days (7 years)', 'system'),
-          ('audit_log_retention_days', '2555', 'Audit log retention period in days (7 years)', 'system'),
-          ('max_trade_amount', '1000000', 'Maximum trade amount in USD', 'system'),
-          ('require_manager_approval', 'false', 'Require manager approval for all trades', 'system'),
-          ('blackout_period_active', 'false', 'Whether blackout period is currently active', 'system'),
-          ('regulatory_filing_enabled', 'true', 'Enable regulatory filing assistance', 'system'),
-          ('email_notifications_enabled', 'true', 'Send email notifications for request approvals/rejections', 'system')
-        `);
-      }
+
+      // Drop unused compliance_settings table if it exists
+      await this.pool.query('DROP TABLE IF EXISTS compliance_settings');
+      console.log('🗑️  Removed unused compliance_settings table');
 
       console.log('✅ PostgreSQL database initialized successfully');
     } catch (error) {
