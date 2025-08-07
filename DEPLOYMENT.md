@@ -1,11 +1,14 @@
-# Railway Deployment Guide
+# Railway Deployment Guide - Enterprise Architecture
 
 ## Step-by-Step Railway Deployment Instructions
+
+This guide covers deployment of the enterprise-grade Trading Compliance Portal with layered architecture, comprehensive security, and PostgreSQL database.
 
 ### Prerequisites
 1. GitHub account with the repository
 2. Railway account (sign up at railway.app)
 3. Basic understanding of environment variables
+4. Understanding of PostgreSQL (Railway provides this automatically)
 
 ### Step 1: Connect to Railway
 
@@ -31,12 +34,20 @@ In your Railway project dashboard:
 
 #### Required Variables:
 ```
+# Core Application Settings
 NODE_ENV=production
 SESSION_SECRET=your-super-secure-random-key-at-least-32-chars
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD=your-secure-admin-password-here
+DATABASE_URL=postgresql://[auto-provided-by-railway]
+
+# Optional Application Settings  
 PORT=3000
+LOG_LEVEL=info
+FRONTEND_URL=https://your-app-name.up.railway.app
 ```
+
+**⚠️ CRITICAL**: Railway automatically provides `DATABASE_URL` for PostgreSQL - do not set this manually.
 
 #### Optional Microsoft 365 Integration:
 ```
@@ -99,25 +110,54 @@ Railway provides:
 - **Health Checks**: Automatic monitoring via `/health` endpoint
 - **Deployments**: History of all deployments
 
-### Step 8: Database Persistence
+### Step 8: Database Management
 
-The SQLite database is automatically persistent on Railway. The database will:
-- Initialize empty on first run
-- Retain all data between deployments
-- Create backup automatically
-- Scale with your usage
+Railway provides managed PostgreSQL database:
+- **PostgreSQL Instance**: Automatically provisioned and managed
+- **Automatic Backups**: Railway handles database backups
+- **Data Persistence**: All data persists between deployments
+- **Auto-initialization**: Database schema created on first run
+- **Built-in Backup**: App includes `/admin-backup-database` endpoint for manual exports
+- **High Availability**: Railway ensures database uptime and performance
+
+### Step 9: Application Architecture Features
+
+This deployment includes enterprise-grade features:
+
+#### 🏗️ **Layered Architecture**
+- Controllers handle HTTP requests/responses
+- Services contain business logic  
+- Models manage database operations
+- Middleware handles security, validation, logging
+
+#### 🔒 **Security Features**
+- Rate limiting to prevent brute force attacks
+- Comprehensive input validation and sanitization
+- Centralized error handling with proper logging
+- Audit trail for all user actions
+- Session security with configurable expiration
+
+#### 📊 **Monitoring & Logging**
+- Winston structured logging with request correlation IDs
+- Health check endpoint at `/health` for Railway monitoring
+- Database status endpoint at `/db-status` (admin only)
+- Complete audit logging for compliance requirements
 
 ## Security Checklist
 
 Before going live:
 
-- [ ] Change default admin password
-- [ ] Set strong SESSION_SECRET
-- [ ] Configure HTTPS (automatic on Railway)
-- [ ] Review admin user permissions
+- [ ] Set strong SESSION_SECRET (32+ characters, cryptographically secure)
+- [ ] Configure secure ADMIN_USERNAME and ADMIN_PASSWORD
+- [ ] Verify HTTPS is enabled (automatic on Railway)
+- [ ] Test rate limiting on authentication endpoints
+- [ ] Verify input validation is working on all forms
 - [ ] Test Microsoft 365 integration if enabled
-- [ ] Add restricted stocks as needed
-- [ ] Test employee and admin workflows
+- [ ] Add restricted stocks as needed via admin panel
+- [ ] Test complete employee workflow (request → approval/rejection)
+- [ ] Verify audit logging is capturing all actions
+- [ ] Test database backup functionality
+- [ ] Review application logs for any security warnings
 
 ## Troubleshooting
 

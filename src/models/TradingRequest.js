@@ -1,6 +1,9 @@
-const database = require('./database');
+const BaseModel = require('./BaseModel');
 
-class TradingRequest {
+class TradingRequest extends BaseModel {
+  static get tableName() {
+    return 'trading_requests';
+  }
   static create(requestData) {
     return new Promise((resolve, reject) => {
       const { 
@@ -37,7 +40,7 @@ class TradingRequest {
         total_value_usd || finalTotalValue, exchange_rate || 1, trading_type
       ];
       
-      database.run(sql, params).then(result => {
+      this.run(sql, params).then(result => {
         resolve({ 
           id: result.lastID,
           status: 'pending',
@@ -57,7 +60,7 @@ class TradingRequest {
         WHERE id = $3
       `;
       
-      database.run(sql, [status, rejection_reason, id]).then(result => {
+      this.run(sql, [status, rejection_reason, id]).then(result => {
         resolve({ changes: result.changes });
       }).catch(err => {
         reject(err);
@@ -66,34 +69,18 @@ class TradingRequest {
   }
 
   static getById(id) {
-    return new Promise((resolve, reject) => {
-      const sql = 'SELECT * FROM trading_requests WHERE id = $1';
-      
-      database.get(sql, [id]).then(row => {
-        resolve(row);
-      }).catch(err => {
-        reject(err);
-      });
-    });
+    return this.findById(id);
   }
 
   static getAll() {
-    return new Promise((resolve, reject) => {
-      const sql = 'SELECT * FROM trading_requests ORDER BY created_at ASC';
-      
-      database.query(sql, []).then(rows => {
-        resolve(rows);
-      }).catch(err => {
-        reject(err);
-      });
-    });
+    return this.findAll({}, 'created_at ASC');
   }
 
   static findByEmail(email) {
     return new Promise((resolve, reject) => {
       const sql = 'SELECT * FROM trading_requests WHERE LOWER(employee_email) = $1 ORDER BY created_at ASC';
       
-      database.query(sql, [email.toLowerCase()]).then(rows => {
+      this.query(sql, [email.toLowerCase()]).then(rows => {
         resolve(rows);
       }).catch(err => {
         reject(err);
@@ -109,7 +96,7 @@ class TradingRequest {
         WHERE id = $2
       `;
       
-      database.run(sql, [escalationReason, id]).then(result => {
+      this.run(sql, [escalationReason, id]).then(result => {
         resolve({ changes: result.changes });
       }).catch(err => {
         reject(err);
@@ -121,7 +108,7 @@ class TradingRequest {
     return new Promise((resolve, reject) => {
       const sql = 'SELECT DISTINCT LOWER(employee_email) as employee_email FROM trading_requests ORDER BY employee_email';
       
-      database.query(sql, []).then(rows => {
+      this.query(sql, []).then(rows => {
         resolve(rows.map(row => row.employee_email));
       }).catch(err => {
         reject(err);
@@ -167,7 +154,7 @@ class TradingRequest {
 
       sql += ' ORDER BY created_at DESC';
 
-      database.query(sql, params).then(rows => {
+      this.query(sql, params).then(rows => {
         resolve(rows);
       }).catch(err => {
         reject(err);
@@ -213,7 +200,7 @@ class TradingRequest {
         paramIndex++;
       }
 
-      database.get(sql, params).then(row => {
+      this.get(sql, params).then(row => {
         resolve(row);
       }).catch(err => {
         reject(err);

@@ -1,48 +1,35 @@
-const database = require('./database');
+const BaseModel = require('./BaseModel');
 
-class RestrictedStockChangelog {
+class RestrictedStockChangelog extends BaseModel {
+  static get tableName() {
+    return 'restricted_stock_changelog';
+  }
   static logChange(changeData) {
-    return new Promise((resolve, reject) => {
-      const { 
-        ticker, 
-        company_name, 
-        action, 
-        admin_email, 
-        reason = null,
-        ip_address = null,
-        user_agent = null,
-        session_id = null
-      } = changeData;
-      
-      const sql = `
-        INSERT INTO restricted_stock_changelog (
-          ticker, company_name, action, admin_email, reason,
-          ip_address, user_agent, session_id
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-      `;
-      
-      database.run(sql, [
-        ticker, company_name, action, admin_email, reason,
-        ip_address, user_agent, session_id
-      ]).then(result => {
-        resolve({ id: result.lastID, ...changeData });
-      }).catch(err => {
-        reject(err);
-      });
+    const {
+      ticker,
+      company_name,
+      action,
+      admin_email,
+      reason = null,
+      ip_address = null,
+      user_agent = null,
+      session_id = null
+    } = changeData;
+    
+    return this.create({
+      ticker,
+      company_name,
+      action,
+      admin_email,
+      reason,
+      ip_address,
+      user_agent,
+      session_id
     });
   }
 
   static getAll() {
-    return new Promise((resolve, reject) => {
-      const sql = 'SELECT * FROM restricted_stock_changelog ORDER BY created_at DESC';
-      
-      database.query(sql, []).then(rows => {
-        resolve(rows);
-      }).catch(err => {
-        reject(err);
-      });
-    });
+    return this.findAll({}, 'created_at DESC');
   }
 
   static getFiltered(filters) {
@@ -83,11 +70,7 @@ class RestrictedStockChangelog {
 
       sql += ' ORDER BY created_at DESC';
 
-      database.query(sql, params).then(rows => {
-        resolve(rows);
-      }).catch(err => {
-        reject(err);
-      });
+      this.query(sql, params).then(resolve).catch(reject);
     });
   }
 
@@ -118,11 +101,7 @@ class RestrictedStockChangelog {
         paramIndex++;
       }
 
-      database.get(sql, params).then(row => {
-        resolve(row);
-      }).catch(err => {
-        reject(err);
-      });
+      this.get(sql, params).then(resolve).catch(reject);
     });
   }
 }

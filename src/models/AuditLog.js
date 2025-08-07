@@ -1,18 +1,24 @@
-const database = require('./database');
+const BaseModel = require('./BaseModel');
 
-class AuditLog {
+class AuditLog extends BaseModel {
+  static get tableName() {
+    return 'audit_logs';
+  }
   static logActivity(userEmail, userType, action, targetType, targetId = null, details = null, ipAddress = null, userAgent = null, sessionId = null) {
     return new Promise((resolve, reject) => {
-      const query = `
-        INSERT INTO audit_logs (user_email, user_type, action, target_type, target_id, details, ip_address, user_agent, session_id)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-      `;
-      
-      database.run(query, [userEmail.toLowerCase(), userType, action, targetType, targetId, details, ipAddress, userAgent, sessionId]).then(result => {
-        resolve(result.lastID);
-      }).catch(err => {
-        reject(err);
-      });
+      this.create({
+        user_email: userEmail.toLowerCase(),
+        user_type: userType,
+        action,
+        target_type: targetType,
+        target_id: targetId,
+        details,
+        ip_address: ipAddress,
+        user_agent: userAgent,
+        session_id: sessionId
+      }).then(result => {
+        resolve(result.id);
+      }).catch(reject);
     });
   }
 
@@ -70,11 +76,7 @@ class AuditLog {
         params.push(filters.limit);
       }
 
-      database.query(query, params).then(rows => {
-        resolve(rows);
-      }).catch(err => {
-        reject(err);
-      });
+      this.query(query, params).then(resolve).catch(reject);
     });
   }
 
@@ -112,11 +114,7 @@ class AuditLog {
         query += ' WHERE ' + conditions.join(' AND ');
       }
 
-      database.get(query, params).then(row => {
-        resolve(row);
-      }).catch(err => {
-        reject(err);
-      });
+      this.get(query, params).then(resolve).catch(reject);
     });
   }
 
@@ -127,11 +125,9 @@ class AuditLog {
       
       const query = 'DELETE FROM audit_logs WHERE created_at < $1';
       
-      database.run(query, [cutoffDate.toISOString()]).then(result => {
+      this.run(query, [cutoffDate.toISOString()]).then(result => {
         resolve(result.changes);
-      }).catch(err => {
-        reject(err);
-      });
+      }).catch(reject);
     });
   }
 
@@ -144,11 +140,7 @@ class AuditLog {
         LIMIT $2
       `;
       
-      database.query(query, [userEmail.toLowerCase(), limit]).then(rows => {
-        resolve(rows);
-      }).catch(err => {
-        reject(err);
-      });
+      this.query(query, [userEmail.toLowerCase(), limit]).then(resolve).catch(reject);
     });
   }
 
@@ -164,11 +156,7 @@ class AuditLog {
         LIMIT $2
       `;
       
-      database.query(query, [cutoffDate.toISOString(), limit]).then(rows => {
-        resolve(rows);
-      }).catch(err => {
-        reject(err);
-      });
+      this.query(query, [cutoffDate.toISOString(), limit]).then(resolve).catch(reject);
     });
   }
 }

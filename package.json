@@ -13,7 +13,12 @@
     "build": "echo 'No build step needed'",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": ["trading", "approval", "compliance", "microsoft365"],
+  "keywords": [
+    "trading",
+    "approval",
+    "compliance",
+    "microsoft365"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
@@ -21,8 +26,11 @@
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
+    "express-rate-limit": "^8.0.1",
     "express-session": "^1.18.2",
+    "express-validator": "^7.2.1",
     "helmet": "^8.1.0",
-    "pg": "^8.11.3"
+    "pg": "^8.11.3",
+    "winston": "^3.17.0"
   }
 }
