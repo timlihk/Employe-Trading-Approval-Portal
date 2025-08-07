@@ -432,23 +432,26 @@ function generateSortingControls(baseUrl, currentSortBy, currentSortOrder, query
   const baseQuery = queryString ? `${baseUrl}?${queryString}&` : `${baseUrl}?`;
 
   return `
-    <div style="display: flex; align-items: center; gap: var(--spacing-3);">
+    <div style="display: flex; align-items: center; gap: var(--spacing-3); flex-wrap: wrap;">
       <span style="font-weight: 600; color: var(--gs-neutral-700);">Sort by:</span>
-      <select id="sortBy" onchange="updateSort()" style="padding: 6px 10px; border: 1px solid var(--gs-neutral-300); border-radius: var(--radius);">
+      <select id="employeeSortBy" style="padding: 6px 10px; border: 1px solid var(--gs-neutral-300); border-radius: var(--radius);">
         <option value="id" ${currentSortBy === 'id' ? 'selected' : ''}>Request ID</option>
         <option value="created_at" ${currentSortBy === 'created_at' ? 'selected' : ''}>Date</option>
         <option value="ticker" ${currentSortBy === 'ticker' ? 'selected' : ''}>Ticker</option>
       </select>
-      <select id="sortOrder" onchange="updateSort()" style="padding: 6px 10px; border: 1px solid var(--gs-neutral-300); border-radius: var(--radius);">
+      <select id="employeeSortOrder" style="padding: 6px 10px; border: 1px solid var(--gs-neutral-300); border-radius: var(--radius);">
         <option value="DESC" ${currentSortOrder === 'DESC' ? 'selected' : ''}>↓ Descending</option>
         <option value="ASC" ${currentSortOrder === 'ASC' ? 'selected' : ''}>↑ Ascending</option>
       </select>
+      <button onclick="applyEmployeeSort()" class="btn btn-primary btn-sm" style="padding: 6px 15px; font-size: var(--font-size-sm);">
+        Apply Sort
+      </button>
     </div>
     
     <script>
-      function updateSort() {
-        const sortBy = document.getElementById('sortBy').value;
-        const sortOrder = document.getElementById('sortOrder').value;
+      function applyEmployeeSort() {
+        const sortBy = document.getElementById('employeeSortBy').value;
+        const sortOrder = document.getElementById('employeeSortOrder').value;
         window.location.href = '${baseQuery}sort_by=' + sortBy + '&sort_order=' + sortOrder;
       }
     </script>
