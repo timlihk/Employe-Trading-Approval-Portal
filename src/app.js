@@ -35,6 +35,25 @@ if (process.env.AZURE_CLIENT_ID && process.env.AZURE_CLIENT_SECRET && process.en
 const database = require('./models/database');
 console.log('Database initialized successfully');
 
+// Middleware functions
+function requireAdmin(req, res, next) {
+  if (!req.session.adminAuthenticated) {
+    // Check if it's an API request (JSON response) or web request (redirect)
+    if (req.accepts('json') && !req.accepts('html')) {
+      return res.status(401).json({ error: 'Admin authentication required' });
+    }
+    return res.redirect('/admin-login?error=authentication_required');
+  }
+  next();
+}
+
+function requireEmployee(req, res, next) {
+  if (!req.session.employee || !req.session.employee.email) {
+    return res.redirect('/?error=authentication_required');
+  }
+  next();
+}
+
 // All routes are defined in this file
 
 const app = express();
@@ -112,11 +131,7 @@ app.get('/session-test', (req, res) => {
 });
 
 // Database status endpoint for admin debugging
-app.get('/db-status', async (req, res) => {
-  // Check admin authentication
-  if (!req.session.adminAuthenticated) {
-    return res.status(401).json({ error: 'Admin authentication required' });
-  }
+app.get('/db-status', requireAdmin, async (req, res) => {
   
   try {
     const stats = await database.get(`
@@ -769,11 +784,7 @@ app.post('/admin-authenticate', async (req, res) => {
 });
 
 // Admin dashboard
-app.get('/admin-dashboard', (req, res) => {
-  // Check admin authentication
-  if (!req.session.adminAuthenticated) {
-    return res.redirect('/admin-login?error=authentication_required');
-  }
+app.get('/admin-dashboard', requireAdmin, (req, res) => {
   
   const adminDashboardHTML = `
   <!DOCTYPE html>
@@ -855,17 +866,11 @@ app.get('/admin-logout', (req, res) => {
 });
 
 // Employee dashboard route (after authentication)
-app.get('/employee-dashboard', (req, res) => {
+app.get('/employee-dashboard', requireEmployee, (req, res) => {
   try {
     console.log('Employee dashboard accessed');
     console.log('Session:', req.session);
     console.log('Employee data:', req.session.employee);
-    
-    // Check if employee is authenticated
-    if (!req.session.employee || !req.session.employee.email) {
-      console.log('No employee session found, redirecting to login');
-      return res.redirect('/?error=authentication_required');
-    }
     
     console.log('Employee authenticated:', req.session.employee.email);
   } catch (error) {
@@ -1595,11 +1600,7 @@ app.post('/escalate-request', async (req, res) => {
 });
 
 // Submit escalation route
-app.post('/submit-escalation', async (req, res) => {
-  // Check authentication
-  if (!req.session.employee || !req.session.employee.email) {
-    return res.redirect('/?error=authentication_required');
-  }
+app.post('/submit-escalation', requireEmployee, async (req, res) => {
   
   try {
     const { requestId, escalationReason } = req.body;
@@ -1861,11 +1862,7 @@ app.post('/submit-final-trade', async (req, res) => {
 });
 
 // Employee history page (server-side)
-app.get('/employee-history', async (req, res) => {
-  // Check authentication
-  if (!req.session.employee || !req.session.employee.email) {
-    return res.redirect('/?error=authentication_required');
-  }
+app.get('/employee-history', requireEmployee, async (req, res) => {
   
   try {
     const TradingRequest = require('./models/TradingRequest');
@@ -2040,11 +2037,7 @@ app.get('/employee-history', async (req, res) => {
 });
 
 // Employee export history route
-app.get('/employee-export-history', async (req, res) => {
-  // Check authentication
-  if (!req.session.employee || !req.session.employee.email) {
-    return res.redirect('/?error=authentication_required');
-  }
+app.get('/employee-export-history', requireEmployee, async (req, res) => {
   
   try {
     const TradingRequest = require('./models/TradingRequest');
@@ -2112,11 +2105,7 @@ app.get('/employee-export-history', async (req, res) => {
 });
 
 // Admin restricted stocks management page
-app.get('/admin-restricted-stocks', async (req, res) => {
-  // Check admin authentication
-  if (!req.session.adminAuthenticated) {
-    return res.redirect('/admin-login?error=authentication_required');
-  }
+app.get('/admin-restricted-stocks', requireAdmin, async (req, res) => {
   
   try {
     const RestrictedStock = require('./models/RestrictedStock');
@@ -2342,11 +2331,7 @@ async function getCompanyName(ticker) {
 }
 
 // Admin add stock route
-app.post('/admin-add-stock', async (req, res) => {
-  // Check admin authentication
-  if (!req.session.adminAuthenticated) {
-    return res.redirect('/admin-login?error=authentication_required');
-  }
+app.post('/admin-add-stock', requireAdmin, async (req, res) => {
   
   try {
     const { ticker } = req.body;
@@ -2416,11 +2401,7 @@ app.post('/admin-add-stock', async (req, res) => {
 });
 
 // Admin remove stock route
-app.post('/admin-remove-stock', async (req, res) => {
-  // Check admin authentication
-  if (!req.session.adminAuthenticated) {
-    return res.redirect('/admin-login?error=authentication_required');
-  }
+app.post('/admin-remove-stock', requireAdmin, async (req, res) => {
   
   try {
     const { ticker } = req.body;
@@ -2473,11 +2454,7 @@ app.post('/admin-remove-stock', async (req, res) => {
 });
 
 // Admin export restricted stocks changelog route
-app.get('/admin-export-restricted-stocks-changelog', async (req, res) => {
-  // Check admin authentication
-  if (!req.session.adminAuthenticated) {
-    return res.redirect('/admin-login?error=authentication_required');
-  }
+app.get('/admin-export-restricted-stocks-changelog', requireAdmin, async (req, res) => {
   
   try {
     const AuditLog = require('./models/AuditLog');
@@ -2516,11 +2493,7 @@ app.get('/admin-export-restricted-stocks-changelog', async (req, res) => {
 });
 
 // Admin update existing restricted stocks with proper company names
-app.post('/admin-update-stock-names', async (req, res) => {
-  // Check admin authentication
-  if (!req.session.adminAuthenticated) {
-    return res.redirect('/admin-login?error=authentication_required');
-  }
+app.post('/admin-update-stock-names', requireAdmin, async (req, res) => {
   
   try {
     const RestrictedStock = require('./models/RestrictedStock');
@@ -2556,11 +2529,7 @@ app.post('/admin-update-stock-names', async (req, res) => {
 });
 
 // Admin approve request route
-app.post('/admin-approve-request', async (req, res) => {
-  // Check admin authentication
-  if (!req.session.adminAuthenticated) {
-    return res.redirect('/admin-login?error=authentication_required');
-  }
+app.post('/admin-approve-request', requireAdmin, async (req, res) => {
   
   try {
     const { requestId } = req.body;
@@ -2607,11 +2576,7 @@ app.post('/admin-approve-request', async (req, res) => {
 });
 
 // Admin reject request route
-app.post('/admin-reject-request', async (req, res) => {
-  // Check admin authentication
-  if (!req.session.adminAuthenticated) {
-    return res.redirect('/admin-login?error=authentication_required');
-  }
+app.post('/admin-reject-request', requireAdmin, async (req, res) => {
   
   try {
     const { requestId } = req.body;
@@ -2658,11 +2623,7 @@ app.post('/admin-reject-request', async (req, res) => {
 });
 
 // View escalation reason route
-app.get('/view-escalation/:requestId', async (req, res) => {
-  // Check admin authentication
-  if (!req.session.adminAuthenticated) {
-    return res.redirect('/admin-login?error=authentication_required');
-  }
+app.get('/view-escalation/:requestId', requireAdmin, async (req, res) => {
   
   try {
     const { requestId } = req.params;
@@ -2822,11 +2783,7 @@ async function getUniqueEmployeeOptions(selectedEmail = null) {
 }
 
 // Admin requests view page
-app.get('/admin-requests', async (req, res) => {
-  // Check admin authentication
-  if (!req.session.adminAuthenticated) {
-    return res.redirect('/admin-login?error=authentication_required');
-  }
+app.get('/admin-requests', requireAdmin, async (req, res) => {
   
   try {
     const TradingRequest = require('./models/TradingRequest');
@@ -3002,11 +2959,7 @@ app.get('/admin-requests', async (req, res) => {
 });
 
 // Admin export trading requests route
-app.get('/admin-export-trading-requests', async (req, res) => {
-  // Check admin authentication
-  if (!req.session.adminAuthenticated) {
-    return res.redirect('/admin-login?error=authentication_required');
-  }
+app.get('/admin-export-trading-requests', requireAdmin, async (req, res) => {
   
   try {
     const TradingRequest = require('./models/TradingRequest');
@@ -3053,11 +3006,7 @@ app.get('/admin-export-trading-requests', async (req, res) => {
 });
 
 // Admin backup database route
-app.get('/admin-backup-database', async (req, res) => {
-  // Check admin authentication
-  if (!req.session.adminAuthenticated) {
-    return res.redirect('/admin-login?error=authentication_required');
-  }
+app.get('/admin-backup-database', requireAdmin, async (req, res) => {
   
   try {
     const { exec } = require('child_process');
