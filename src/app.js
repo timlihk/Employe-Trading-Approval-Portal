@@ -11,11 +11,21 @@ let cca = null;
 let REDIRECT_URI = null;
 let POST_LOGOUT_REDIRECT_URI = null;
 
+// Helper function to get the correct base URL
+function getBaseUrl(req) {
+  // In production, use the host from the request
+  if (process.env.NODE_ENV === 'production' && req) {
+    const protocol = req.get('x-forwarded-proto') || req.protocol || 'https';
+    const host = req.get('host');
+    return `${protocol}://${host}`;
+  }
+  // Otherwise use environment variable or default
+  return process.env.FRONTEND_URL || 'http://localhost:3001';
+}
+
 if (process.env.AZURE_CLIENT_ID && process.env.AZURE_CLIENT_SECRET && process.env.AZURE_TENANT_ID) {
-  const { msalConfig, REDIRECT_URI: redirectUri, POST_LOGOUT_REDIRECT_URI: postLogoutUri } = require('./config/msalConfig');
+  const { msalConfig } = require('./config/msalConfig');
   cca = new msal.ConfidentialClientApplication(msalConfig);
-  REDIRECT_URI = redirectUri;
-  POST_LOGOUT_REDIRECT_URI = postLogoutUri;
   console.log('Microsoft 365 SSO enabled');
 } else {
   console.log('Microsoft 365 SSO disabled - using email-based authentication');
@@ -292,8 +302,7 @@ app.get('/employee-login', (req, res) => {
                       <h3 class="card-title">Employee Login</h3>
                   </div>
                   <div class="card-body">
-                      ${cca && process.env.REDIRECT_URI && process.env.REDIRECT_URI.startsWith('https') ? `
-                      <!-- Microsoft 365 SSO Login -->
+                      <!-- Microsoft 365 SSO Login Only -->
                       <div style="text-align: center; margin-bottom: var(--spacing-6);">
                           <a href="/api/auth/microsoft/login" class="btn btn-primary" style="display: inline-block; padding: 20px 40px; font-size: 18px; text-decoration: none;">
                               <span style="display: inline-flex; align-items: center;">
@@ -304,43 +313,15 @@ app.get('/employee-login', (req, res) => {
                               </span>
                           </a>
                           <p style="margin-top: var(--spacing-4); color: var(--gs-neutral-600); font-size: var(--font-size-base);">
-                              Sign in with your corporate Microsoft account
+                              Sign in with your corporate Microsoft account to access the Trading Compliance Portal
                           </p>
                       </div>
                       
-                      <div style="text-align: center; margin: var(--spacing-4) 0; color: var(--gs-neutral-500);">
-                          <span>— OR —</span>
+                      ${req.query.error ? `
+                      <div style="margin-bottom: var(--spacing-4); padding: var(--spacing-3); background: #f8d7da; border: 1px solid #f5c6cb; border-radius: var(--radius); color: #721c24; text-align: center;">
+                          Authentication failed. Please check your Microsoft 365 credentials and try again.
                       </div>
                       ` : ''}
-                      
-                      <!-- Email-based Login Form -->
-                      <form action="/employee-authenticate" method="POST" style="max-width: 400px; margin: 0 auto;">
-                          ${req.query.error ? `
-                          <div style="margin-bottom: var(--spacing-4); padding: var(--spacing-3); background: #f8d7da; border: 1px solid #f5c6cb; border-radius: var(--radius); color: #721c24; text-align: center;">
-                              ${req.query.error === 'missing_fields' ? 'Please fill in all fields' : 'Authentication failed. Please try again.'}
-                          </div>
-                          ` : ''}
-                          
-                          <div style="margin-bottom: var(--spacing-4);">
-                              <label for="email" style="display: block; font-size: var(--font-size-sm); font-weight: 600; color: var(--gs-neutral-700); margin-bottom: var(--spacing-2);">Email Address</label>
-                              <input type="email" id="email" name="email" class="form-control" required 
-                                     placeholder="your.email@company.com"
-                                     style="width: 100%; padding: var(--spacing-3) var(--spacing-4); font-size: var(--font-size-base); border: 2px solid var(--gs-neutral-300); border-radius: var(--radius);">
-                          </div>
-                          
-                          <div style="margin-bottom: var(--spacing-6);">
-                              <label for="name" style="display: block; font-size: var(--font-size-sm); font-weight: 600; color: var(--gs-neutral-700); margin-bottom: var(--spacing-2);">Full Name</label>
-                              <input type="text" id="name" name="name" class="form-control" required 
-                                     placeholder="John Doe"
-                                     style="width: 100%; padding: var(--spacing-3) var(--spacing-4); font-size: var(--font-size-base); border: 2px solid var(--gs-neutral-300); border-radius: var(--radius);">
-                          </div>
-                          
-                          <div style="text-align: center;">
-                              <button type="submit" class="btn btn-primary" style="padding: 15px 30px; font-size: 16px;">
-                                  Login as Employee
-                              </button>
-                          </div>
-                      </form>
                       
                       <div style="text-align: center; margin-top: var(--spacing-6);">
                           <a href="/" style="color: var(--gs-primary-blue); text-decoration: none;">← Back to Home</a>
@@ -357,22 +338,13 @@ app.get('/employee-login', (req, res) => {
 
 // Employee authentication route
 app.post('/employee-authenticate', (req, res) => {
-  const { email, name } = req.body;
-  
-  // Always check for email-based authentication first
-  if (!email || !name) {
-    return res.redirect('/employee-login?error=missing_fields');
+  if (cca) {
+    // Microsoft 365 SSO enabled
+    res.redirect('/api/auth/microsoft/login');
+  } else {
+    // This route should not be called without SSO
+    res.redirect('/employee-login?error=sso_required');
   }
-  
-  // Set up employee session
-  req.session.employee = {
-    email: email.trim(),
-    name: name.trim(),
-    authMethod: 'email'
-  };
-  
-  console.log('Employee logged in via email:', email);
-  res.redirect('/employee-dashboard');
 });
 
 // Microsoft 365 Authentication Routes
@@ -438,11 +410,17 @@ app.get('/api/auth/microsoft/login', async (req, res) => {
       return res.send(configHTML);
     }
 
+    // Use dynamic redirect URI based on request
+    const baseUrl = getBaseUrl(req);
+    const redirectUri = `${baseUrl}/api/auth/microsoft/callback`;
+    
     const authCodeUrlParameters = {
       scopes: ['user.read', 'profile', 'email', 'openid'],
-      redirectUri: REDIRECT_URI,
+      redirectUri: redirectUri,
     };
 
+    console.log('Microsoft login - Redirect URI:', redirectUri);
+    
     // Get url to sign user in and consent to scopes
     const authUrl = await cca.getAuthCodeUrl(authCodeUrlParameters);
     res.redirect(authUrl);
@@ -459,11 +437,17 @@ app.get('/api/auth/microsoft/callback', async (req, res) => {
   }
   
   try {
+    // Use dynamic redirect URI based on request
+    const baseUrl = getBaseUrl(req);
+    const redirectUri = `${baseUrl}/api/auth/microsoft/callback`;
+    
     const tokenRequest = {
       code: req.query.code,
       scopes: ['user.read', 'profile', 'email', 'openid'],
-      redirectUri: REDIRECT_URI,
+      redirectUri: redirectUri,
     };
+
+    console.log('Microsoft callback - Redirect URI:', redirectUri);
 
     // Acquire token using authorization code
     const response = await cca.acquireTokenByCode(tokenRequest);
@@ -541,7 +525,7 @@ app.get('/api/auth/microsoft/callback', async (req, res) => {
 
 // Microsoft 365 logout helper
 app.get('/api/auth/microsoft/logout', (req, res) => {
-  if (!cca || !POST_LOGOUT_REDIRECT_URI) {
+  if (!cca) {
     // If SSO not configured, just clear session and redirect
     req.session.destroy(() => {
       res.redirect('/?message=logged_out');
@@ -549,7 +533,13 @@ app.get('/api/auth/microsoft/logout', (req, res) => {
     return;
   }
   
-  const logoutUri = `https://login.microsoftonline.com/${process.env.AZURE_TENANT_ID}/oauth2/v2.0/logout?post_logout_redirect_uri=${encodeURIComponent(POST_LOGOUT_REDIRECT_URI)}`;
+  // Use dynamic logout redirect URI
+  const baseUrl = getBaseUrl(req);
+  const postLogoutRedirectUri = baseUrl;
+  
+  const logoutUri = `https://login.microsoftonline.com/${process.env.AZURE_TENANT_ID}/oauth2/v2.0/logout?post_logout_redirect_uri=${encodeURIComponent(postLogoutRedirectUri)}`;
+  
+  console.log('Microsoft logout - Post logout redirect URI:', postLogoutRedirectUri);
   
   // Clear session
   req.session.destroy((err) => {
@@ -636,10 +626,18 @@ app.post('/admin-authenticate', async (req, res) => {
     const adminUsername = process.env.ADMIN_USERNAME || 'admin';
     const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
     
+    console.log('Admin credentials check:', {
+      providedUsername: username,
+      expectedUsername: adminUsername,
+      passwordMatch: password === adminPassword
+    });
+    
     if (username === adminUsername && password === adminPassword) {
       // Set admin session
       req.session.adminAuthenticated = true;
       req.session.admin = { username: username };
+      
+      console.log('Admin session set, saving...');
       
       // Save session before redirect
       req.session.save((err) => {
@@ -647,6 +645,7 @@ app.post('/admin-authenticate', async (req, res) => {
           console.error('Session save error:', err);
           return res.status(500).send('Session error. Please try again.');
         }
+        console.log('Admin session saved, redirecting to dashboard');
         // Redirect to admin dashboard
         res.redirect('/admin-dashboard');
       });
