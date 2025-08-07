@@ -73,7 +73,6 @@ class AuditLog {
 
   static getAuditSummary(filters = {}) {
     return new Promise((resolve, reject) => {
-      const db = database.getDb();
       let query = `
         SELECT 
           COUNT(*) as total_activities,
@@ -103,37 +102,31 @@ class AuditLog {
         query += ' WHERE ' + conditions.join(' AND ');
       }
 
-      db.get(query, params, (err, row) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(row);
-        }
+      database.get(query, params).then(row => {
+        resolve(row);
+      }).catch(err => {
+        reject(err);
       });
     });
   }
 
   static cleanupOldLogs(retentionDays) {
     return new Promise((resolve, reject) => {
-      const db = database.getDb();
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
       
       const query = 'DELETE FROM audit_logs WHERE created_at < ?';
       
-      db.run(query, [cutoffDate.toISOString()], function(err) {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(this.changes);
-        }
+      database.run(query, [cutoffDate.toISOString()]).then(result => {
+        resolve(result.changes);
+      }).catch(err => {
+        reject(err);
       });
     });
   }
 
   static getActivityByUser(userEmail, limit = 50) {
     return new Promise((resolve, reject) => {
-      const db = database.getDb();
       const query = `
         SELECT * FROM audit_logs 
         WHERE LOWER(user_email) = ? 
@@ -141,19 +134,16 @@ class AuditLog {
         LIMIT ?
       `;
       
-      db.all(query, [userEmail.toLowerCase(), limit], (err, rows) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(rows);
-        }
+      database.query(query, [userEmail.toLowerCase(), limit]).then(rows => {
+        resolve(rows);
+      }).catch(err => {
+        reject(err);
       });
     });
   }
 
   static getRecentActivity(hours = 24, limit = 100) {
     return new Promise((resolve, reject) => {
-      const db = database.getDb();
       const cutoffDate = new Date();
       cutoffDate.setHours(cutoffDate.getHours() - hours);
       
@@ -164,12 +154,10 @@ class AuditLog {
         LIMIT ?
       `;
       
-      db.all(query, [cutoffDate.toISOString(), limit], (err, rows) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(rows);
-        }
+      database.query(query, [cutoffDate.toISOString(), limit]).then(rows => {
+        resolve(rows);
+      }).catch(err => {
+        reject(err);
       });
     });
   }
