@@ -133,12 +133,51 @@ app.use(express.static(path.join(__dirname, '../public'), {
 // ===========================================
 
 // Health check endpoint for Railway
-app.get('/health', (req, res) => {
-  res.status(200).json({ 
-    status: 'healthy', 
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime()
-  });
+app.get('/health', async (req, res) => {
+  try {
+    let dbStatus = 'unknown';
+    let dbError = null;
+    
+    // Check database connectivity
+    try {
+      if (process.env.DATABASE_URL) {
+        const db = database.getDb();
+        if (db.pool) {
+          // Quick connection test
+          await db.query('SELECT 1 as test');
+          dbStatus = 'connected';
+        } else {
+          dbStatus = 'not_initialized';
+        }
+      } else {
+        dbStatus = 'no_url_provided';
+      }
+    } catch (error) {
+      dbStatus = 'error';
+      dbError = error.message;
+    }
+
+    res.status(200).json({ 
+      status: 'healthy', 
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      database: {
+        status: dbStatus,
+        error: dbError,
+        hasUrl: !!process.env.DATABASE_URL
+      }
+    });
+  } catch (error) {
+    res.status(200).json({ 
+      status: 'healthy', 
+      timestamp: new Date().toISOString(),
+      uptime: process.uptime(),
+      database: {
+        status: 'healthcheck_error',
+        error: error.message
+      }
+    });
+  }
 });
 
 // Session test endpoint for debugging

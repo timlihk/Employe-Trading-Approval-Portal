@@ -2,21 +2,30 @@ const { Pool } = require('pg');
 
 class Database {
   constructor() {
-    if (!process.env.DATABASE_URL) {
-      throw new Error('DATABASE_URL environment variable is required for PostgreSQL connection');
+    if (process.env.DATABASE_URL) {
+      console.log('🐘 Using PostgreSQL database');
+      this.pool = new Pool({
+        connectionString: process.env.DATABASE_URL,
+        ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+      });
+    } else {
+      console.log('⚠️  No DATABASE_URL found - PostgreSQL not available');
+      console.log('📱 This might be expected during Railway initial deployment');
+      // For now, we'll use a minimal fallback that doesn't crash the app
+      this.pool = null;
     }
-    
-    console.log('🐘 Using PostgreSQL database');
-    this.pool = new Pool({
-      connectionString: process.env.DATABASE_URL,
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-    });
     
     this.init();
   }
 
   async init() {
+    if (!this.pool) {
+      console.log('⚠️  Skipping database initialization - no PostgreSQL connection available');
+      return;
+    }
+    
     try {
+      console.log('🔄 Initializing PostgreSQL database schema...');
       // Create tables for PostgreSQL
       await this.pool.query(`
         CREATE TABLE IF NOT EXISTS restricted_stocks (
@@ -93,18 +102,26 @@ class Database {
       console.log('✅ PostgreSQL database initialized successfully');
     } catch (error) {
       console.error('❌ Error initializing PostgreSQL database:', error);
-      throw error;
+      console.error('This might be a temporary issue during Railway deployment');
+      // Don't throw the error to prevent app crash during deployment
+      // Railway will retry the healthcheck
     }
   }
 
   // Direct PostgreSQL query method
   async query(sql, params = []) {
+    if (!this.pool) {
+      throw new Error('Database not available - PostgreSQL connection not established');
+    }
     const result = await this.pool.query(sql, params);
     return result.rows;
   }
 
   // PostgreSQL run method for INSERT/UPDATE/DELETE
   async run(sql, params = []) {
+    if (!this.pool) {
+      throw new Error('Database not available - PostgreSQL connection not established');
+    }
     // For INSERT, we need to return the ID
     if (sql.toLowerCase().includes('insert')) {
       sql += ' RETURNING id';
@@ -118,6 +135,9 @@ class Database {
 
   // PostgreSQL get method for single row
   async get(sql, params = []) {
+    if (!this.pool) {
+      throw new Error('Database not available - PostgreSQL connection not established');
+    }
     const result = await this.pool.query(sql, params);
     return result.rows[0] || null;
   }
