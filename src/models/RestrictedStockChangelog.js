@@ -22,15 +22,13 @@ class RestrictedStockChangelog {
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `;
       
-      database.getDb().run(sql, [
+      database.run(sql, [
         ticker, company_name, action, admin_email, reason,
         ip_address, user_agent, session_id
-      ], function(err) {
-        if (err) {
-          reject(err);
-        } else {
-          resolve({ id: this.lastID, ...changeData });
-        }
+      ]).then(result => {
+        resolve({ id: result.lastID, ...changeData });
+      }).catch(err => {
+        reject(err);
       });
     });
   }
@@ -39,12 +37,10 @@ class RestrictedStockChangelog {
     return new Promise((resolve, reject) => {
       const sql = 'SELECT * FROM restricted_stock_changelog ORDER BY created_at DESC';
       
-      database.getDb().all(sql, [], (err, rows) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(rows);
-        }
+      database.query(sql, []).then(rows => {
+        resolve(rows);
+      }).catch(err => {
+        reject(err);
       });
     });
   }
@@ -81,12 +77,10 @@ class RestrictedStockChangelog {
 
       sql += ' ORDER BY created_at DESC';
 
-      database.getDb().all(sql, params, (err, rows) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(rows);
-        }
+      database.query(sql, params).then(rows => {
+        resolve(rows);
+      }).catch(err => {
+        reject(err);
       });
     });
   }
@@ -115,12 +109,10 @@ class RestrictedStockChangelog {
         params.push(filters.end_date);
       }
 
-      database.getDb().get(sql, params, (err, row) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(row);
-        }
+      database.get(sql, params).then(row => {
+        resolve(row);
+      }).catch(err => {
+        reject(err);
       });
     });
   }

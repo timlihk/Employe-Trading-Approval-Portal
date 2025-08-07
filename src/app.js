@@ -2377,6 +2377,7 @@ app.post('/admin-add-stock', async (req, res) => {
     
     const RestrictedStock = require('./models/RestrictedStock');
     const AuditLog = require('./models/AuditLog');
+    const RestrictedStockChangelog = require('./models/RestrictedStockChangelog');
     
     const tickerUpper = ticker.toUpperCase().trim();
     
@@ -2397,7 +2398,7 @@ app.post('/admin-add-stock', async (req, res) => {
     
     await RestrictedStock.add(tickerUpper, companyName, null);
     
-    // Log the addition to restricted stock changelog
+    // Log the addition to audit log
     await AuditLog.logActivity(
       req.session.admin?.username || 'admin@company.com',
       'admin',
@@ -2413,6 +2414,18 @@ app.post('/admin-add-stock', async (req, res) => {
       req.get('User-Agent'),
       req.sessionID
     );
+    
+    // Log to restricted stock changelog
+    await RestrictedStockChangelog.logChange({
+      ticker: tickerUpper,
+      company_name: companyName,
+      action: 'added',
+      admin_email: req.session.admin?.username || 'admin@company.com',
+      reason: 'Added via admin panel',
+      ip_address: req.ip,
+      user_agent: req.get('User-Agent'),
+      session_id: req.sessionID
+    });
     
     res.redirect(`/admin-restricted-stocks?message=stock_added&ticker=${encodeURIComponent(tickerUpper)}&company=${encodeURIComponent(companyName)}`);
     
@@ -2433,6 +2446,7 @@ app.post('/admin-remove-stock', async (req, res) => {
     const { ticker } = req.body;
     const RestrictedStock = require('./models/RestrictedStock');
     const AuditLog = require('./models/AuditLog');
+    const RestrictedStockChangelog = require('./models/RestrictedStockChangelog');
     
     // Get stock details before removal for logging
     const stockToRemove = await RestrictedStock.getByTicker(ticker);
@@ -2442,7 +2456,7 @@ app.post('/admin-remove-stock', async (req, res) => {
     // Log the removal to audit log
     if (stockToRemove) {
       await AuditLog.logActivity(
-        'admin@company.com', // You may want to get actual admin email from session
+        req.session.admin?.username || 'admin@company.com',
         'admin',
         'remove_restricted_stock',
         'restricted_stock',
@@ -2456,6 +2470,18 @@ app.post('/admin-remove-stock', async (req, res) => {
         req.get('User-Agent'),
         req.sessionID
       );
+      
+      // Log to restricted stock changelog
+      await RestrictedStockChangelog.logChange({
+        ticker: ticker.toUpperCase(),
+        company_name: stockToRemove.company_name,
+        action: 'removed',
+        admin_email: req.session.admin?.username || 'admin@company.com',
+        reason: 'Removed via admin panel',
+        ip_address: req.ip,
+        user_agent: req.get('User-Agent'),
+        session_id: req.sessionID
+      });
     }
     
     res.redirect('/admin-restricted-stocks?message=stock_removed');
