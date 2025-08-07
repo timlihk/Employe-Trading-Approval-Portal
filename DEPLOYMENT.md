@@ -143,6 +143,14 @@ This deployment includes enterprise-grade features:
 - Database status endpoint at `/db-status` (admin only)
 - Complete audit logging for compliance requirements
 
+#### 🔍 **Advanced Reporting Features**
+- **Dynamic Sorting**: All reporting tables support sorting by Request ID, Date, or Ticker
+- **Real-time Updates**: Tables update instantly when changing sort options
+- **CSV Exports**: Full data export with current sorting and filtering applied
+- **Advanced Filtering**: Date ranges, ticker search, trading type selection
+- **Visual Indicators**: Clear display of current sort field and direction
+- **URL Parameters**: Sorting state preserved in URLs for bookmarking
+
 ## Security Checklist
 
 Before going live:
@@ -157,6 +165,8 @@ Before going live:
 - [ ] Test complete employee workflow (request → approval/rejection)
 - [ ] Verify audit logging is capturing all actions
 - [ ] Test database backup functionality
+- [ ] Test dynamic sorting functionality on admin and employee tables
+- [ ] Verify CSV export includes correct sorting and filtering
 - [ ] Review application logs for any security warnings
 
 ## Troubleshooting
@@ -165,8 +175,10 @@ Before going live:
 
 1. **App won't start**: Check environment variables are set correctly
 2. **Microsoft 365 login fails**: Verify redirect URIs match exactly
-3. **Database issues**: Check logs for SQLite errors
+3. **Database issues**: Check logs for PostgreSQL/SQLite errors
 4. **Health check fails**: Ensure `/health` endpoint responds
+5. **Sorting not working**: Check that JavaScript is enabled and CSP allows inline scripts
+6. **Tables not updating**: Verify network connection and check browser console for errors
 
 ### Checking Logs:
 
@@ -192,9 +204,12 @@ Before going live:
 - [ ] Admin password changed from default
 - [ ] Restricted stocks configured
 - [ ] Employee workflow tested
-- [ ] Admin approval/rejection workflow tested
+- [ ] Admin approval/rejection workflow tested  
 - [ ] Audit logging working
 - [ ] CSV export functional
+- [ ] Dynamic sorting working on all reporting tables
+- [ ] Advanced filtering operational in employee history
+- [ ] Table sorting indicators displaying correctly
 
 ## Support
 

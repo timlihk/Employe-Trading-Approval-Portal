@@ -6,8 +6,11 @@ A comprehensive employee pre-trading approval system with Microsoft 365 integrat
 
 - **Employee Portal**: Trading request submission with real-time ticker validation and approval tracking
 - **Admin Dashboard**: Complete trading request management with advanced filtering and bulk operations
+- **Dynamic Sorting**: All reporting tables support sorting by Request ID, Date, or Ticker in ascending/descending order
+- **Advanced Filtering**: Comprehensive filtering with date ranges, ticker search, and trading type selection
 - **Restricted Stock Management**: Dynamic restricted stock list with full audit trail and changelog
 - **Escalation Workflow**: Business justification system for declined trades with admin priority review
+- **CSV Export**: Full data export functionality with current sorting and filtering applied
 - **Advanced Security**: Rate limiting, input validation, comprehensive audit logging, and secure session management
 - **Real-time Validation**: Yahoo Finance API integration for ticker validation and pricing
 - **Database Backup**: Built-in database export functionality for disaster recovery
@@ -115,6 +118,59 @@ The application supports both PostgreSQL (production) and SQLite (development):
 - `POST /employee-authenticate` - Employee email authentication
 - `POST /admin-authenticate` - Admin credential authentication
 - `GET /api/auth/microsoft/*` - Microsoft 365 OAuth flow (if enabled)
+
+### Admin Management
+- `GET /admin-dashboard` - Admin dashboard with statistics
+- `GET /admin-requests` - Trading requests management with sorting
+- `GET /admin-restricted-stocks` - Restricted stocks management
+- `GET /admin-export-trading-requests` - CSV export of all trading requests
+- `GET /admin-backup-database` - Full database backup
+
+### Employee Portal
+- `GET /employee-dashboard` - Employee trading request submission
+- `GET /employee-history` - Personal trading history with sorting and filtering
+- `GET /employee-export-history` - Personal CSV export with applied filters
+- `GET /escalate-form/:id` - Request escalation form
+
+## Reporting & Data Management
+
+### 📊 **Dynamic Sorting**
+All reporting tables support flexible sorting options:
+
+**Sort Fields:**
+- **Request ID** - Sort by unique request identifier (most recent first)
+- **Date** - Sort by creation timestamp (chronological order)  
+- **Ticker** - Sort alphabetically by stock symbol
+- **Employee** - Sort by employee email (admin tables only)
+
+**Sort Directions:**
+- **↓ Descending** - Newest/highest first (default)
+- **↑ Ascending** - Oldest/lowest first
+
+**Usage:**
+```
+URL: /admin-requests?sort_by=created_at&sort_order=ASC
+URL: /employee-history?sort_by=ticker&sort_order=DESC&ticker=AAPL
+```
+
+### 🔍 **Advanced Filtering**
+Employee history supports comprehensive filtering:
+- **Date Range** - Filter by start and end dates
+- **Ticker Search** - Find specific stock symbols
+- **Trading Type** - Filter by buy/sell transactions
+- **Combined Filters** - Multiple filters work together
+
+### 📥 **CSV Export Features**
+- **Maintains Sorting** - Exports respect current sort order
+- **Preserves Filters** - Employee exports include applied filters
+- **Timestamped Files** - Automatic filename generation with timestamps
+- **Complete Data** - All relevant fields included in exports
+
+### 📋 **Real-time Table Updates**
+- **Instant Sorting** - Tables update immediately when changing sort options
+- **Visual Indicators** - Headers show current sort field and direction
+- **Preserved State** - Sorting maintained across page navigation
+- **Filter Integration** - Sorting works seamlessly with filtering
 
 ## Development Setup
 
