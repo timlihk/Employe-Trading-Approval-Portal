@@ -446,6 +446,7 @@ app.post('/admin-add-stock', requireAdmin, adminActionLimiter, AdminController.a
 app.post('/admin-remove-stock', requireAdmin, adminActionLimiter, AdminController.removeRestrictedStock);
 app.post('/admin-approve-request', requireAdmin, adminActionLimiter, AdminController.approveRequest);
 app.post('/admin-reject-request', requireAdmin, adminActionLimiter, AdminController.rejectRequest);
+app.get('/admin-export-trading-requests', requireAdmin, AdminController.exportTradingRequests);
 app.get('/admin-backup-database', requireAdmin, AdminController.backupDatabase);
 
 // ===========================================
@@ -454,6 +455,7 @@ app.get('/admin-backup-database', requireAdmin, AdminController.backupDatabase);
 
 app.get('/employee-dashboard', requireEmployee, EmployeeController.getDashboard);
 app.get('/employee-history', requireEmployee, EmployeeController.getHistory);
+app.get('/employee-export-history', requireEmployee, EmployeeController.exportHistory);
 app.get('/escalate-form/:id', requireEmployee, EmployeeController.getEscalationForm);
 
 // ===========================================

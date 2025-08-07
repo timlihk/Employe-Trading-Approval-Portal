@@ -28,6 +28,17 @@ class RestrictedStock extends BaseModel {
   static remove(ticker) {
     return this.deleteWhere({ ticker: ticker.toUpperCase() });
   }
+
+  static getCount() {
+    return new Promise((resolve, reject) => {
+      const sql = 'SELECT COUNT(*) as count FROM restricted_stocks';
+      this.get(sql, []).then(row => {
+        resolve(row.count);
+      }).catch(err => {
+        reject(err);
+      });
+    });
+  }
 }
 
 module.exports = RestrictedStock;

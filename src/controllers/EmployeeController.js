@@ -231,8 +231,11 @@ class EmployeeController {
       </div>
 
       <div style="margin-top: var(--spacing-6); text-align: center;">
-        <a href="/employee-dashboard" class="btn btn-secondary" style="text-decoration: none;">
+        <a href="/employee-dashboard" class="btn btn-secondary" style="text-decoration: none; margin-right: var(--spacing-3);">
           ← Back to Dashboard
+        </a>
+        <a href="/employee-export-history?${new URLSearchParams(req.query).toString()}" class="btn btn-outline" style="text-decoration: none;">
+          📥 Export History (CSV)
         </a>
       </div>
 
@@ -318,6 +321,54 @@ class EmployeeController {
 
     const html = renderEmployeePage('Escalate Request', escalationContent, req.session.employee.name, req.session.employee.email);
     res.send(html);
+  });
+
+  /**
+   * Export employee history as CSV
+   */
+  exportHistory = catchAsync(async (req, res) => {
+    const { start_date, end_date, ticker, trading_type } = req.query;
+    const employeeEmail = req.session.employee.email;
+    
+    // Build filters
+    const filters = { employee_email: employeeEmail };
+    if (start_date) filters.start_date = start_date;
+    if (end_date) filters.end_date = end_date;
+    if (ticker) filters.ticker = ticker.toUpperCase();
+    if (trading_type) filters.trading_type = trading_type;
+
+    const requests = await TradingRequestService.getEmployeeRequests(employeeEmail, filters);
+
+    // Create filename with filters
+    let filterSuffix = '';
+    if (start_date && end_date) {
+      filterSuffix = `-${start_date}-to-${end_date}`;
+    } else if (start_date) {
+      filterSuffix = `-from-${start_date}`;
+    } else if (end_date) {
+      filterSuffix = `-until-${end_date}`;
+    }
+    if (ticker) filterSuffix += `-${ticker}`;
+    if (trading_type) filterSuffix += `-${trading_type}`;
+
+    const timestamp = formatHongKongTime(new Date(), true).replace(/[/:,\s]/g, '-');
+    const filename = `my-trading-history${filterSuffix}-${timestamp}.csv`;
+
+    let csvContent = 'Request ID,Date Created,Stock Name,Ticker,Trading Type,Shares,Estimated Value,Status,Escalated,Rejection Reason\n';
+    
+    requests.forEach(request => {
+      const createdDate = formatHongKongTime(new Date(request.created_at));
+      const stockName = (request.stock_name || 'N/A').replace(/"/g, '""');
+      const estimatedValue = (request.total_value_usd || request.total_value || 0).toFixed(2);
+      const escalated = request.escalated ? 'Yes' : 'No';
+      const rejectionReason = (request.rejection_reason || '').replace(/"/g, '""');
+      
+      csvContent += `"${request.id}","${createdDate}","${stockName}","${request.ticker}","${request.trading_type.toUpperCase()}","${request.shares}","$${estimatedValue}","${request.status.toUpperCase()}","${escalated}","${rejectionReason}"\n`;
+    });
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(csvContent);
   });
 }
 

@@ -199,6 +199,12 @@ class AdminController {
 
     const requestsContent = `
       ${banner}
+      <div style="margin-bottom: var(--spacing-6); text-align: right;">
+        <a href="/admin-export-trading-requests" class="btn btn-outline" style="text-decoration: none;">
+          📥 Export All Requests (CSV)
+        </a>
+      </div>
+      
       <div class="card">
         <div class="card-header">
           <h3 class="card-title">Pending Requests (${pendingRequests.length})</h3>
@@ -432,6 +438,34 @@ class AdminController {
 
     const html = renderAdminPage('Restricted Stocks', restrictedContent);
     res.send(html);
+  });
+
+  /**
+   * Export trading requests as CSV
+   */
+  exportTradingRequests = catchAsync(async (req, res) => {
+    // Get all trading requests (sorted by ID DESC - most recent first)
+    const requests = await TradingRequest.getAll();
+    
+    const timestamp = formatHongKongTime(new Date(), true).replace(/[/:,\s]/g, '-');
+    const filename = `trading-requests-export-${timestamp}.csv`;
+
+    let csvContent = 'Request ID,Date Created,Employee Email,Stock Name,Ticker,Trading Type,Shares,Estimated Value,Status,Escalated,Escalation Reason,Processed Date\n';
+    
+    requests.forEach(request => {
+      const createdDate = formatHongKongTime(new Date(request.created_at));
+      const stockName = (request.stock_name || 'N/A').replace(/"/g, '""');
+      const estimatedValue = (request.total_value_usd || request.total_value || 0).toFixed(2);
+      const escalated = request.escalated ? 'Yes' : 'No';
+      const escalationReason = (request.escalation_reason || '').replace(/"/g, '""');
+      const processedDate = request.processed_at ? formatHongKongTime(new Date(request.processed_at)) : 'N/A';
+      
+      csvContent += `"${request.id}","${createdDate}","${request.employee_email}","${stockName}","${request.ticker}","${request.trading_type.toUpperCase()}","${request.shares}","$${estimatedValue}","${request.status.toUpperCase()}","${escalated}","${escalationReason}","${processedDate}"\n`;
+    });
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(csvContent);
   });
 
   /**

@@ -73,12 +73,12 @@ class TradingRequest extends BaseModel {
   }
 
   static getAll() {
-    return this.findAll({}, 'created_at ASC');
+    return this.findAll({}, 'id DESC');
   }
 
   static findByEmail(email) {
     return new Promise((resolve, reject) => {
-      const sql = 'SELECT * FROM trading_requests WHERE LOWER(employee_email) = $1 ORDER BY created_at ASC';
+      const sql = 'SELECT * FROM trading_requests WHERE LOWER(employee_email) = $1 ORDER BY id DESC';
       
       this.query(sql, [email.toLowerCase()]).then(rows => {
         resolve(rows);
@@ -152,10 +152,43 @@ class TradingRequest extends BaseModel {
         paramIndex++;
       }
 
-      sql += ' ORDER BY created_at DESC';
+      sql += ' ORDER BY id DESC';
 
       this.query(sql, params).then(rows => {
         resolve(rows);
+      }).catch(err => {
+        reject(err);
+      });
+    });
+  }
+
+  static getPendingRequests() {
+    return new Promise((resolve, reject) => {
+      const sql = 'SELECT * FROM trading_requests WHERE status = $1 ORDER BY id DESC';
+      this.query(sql, ['pending']).then(rows => {
+        resolve(rows);
+      }).catch(err => {
+        reject(err);
+      });
+    });
+  }
+
+  static getEscalatedRequests() {
+    return new Promise((resolve, reject) => {
+      const sql = 'SELECT * FROM trading_requests WHERE escalated = $1 AND status = $2 ORDER BY id DESC';
+      this.query(sql, [true, 'pending']).then(rows => {
+        resolve(rows);
+      }).catch(err => {
+        reject(err);
+      });
+    });
+  }
+
+  static getTotalCount() {
+    return new Promise((resolve, reject) => {
+      const sql = 'SELECT COUNT(*) as count FROM trading_requests';
+      this.get(sql, []).then(row => {
+        resolve(row.count);
       }).catch(err => {
         reject(err);
       });
