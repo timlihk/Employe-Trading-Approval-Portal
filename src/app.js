@@ -2686,7 +2686,7 @@ app.get('/view-escalation/:requestId', async (req, res) => {
                   <div>
                       <h1>Trading Compliance Portal</h1>
                       <div class="header-subtitle">Inspiration Capital Management Limited</div>
-                      <div style="font-size: var(--font-size-sm); color: var(--gs-neutral-500); margin-top: var(--spacing-1);">Administrator Dashboard</div>
+                      <div style="font-size: var(--font-size-sm); color: var(--gs-neutral-500); margin-top: var(--spacing-1);">Pre-Trading Approval & Risk Management System</div>
                   </div>
               </div>
           </header>
