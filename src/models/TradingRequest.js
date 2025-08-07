@@ -37,16 +37,14 @@ class TradingRequest {
         total_value_usd || finalTotalValue, exchange_rate || 1, trading_type
       ];
       
-      database.getDb().run(sql, params, function(err) {
-        if (err) {
-          reject(err);
-        } else {
-          resolve({ 
-            id: this.lastID,
-            status: 'pending',
-            ...requestData 
-          });
-        }
+      database.run(sql, params).then(result => {
+        resolve({ 
+          id: result.lastID,
+          status: 'pending',
+          ...requestData 
+        });
+      }).catch(err => {
+        reject(err);
       });
     });
   }
@@ -59,12 +57,10 @@ class TradingRequest {
         WHERE id = ?
       `;
       
-      database.getDb().run(sql, [status, rejection_reason, id], function(err) {
-        if (err) {
-          reject(err);
-        } else {
-          resolve({ changes: this.changes });
-        }
+      database.run(sql, [status, rejection_reason, id]).then(result => {
+        resolve({ changes: result.changes });
+      }).catch(err => {
+        reject(err);
       });
     });
   }
@@ -73,12 +69,10 @@ class TradingRequest {
     return new Promise((resolve, reject) => {
       const sql = 'SELECT * FROM trading_requests WHERE id = ?';
       
-      database.getDb().get(sql, [id], (err, row) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(row);
-        }
+      database.get(sql, [id]).then(row => {
+        resolve(row);
+      }).catch(err => {
+        reject(err);
       });
     });
   }
@@ -87,12 +81,10 @@ class TradingRequest {
     return new Promise((resolve, reject) => {
       const sql = 'SELECT * FROM trading_requests ORDER BY created_at ASC';
       
-      database.getDb().all(sql, [], (err, rows) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(rows);
-        }
+      database.query(sql, []).then(rows => {
+        resolve(rows);
+      }).catch(err => {
+        reject(err);
       });
     });
   }
@@ -101,12 +93,10 @@ class TradingRequest {
     return new Promise((resolve, reject) => {
       const sql = 'SELECT * FROM trading_requests WHERE LOWER(employee_email) = ? ORDER BY created_at ASC';
       
-      database.getDb().all(sql, [email.toLowerCase()], (err, rows) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(rows);
-        }
+      database.query(sql, [email.toLowerCase()]).then(rows => {
+        resolve(rows);
+      }).catch(err => {
+        reject(err);
       });
     });
   }
@@ -119,12 +109,10 @@ class TradingRequest {
         WHERE id = ?
       `;
       
-      database.getDb().run(sql, [escalationReason, id], function(err) {
-        if (err) {
-          reject(err);
-        } else {
-          resolve({ changes: this.changes });
-        }
+      database.run(sql, [escalationReason, id]).then(result => {
+        resolve({ changes: result.changes });
+      }).catch(err => {
+        reject(err);
       });
     });
   }
@@ -133,12 +121,10 @@ class TradingRequest {
     return new Promise((resolve, reject) => {
       const sql = 'SELECT DISTINCT LOWER(employee_email) as employee_email FROM trading_requests ORDER BY employee_email';
       
-      database.getDb().all(sql, [], (err, rows) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(rows.map(row => row.employee_email));
-        }
+      database.query(sql, []).then(rows => {
+        resolve(rows.map(row => row.employee_email));
+      }).catch(err => {
+        reject(err);
       });
     });
   }
@@ -175,12 +161,10 @@ class TradingRequest {
 
       sql += ' ORDER BY created_at DESC';
 
-      database.getDb().all(sql, params, (err, rows) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(rows);
-        }
+      database.query(sql, params).then(rows => {
+        resolve(rows);
+      }).catch(err => {
+        reject(err);
       });
     });
   }
@@ -219,12 +203,10 @@ class TradingRequest {
         params.push(filters.end_date);
       }
 
-      database.getDb().get(sql, params, (err, row) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(row);
-        }
+      database.get(sql, params).then(row => {
+        resolve(row);
+      }).catch(err => {
+        reject(err);
       });
     });
   }

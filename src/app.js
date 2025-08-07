@@ -119,32 +119,52 @@ app.get('/db-status', async (req, res) => {
   }
   
   try {
-    const db = database.getDb();
-    const stats = await new Promise((resolve, reject) => {
-      db.all(`
-        SELECT 
-          (SELECT COUNT(*) FROM trading_requests) as total_requests,
-          (SELECT COUNT(*) FROM restricted_stocks) as total_restricted_stocks,
-          (SELECT COUNT(*) FROM audit_logs) as total_audit_logs
-      `, (err, rows) => {
-        if (err) reject(err);
-        else resolve(rows[0]);
-      });
-    });
+    const stats = await database.get(`
+      SELECT 
+        (SELECT COUNT(*) FROM trading_requests) as total_requests,
+        (SELECT COUNT(*) FROM restricted_stocks) as total_restricted_stocks,
+        (SELECT COUNT(*) FROM audit_logs) as total_audit_logs
+    `);
     
-    const path = require('path');
-    const fs = require('fs');
-    const dataDir = process.env.RAILWAY_VOLUME_MOUNT_PATH || path.join(__dirname, '..');
-    const dbPath = path.join(dataDir, 'trading.db');
-    const dbStats = fs.statSync(dbPath);
+    let dbInfo = {};
+    
+    if (database.isPostgres) {
+      dbInfo = {
+        database_type: 'PostgreSQL',
+        database_status: 'connected',
+        database_url: process.env.DATABASE_URL ? 'Connected to Railway PostgreSQL' : 'No DATABASE_URL found',
+        persistent: true,
+        warning: null
+      };
+    } else {
+      const path = require('path');
+      const fs = require('fs');
+      const dataDir = process.env.RAILWAY_VOLUME_MOUNT_PATH || path.join(__dirname, '..');
+      const dbPath = path.join(dataDir, 'trading.db');
+      
+      try {
+        const dbStats = fs.statSync(dbPath);
+        dbInfo = {
+          database_type: 'SQLite',
+          database_status: 'connected',
+          database_path: dbPath,
+          database_size: `${(dbStats.size / 1024).toFixed(2)} KB`,
+          database_modified: dbStats.mtime,
+          persistent: !!process.env.RAILWAY_VOLUME_MOUNT_PATH,
+          warning: !process.env.RAILWAY_VOLUME_MOUNT_PATH ? 'Database is stored locally and will be lost on redeploy without persistent storage!' : null
+        };
+      } catch (error) {
+        dbInfo = {
+          database_type: 'SQLite',
+          database_status: 'error',
+          error: error.message
+        };
+      }
+    }
     
     res.json({
-      database_status: 'connected',
-      database_path: dbPath,
-      database_size: `${(dbStats.size / 1024).toFixed(2)} KB`,
-      database_modified: dbStats.mtime,
-      record_counts: stats,
-      warning: 'Database is stored locally and will be lost on redeploy without persistent storage!'
+      ...dbInfo,
+      record_counts: stats
     });
   } catch (error) {
     res.status(500).json({
