@@ -465,9 +465,18 @@ app.get('/api/auth/microsoft/callback', async (req, res) => {
     };
     
     console.log('Microsoft 365 login successful for:', account.username);
+    console.log('Session data set:', req.session.employee);
     
-    // Redirect to employee dashboard
-    res.redirect('/employee-dashboard');
+    // Save session before redirect
+    req.session.save((err) => {
+      if (err) {
+        console.error('Session save error:', err);
+        return res.status(500).send('Session error. Please try again.');
+      }
+      console.log('Session saved successfully, redirecting to dashboard');
+      // Redirect to employee dashboard
+      res.redirect('/employee-dashboard');
+    });
   } catch (error) {
     console.error('Error in Microsoft callback:', error);
     
@@ -783,10 +792,17 @@ app.get('/admin-logout', (req, res) => {
 // Employee dashboard route (after authentication)
 app.get('/employee-dashboard', (req, res) => {
   try {
+    console.log('Employee dashboard accessed');
+    console.log('Session:', req.session);
+    console.log('Employee data:', req.session.employee);
+    
     // Check if employee is authenticated
     if (!req.session.employee || !req.session.employee.email) {
+      console.log('No employee session found, redirecting to login');
       return res.redirect('/?error=authentication_required');
     }
+    
+    console.log('Employee authenticated:', req.session.employee.email);
   } catch (error) {
     console.error('Error in employee dashboard:', error);
     return res.redirect('/?error=server_error');
