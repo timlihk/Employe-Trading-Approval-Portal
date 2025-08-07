@@ -292,7 +292,8 @@ app.get('/employee-login', (req, res) => {
                       <h3 class="card-title">Employee Login</h3>
                   </div>
                   <div class="card-body">
-                      <!-- Microsoft 365 SSO Login Only -->
+                      ${cca && process.env.REDIRECT_URI && process.env.REDIRECT_URI.startsWith('https') ? `
+                      <!-- Microsoft 365 SSO Login -->
                       <div style="text-align: center; margin-bottom: var(--spacing-6);">
                           <a href="/api/auth/microsoft/login" class="btn btn-primary" style="display: inline-block; padding: 20px 40px; font-size: 18px; text-decoration: none;">
                               <span style="display: inline-flex; align-items: center;">
@@ -303,10 +304,43 @@ app.get('/employee-login', (req, res) => {
                               </span>
                           </a>
                           <p style="margin-top: var(--spacing-4); color: var(--gs-neutral-600); font-size: var(--font-size-base);">
-                              Sign in with your corporate Microsoft account to access the Trading Compliance Portal
+                              Sign in with your corporate Microsoft account
                           </p>
                       </div>
                       
+                      <div style="text-align: center; margin: var(--spacing-4) 0; color: var(--gs-neutral-500);">
+                          <span>— OR —</span>
+                      </div>
+                      ` : ''}
+                      
+                      <!-- Email-based Login Form -->
+                      <form action="/employee-authenticate" method="POST" style="max-width: 400px; margin: 0 auto;">
+                          ${req.query.error ? `
+                          <div style="margin-bottom: var(--spacing-4); padding: var(--spacing-3); background: #f8d7da; border: 1px solid #f5c6cb; border-radius: var(--radius); color: #721c24; text-align: center;">
+                              ${req.query.error === 'missing_fields' ? 'Please fill in all fields' : 'Authentication failed. Please try again.'}
+                          </div>
+                          ` : ''}
+                          
+                          <div style="margin-bottom: var(--spacing-4);">
+                              <label for="email" style="display: block; font-size: var(--font-size-sm); font-weight: 600; color: var(--gs-neutral-700); margin-bottom: var(--spacing-2);">Email Address</label>
+                              <input type="email" id="email" name="email" class="form-control" required 
+                                     placeholder="your.email@company.com"
+                                     style="width: 100%; padding: var(--spacing-3) var(--spacing-4); font-size: var(--font-size-base); border: 2px solid var(--gs-neutral-300); border-radius: var(--radius);">
+                          </div>
+                          
+                          <div style="margin-bottom: var(--spacing-6);">
+                              <label for="name" style="display: block; font-size: var(--font-size-sm); font-weight: 600; color: var(--gs-neutral-700); margin-bottom: var(--spacing-2);">Full Name</label>
+                              <input type="text" id="name" name="name" class="form-control" required 
+                                     placeholder="John Doe"
+                                     style="width: 100%; padding: var(--spacing-3) var(--spacing-4); font-size: var(--font-size-base); border: 2px solid var(--gs-neutral-300); border-radius: var(--radius);">
+                          </div>
+                          
+                          <div style="text-align: center;">
+                              <button type="submit" class="btn btn-primary" style="padding: 15px 30px; font-size: 16px;">
+                                  Login as Employee
+                              </button>
+                          </div>
+                      </form>
                       
                       <div style="text-align: center; margin-top: var(--spacing-6);">
                           <a href="/" style="color: var(--gs-primary-blue); text-decoration: none;">← Back to Home</a>
@@ -323,26 +357,22 @@ app.get('/employee-login', (req, res) => {
 
 // Employee authentication route
 app.post('/employee-authenticate', (req, res) => {
-  if (cca) {
-    // Microsoft 365 SSO enabled
-    res.redirect('/api/auth/microsoft/login');
-  } else {
-    // Email-based authentication
-    const { email, name } = req.body;
-    
-    if (!email || !name) {
-      return res.redirect('/employee-login?error=missing_fields');
-    }
-    
-    // Set up employee session
-    req.session.employee = {
-      email: email.trim(),
-      name: name.trim(),
-      authMethod: 'email'
-    };
-    
-    res.redirect('/employee-dashboard');
+  const { email, name } = req.body;
+  
+  // Always check for email-based authentication first
+  if (!email || !name) {
+    return res.redirect('/employee-login?error=missing_fields');
   }
+  
+  // Set up employee session
+  req.session.employee = {
+    email: email.trim(),
+    name: name.trim(),
+    authMethod: 'email'
+  };
+  
+  console.log('Employee logged in via email:', email);
+  res.redirect('/employee-dashboard');
 });
 
 // Microsoft 365 Authentication Routes
