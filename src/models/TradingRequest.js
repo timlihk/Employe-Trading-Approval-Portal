@@ -105,7 +105,7 @@ class TradingRequest {
     return new Promise((resolve, reject) => {
       const sql = `
         UPDATE trading_requests 
-        SET escalated = 1, escalation_reason = ?, escalated_at = CURRENT_TIMESTAMP, status = 'pending'
+        SET escalated = 1, escalation_reason = ?, escalated_at = datetime('now', 'utc'), status = 'pending'
         WHERE id = ?
       `;
       

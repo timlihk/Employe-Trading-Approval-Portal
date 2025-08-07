@@ -1727,7 +1727,8 @@ app.post('/submit-escalation', async (req, res) => {
     
   } catch (error) {
     console.error('Error submitting escalation:', error);
-    res.status(500).send('Error processing escalation');
+    console.error('Error stack:', error.stack);
+    res.status(500).send(`Error processing escalation: ${error.message}`);
   }
 });
 
