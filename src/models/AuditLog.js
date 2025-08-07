@@ -3,25 +3,21 @@ const database = require('./database');
 class AuditLog {
   static logActivity(userEmail, userType, action, targetType, targetId = null, details = null, ipAddress = null, userAgent = null, sessionId = null) {
     return new Promise((resolve, reject) => {
-      const db = database.getDb();
       const query = `
         INSERT INTO audit_logs (user_email, user_type, action, target_type, target_id, details, ip_address, user_agent, session_id)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `;
       
-      db.run(query, [userEmail.toLowerCase(), userType, action, targetType, targetId, details, ipAddress, userAgent, sessionId], function(err) {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(this.lastID);
-        }
+      database.run(query, [userEmail.toLowerCase(), userType, action, targetType, targetId, details, ipAddress, userAgent, sessionId]).then(result => {
+        resolve(result.lastID);
+      }).catch(err => {
+        reject(err);
       });
     });
   }
 
   static getAuditLogs(filters = {}) {
     return new Promise((resolve, reject) => {
-      const db = database.getDb();
       let query = 'SELECT * FROM audit_logs';
       let params = [];
       let conditions = [];
@@ -67,12 +63,10 @@ class AuditLog {
         params.push(filters.limit);
       }
 
-      db.all(query, params, (err, rows) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(rows);
-        }
+      database.query(query, params).then(rows => {
+        resolve(rows);
+      }).catch(err => {
+        reject(err);
       });
     });
   }

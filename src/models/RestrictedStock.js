@@ -5,12 +5,10 @@ class RestrictedStock {
     return new Promise((resolve, reject) => {
       const sql = 'SELECT * FROM restricted_stocks ORDER BY ticker';
       
-      database.getDb().all(sql, [], (err, rows) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(rows);
-        }
+      database.query(sql, []).then(rows => {
+        resolve(rows);
+      }).catch(err => {
+        reject(err);
       });
     });
   }
@@ -19,12 +17,10 @@ class RestrictedStock {
     return new Promise((resolve, reject) => {
       const sql = 'SELECT COUNT(*) as count FROM restricted_stocks WHERE ticker = ?';
       
-      database.getDb().get(sql, [ticker.toUpperCase()], (err, row) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(row.count > 0);
-        }
+      database.get(sql, [ticker.toUpperCase()]).then(row => {
+        resolve(row.count > 0);
+      }).catch(err => {
+        reject(err);
       });
     });
   }
@@ -33,12 +29,10 @@ class RestrictedStock {
     return new Promise((resolve, reject) => {
       const sql = 'SELECT * FROM restricted_stocks WHERE ticker = ?';
       
-      database.getDb().get(sql, [ticker.toUpperCase()], (err, row) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(row);
-        }
+      database.get(sql, [ticker.toUpperCase()]).then(row => {
+        resolve(row);
+      }).catch(err => {
+        reject(err);
       });
     });
   }
@@ -47,12 +41,10 @@ class RestrictedStock {
     return new Promise((resolve, reject) => {
       const sql = 'INSERT INTO restricted_stocks (ticker, company_name, exchange) VALUES (?, ?, ?)';
       
-      database.getDb().run(sql, [ticker.toUpperCase(), company_name, exchange], function(err) {
-        if (err) {
-          reject(err);
-        } else {
-          resolve({ id: this.lastID, ticker: ticker.toUpperCase(), company_name, exchange });
-        }
+      database.run(sql, [ticker.toUpperCase(), company_name, exchange]).then(result => {
+        resolve({ id: result.lastID, ticker: ticker.toUpperCase(), company_name, exchange });
+      }).catch(err => {
+        reject(err);
       });
     });
   }
@@ -61,12 +53,10 @@ class RestrictedStock {
     return new Promise((resolve, reject) => {
       const sql = 'DELETE FROM restricted_stocks WHERE ticker = ?';
       
-      database.getDb().run(sql, [ticker.toUpperCase()], function(err) {
-        if (err) {
-          reject(err);
-        } else {
-          resolve({ changes: this.changes });
-        }
+      database.run(sql, [ticker.toUpperCase()]).then(result => {
+        resolve({ changes: result.changes });
+      }).catch(err => {
+        reject(err);
       });
     });
   }
