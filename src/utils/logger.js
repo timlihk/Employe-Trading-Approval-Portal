@@ -1,6 +1,51 @@
 const winston = require('winston');
+const fs = require('fs');
+const path = require('path');
 
-// Create logger instance
+// Create logs directory if it doesn't exist (Railway-safe)
+const logsDir = path.join(process.cwd(), 'logs');
+try {
+  if (!fs.existsSync(logsDir)) {
+    fs.mkdirSync(logsDir, { recursive: true });
+  }
+} catch (error) {
+  // If we can't create logs directory (Railway filesystem restrictions), use console only
+  console.warn('Cannot create logs directory, using console logging only:', error.message);
+}
+
+// Create logger instance with Railway-safe transports
+const transports = [];
+
+// Always add console transport
+transports.push(new winston.transports.Console({
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.colorize(),
+    winston.format.simple()
+  )
+}));
+
+// Only add file transports if logs directory is writable
+try {
+  if (fs.existsSync(logsDir)) {
+    // Test if we can write to the logs directory
+    const testFile = path.join(logsDir, '.test');
+    fs.writeFileSync(testFile, 'test');
+    fs.unlinkSync(testFile);
+    
+    // If successful, add file transports
+    transports.push(new winston.transports.File({ 
+      filename: path.join(logsDir, 'error.log'), 
+      level: 'error' 
+    }));
+    transports.push(new winston.transports.File({ 
+      filename: path.join(logsDir, 'combined.log') 
+    }));
+  }
+} catch (error) {
+  console.warn('Logs directory not writable, using console only:', error.message);
+}
+
 const logger = winston.createLogger({
   level: process.env.LOG_LEVEL || 'info',
   format: winston.format.combine(
@@ -25,24 +70,10 @@ const logger = winston.createLogger({
     })
   ),
   defaultMeta: { service: 'trading-approval' },
-  transports: [
-    // Write all logs with level `error` and below to `error.log`
-    new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
-    // Write all logs with level `info` and below to `combined.log`
-    new winston.transports.File({ filename: 'logs/combined.log' }),
-  ],
+  transports: transports,
 });
 
-// If we're not in production then log to the console with the format:
-// `${info.level}: ${info.message} JSON.stringify({ ...rest }) `
-if (process.env.NODE_ENV !== 'production') {
-  logger.add(new winston.transports.Console({
-    format: winston.format.combine(
-      winston.format.colorize(),
-      winston.format.simple()
-    )
-  }));
-}
+// Console transport is already configured above for all environments
 
 // Add request correlation ID middleware
 const addRequestId = (req, res, next) => {

@@ -2,7 +2,7 @@ const AdminService = require('../services/AdminService');
 const TradingRequest = require('../models/TradingRequest');
 const RestrictedStock = require('../models/RestrictedStock');
 const RestrictedStockChangelog = require('../models/RestrictedStockChangelog');
-const database = require('../utils/database');
+const database = require('../models/database');
 const { catchAsync } = require('../middleware/errorHandler');
 const { renderAdminPage, generateNotificationBanner } = require('../utils/templates');
 
