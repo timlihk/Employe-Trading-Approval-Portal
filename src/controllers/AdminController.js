@@ -2,6 +2,7 @@ const AdminService = require('../services/AdminService');
 const TradingRequest = require('../models/TradingRequest');
 const RestrictedStock = require('../models/RestrictedStock');
 const RestrictedStockChangelog = require('../models/RestrictedStockChangelog');
+const AuditLog = require('../models/AuditLog');
 const database = require('../models/database');
 const { catchAsync } = require('../middleware/errorHandler');
 const { renderAdminPage, generateNotificationBanner } = require('../utils/templates');
@@ -527,6 +528,167 @@ class AdminController {
     res.setHeader('Content-Type', 'application/sql');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.send(sqlDump);
+  });
+
+  /**
+   * Get audit log page
+   */
+  getAuditLog = catchAsync(async (req, res) => {
+    const { 
+      user_email, 
+      user_type, 
+      action, 
+      target_type, 
+      start_date, 
+      end_date,
+      sort_by = 'created_at',
+      sort_order = 'DESC'
+    } = req.query;
+
+    // Build filters
+    const filters = {};
+    if (user_email) filters.userEmail = user_email;
+    if (user_type) filters.userType = user_type;
+    if (action) filters.action = action;
+    if (target_type) filters.targetType = target_type;
+    if (start_date) filters.startDate = start_date;
+    if (end_date) filters.endDate = end_date;
+    filters.limit = 100; // Limit for performance
+
+    const auditLogs = await AuditLog.getAuditLogs(filters);
+    const summary = await AuditLog.getAuditSummary(filters);
+
+    // Generate sorting controls
+    const sortingControls = generateSortingControls('/admin-audit-log', sort_by, sort_order, {
+      user_email, user_type, action, target_type, start_date, end_date
+    });
+
+    // Build audit log rows
+    const auditRows = auditLogs.map(log => `
+      <tr>
+        <td style="text-align: center;">${formatHongKongTime(new Date(log.created_at), true)}</td>
+        <td>${log.user_email}</td>
+        <td style="text-align: center;">
+          <span class="badge ${log.user_type === 'admin' ? 'badge-danger' : 'badge-info'}">${log.user_type.toUpperCase()}</span>
+        </td>
+        <td>${log.action}</td>
+        <td style="text-align: center;">${log.target_type}</td>
+        <td style="text-align: center;">${log.target_id || 'N/A'}</td>
+        <td style="max-width: 200px; word-break: break-word;">${log.details || 'N/A'}</td>
+        <td style="text-align: center; font-family: monospace; font-size: 12px;">${log.ip_address || 'N/A'}</td>
+      </tr>
+    `).join('');
+
+    const auditContent = `
+      <div class="dashboard-grid" style="margin-bottom: var(--spacing-6);">
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">📊 Audit Summary</h3>
+          </div>
+          <div class="card-body">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--spacing-4);">
+              <div style="text-align: center;">
+                <div class="stat-value">${summary.total_activities || 0}</div>
+                <div class="stat-label">Total Activities</div>
+              </div>
+              <div style="text-align: center;">
+                <div class="stat-value">${summary.unique_users || 0}</div>
+                <div class="stat-label">Unique Users</div>
+              </div>
+              <div style="text-align: center;">
+                <div class="stat-value">${summary.admin_activities || 0}</div>
+                <div class="stat-label">Admin Actions</div>
+              </div>
+              <div style="text-align: center;">
+                <div class="stat-value">${summary.employee_activities || 0}</div>
+                <div class="stat-label">Employee Actions</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
+            <h3 class="card-title">🔍 Audit Log</h3>
+            ${sortingControls}
+          </div>
+        </div>
+        <div class="card-body">
+          <!-- Filter Form -->
+          <form method="get" action="/admin-audit-log" style="margin-bottom: var(--spacing-4); padding: var(--spacing-4); background: var(--gs-neutral-100); border-radius: var(--radius);">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--spacing-3);">
+              <div>
+                <label style="display: block; margin-bottom: var(--spacing-1); font-weight: 600;">User Email:</label>
+                <input type="text" name="user_email" value="${user_email || ''}" 
+                       placeholder="Filter by email" style="width: 100%; padding: var(--spacing-2); border: 1px solid var(--gs-neutral-300); border-radius: var(--radius);">
+              </div>
+              <div>
+                <label style="display: block; margin-bottom: var(--spacing-1); font-weight: 600;">User Type:</label>
+                <select name="user_type" style="width: 100%; padding: var(--spacing-2); border: 1px solid var(--gs-neutral-300); border-radius: var(--radius);">
+                  <option value="">All Types</option>
+                  <option value="admin" ${user_type === 'admin' ? 'selected' : ''}>Admin</option>
+                  <option value="employee" ${user_type === 'employee' ? 'selected' : ''}>Employee</option>
+                </select>
+              </div>
+              <div>
+                <label style="display: block; margin-bottom: var(--spacing-1); font-weight: 600;">Start Date:</label>
+                <input type="date" name="start_date" value="${start_date || ''}" 
+                       style="width: 100%; padding: var(--spacing-2); border: 1px solid var(--gs-neutral-300); border-radius: var(--radius);">
+              </div>
+              <div>
+                <label style="display: block; margin-bottom: var(--spacing-1); font-weight: 600;">End Date:</label>
+                <input type="date" name="end_date" value="${end_date || ''}" 
+                       style="width: 100%; padding: var(--spacing-2); border: 1px solid var(--gs-neutral-300); border-radius: var(--radius);">
+              </div>
+              <div style="display: flex; align-items: end; gap: var(--spacing-2);">
+                <button type="submit" class="btn btn-primary">Filter</button>
+                <a href="/admin-audit-log" class="btn btn-secondary">Clear</a>
+              </div>
+            </div>
+          </form>
+
+          <div class="table-responsive">
+            <table class="table">
+              <thead>
+                <tr>
+                  <th style="text-align: center;">Date & Time</th>
+                  <th>User Email</th>
+                  <th style="text-align: center;">Type</th>
+                  <th>Action</th>
+                  <th style="text-align: center;">Target</th>
+                  <th style="text-align: center;">Target ID</th>
+                  <th>Details</th>
+                  <th style="text-align: center;">IP Address</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${auditRows || '<tr><td colspan="8" style="text-align: center; color: var(--gs-neutral-600);">No audit logs found</td></tr>'}
+              </tbody>
+            </table>
+          </div>
+
+          <p style="color: var(--gs-neutral-600); font-size: var(--font-size-sm); margin-top: var(--spacing-4);">
+            Showing latest 100 entries. Use filters to narrow down results.
+          </p>
+        </div>
+      </div>
+
+      <script>
+        function updateSort() {
+          const sortBy = document.getElementById('sortBy').value;
+          const sortOrder = document.getElementById('sortOrder').value;
+          const url = new URL(window.location);
+          url.searchParams.set('sort_by', sortBy);
+          url.searchParams.set('sort_order', sortOrder);
+          window.location = url.toString();
+        }
+      </script>
+    `;
+
+    const html = renderAdminPage('Audit Log', auditContent);
+    res.send(html);
   });
 }
 

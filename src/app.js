@@ -424,6 +424,7 @@ app.post('/admin-approve-request', requireAdmin, adminActionLimiter, AdminContro
 app.post('/admin-reject-request', requireAdmin, adminActionLimiter, AdminController.rejectRequest);
 app.get('/admin-export-trading-requests', requireAdmin, AdminController.exportTradingRequests);
 app.get('/admin-backup-database', requireAdmin, AdminController.backupDatabase);
+app.get('/admin-audit-log', requireAdmin, AdminController.getAuditLog);
 
 // ===========================================
 // EMPLOYEE ROUTES

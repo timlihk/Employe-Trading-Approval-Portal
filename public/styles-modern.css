@@ -1573,3 +1573,131 @@ button[style*="background: var(--gs-primary-blue)"]:hover {
     width: 100%;
   }
 }
+
+/* Missing Bootstrap-style compatibility classes */
+
+/* Table styles - compatibility with .table class */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-size-sm);
+  background: var(--gs-neutral-100);
+  margin-bottom: var(--spacing-4);
+}
+
+.table thead {
+  background: linear-gradient(135deg, var(--gs-dark-blue) 0%, var(--gs-primary-blue) 100%);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.table thead th {
+  color: var(--gs-neutral-100);
+  font-weight: 600;
+  text-align: center;
+  padding: var(--spacing-4) var(--spacing-3);
+  font-size: var(--font-size-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 2px solid var(--gs-primary-blue);
+  white-space: nowrap;
+}
+
+.table tbody tr {
+  border-bottom: 1px solid var(--gs-neutral-300);
+  transition: all var(--transition-fast);
+}
+
+.table tbody tr:hover {
+  background: var(--gs-neutral-200);
+  transform: scale(1.001);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.table tbody td {
+  padding: var(--spacing-3) var(--spacing-3);
+  text-align: left;
+  border-bottom: 1px solid var(--gs-neutral-300);
+  vertical-align: middle;
+  word-wrap: break-word;
+  max-width: 200px;
+}
+
+.table tbody td:last-child {
+  border-right: none;
+}
+
+/* Table responsive wrapper */
+.table-responsive {
+  overflow-x: auto;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--gs-neutral-300);
+  background: var(--gs-neutral-100);
+  margin-bottom: var(--spacing-4);
+}
+
+/* Badge styles */
+.badge {
+  display: inline-block;
+  padding: var(--spacing-1) var(--spacing-2);
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: baseline;
+  border-radius: var(--radius);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.badge-primary {
+  background-color: var(--gs-primary-blue);
+  color: var(--gs-neutral-100);
+}
+
+.badge-success {
+  background-color: #28a745;
+  color: var(--gs-neutral-100);
+}
+
+.badge-danger {
+  background-color: #dc3545;
+  color: var(--gs-neutral-100);
+}
+
+.badge-warning {
+  background-color: #ffc107;
+  color: var(--gs-neutral-900);
+}
+
+.badge-info {
+  background-color: #17a2b8;
+  color: var(--gs-neutral-100);
+}
+
+.badge-secondary {
+  background-color: var(--gs-neutral-600);
+  color: var(--gs-neutral-100);
+}
+
+/* Stat value and label styles for summary cards */
+.stat-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--gs-primary-blue);
+  margin-bottom: var(--spacing-1);
+}
+
+.stat-label {
+  font-size: var(--font-size-sm);
+  color: var(--gs-neutral-600);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
