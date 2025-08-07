@@ -78,12 +78,6 @@ class EmployeeController {
         </a>
       </div>
 
-      <script>
-        // Auto-uppercase ticker input
-        document.querySelector('input[name="ticker"]').addEventListener('input', function(e) {
-          e.target.value = e.target.value.toUpperCase();
-        });
-      </script>
     `;
 
     const html = renderEmployeePage('Employee Dashboard', dashboardContent, req.session.employee.name, req.session.employee.email);
@@ -249,12 +243,6 @@ class EmployeeController {
         </a>
       </div>
 
-      <script>
-        // Auto-uppercase ticker input
-        document.querySelector('input[name="ticker"]').addEventListener('input', function(e) {
-          e.target.value = e.target.value.toUpperCase();
-        });
-      </script>
     `;
 
     const html = renderEmployeePage('Request History', historyContent, req.session.employee.name, req.session.employee.email);
@@ -428,39 +416,26 @@ function generateSortingControls(baseUrl, currentSortBy, currentSortOrder, query
   delete cleanParams.sort_by;
   delete cleanParams.sort_order;
   
-  const queryString = new URLSearchParams(cleanParams).toString();
-  const baseQuery = queryString ? `${baseUrl}?${queryString}&` : `${baseUrl}?`;
-
   return `
-    <div style="display: flex; align-items: center; gap: var(--spacing-3); flex-wrap: wrap;">
+    <form method="get" action="${baseUrl}" style="display: flex; align-items: center; gap: var(--spacing-3); flex-wrap: wrap;">
+      ${Object.entries(cleanParams).map(([key, value]) => 
+        `<input type="hidden" name="${key}" value="${value || ''}">`
+      ).join('')}
+      
       <span style="font-weight: 600; color: var(--gs-neutral-700);">Sort by:</span>
-      <select id="employeeSortBy" style="padding: 6px 10px; border: 1px solid var(--gs-neutral-300); border-radius: var(--radius);">
+      <select name="sort_by" style="padding: 6px 10px; border: 1px solid var(--gs-neutral-300); border-radius: var(--radius);">
         <option value="id" ${currentSortBy === 'id' ? 'selected' : ''}>Request ID</option>
         <option value="created_at" ${currentSortBy === 'created_at' ? 'selected' : ''}>Date</option>
         <option value="ticker" ${currentSortBy === 'ticker' ? 'selected' : ''}>Ticker</option>
       </select>
-      <select id="employeeSortOrder" style="padding: 6px 10px; border: 1px solid var(--gs-neutral-300); border-radius: var(--radius);">
+      <select name="sort_order" style="padding: 6px 10px; border: 1px solid var(--gs-neutral-300); border-radius: var(--radius);">
         <option value="DESC" ${currentSortOrder === 'DESC' ? 'selected' : ''}>↓ Descending</option>
         <option value="ASC" ${currentSortOrder === 'ASC' ? 'selected' : ''}>↑ Ascending</option>
       </select>
-      <button onclick="applyEmployeeSort()" class="btn btn-primary btn-sm" style="padding: 6px 15px; font-size: var(--font-size-sm);">
+      <button type="submit" class="btn btn-primary btn-sm" style="padding: 6px 15px; font-size: var(--font-size-sm);">
         Apply Sort
       </button>
-    </div>
-    
-    <script>
-      function applyEmployeeSort() {
-        const sortBy = document.getElementById('employeeSortBy').value;
-        const sortOrder = document.getElementById('employeeSortOrder').value;
-        
-        // Get current URL and update parameters
-        const url = new URL(window.location.href);
-        url.searchParams.set('sort_by', sortBy);
-        url.searchParams.set('sort_order', sortOrder);
-        
-        window.location.href = url.toString();
-      }
-    </script>
+    </form>
   `;
 }
 

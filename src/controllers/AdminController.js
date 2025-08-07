@@ -171,9 +171,9 @@ class AdminController {
               ✓ Approve
             </button>
           </form>
-          <button onclick="showRejectForm(${request.id})" class="btn btn-danger" style="padding: 5px 10px; font-size: 12px;">
+          <a href="/admin-reject-form/${request.id}" class="btn btn-danger" style="padding: 5px 10px; font-size: 12px; text-decoration: none;">
             ✗ Reject
-          </button>
+          </a>
         </td>
       </tr>
     `).join('');
@@ -276,44 +276,64 @@ class AdminController {
         </div>
       ` : ''}
 
-      <!-- Reject Request Modal -->
-      <div id="rejectModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
-        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 30px; border-radius: 10px; max-width: 500px; width: 90%;">
-          <h3>Reject Trading Request</h3>
-          <form method="post" action="/admin-reject-request">
-            <input type="hidden" id="rejectRequestId" name="requestId">
-            <div style="margin: 20px 0;">
-              <label style="display: block; margin-bottom: 5px; font-weight: 600;">Rejection Reason:</label>
-              <textarea name="rejection_reason" required style="width: 100%; height: 100px; padding: 10px; border: 1px solid #ddd; border-radius: 5px;"></textarea>
-            </div>
-            <div style="text-align: right; margin-top: 20px;">
-              <button type="button" onclick="hideRejectForm()" class="btn btn-secondary" style="margin-right: 10px;">Cancel</button>
-              <button type="submit" class="btn btn-danger">Reject Request</button>
-            </div>
-          </form>
-        </div>
-      </div>
 
-      <script>
-        function showRejectForm(requestId) {
-          document.getElementById('rejectRequestId').value = requestId;
-          document.getElementById('rejectModal').style.display = 'block';
-        }
-        
-        function hideRejectForm() {
-          document.getElementById('rejectModal').style.display = 'none';
-        }
-        
-        // Close modal when clicking outside
-        document.getElementById('rejectModal').addEventListener('click', function(e) {
-          if (e.target === this) {
-            hideRejectForm();
-          }
-        });
-      </script>
     `;
 
     const html = renderAdminPage('Trading Requests', requestsContent);
+    res.send(html);
+  });
+
+  /**
+   * Get reject form page
+   */
+  getRejectForm = catchAsync(async (req, res) => {
+    const requestId = parseInt(req.params.requestId);
+    
+    // Get the request details
+    const request = await TradingRequest.getById(requestId);
+    if (!request) {
+      return res.redirect('/admin-requests?error=request_not_found');
+    }
+
+    const rejectFormContent = `
+      <div style="max-width: 600px; margin: 0 auto;">
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title">Reject Trading Request #${requestId}</h3>
+          </div>
+          <div class="card-body">
+            <div style="background: var(--gs-neutral-100); padding: var(--spacing-4); border-radius: var(--radius); margin-bottom: var(--spacing-4);">
+              <h4>Request Details:</h4>
+              <p><strong>Employee:</strong> ${request.employee_email}</p>
+              <p><strong>Stock:</strong> ${request.stock_name} (${request.ticker})</p>
+              <p><strong>Action:</strong> ${request.trading_type.toUpperCase()}</p>
+              <p><strong>Shares:</strong> ${parseInt(request.shares).toLocaleString()}</p>
+              <p><strong>Estimated Value:</strong> $${parseFloat(request.total_value_usd || request.total_value || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</p>
+            </div>
+
+            <form method="post" action="/admin-reject-request">
+              <input type="hidden" name="requestId" value="${requestId}">
+              <div style="margin-bottom: var(--spacing-4);">
+                <label style="display: block; margin-bottom: var(--spacing-2); font-weight: 600;">Rejection Reason:</label>
+                <textarea name="rejection_reason" required rows="4" 
+                         placeholder="Please provide a detailed reason for rejection..." 
+                         style="width: 100%; padding: var(--spacing-3); border: 1px solid var(--gs-neutral-300); border-radius: var(--radius); font-family: inherit; resize: vertical;"></textarea>
+              </div>
+              <div style="text-align: center; display: flex; gap: var(--spacing-3); justify-content: center;">
+                <a href="/admin-requests" class="btn btn-secondary" style="text-decoration: none; padding: var(--spacing-3) var(--spacing-6);">
+                  Cancel
+                </a>
+                <button type="submit" class="btn btn-danger" style="padding: var(--spacing-3) var(--spacing-6);">
+                  Reject Request
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const html = renderAdminPage('Reject Trading Request', rejectFormContent);
     res.send(html);
   });
 
@@ -675,9 +695,6 @@ class AdminController {
         </div>
       </div>
 
-      <script>
-        // Audit log uses the same applyAdminSort function from the generateSortingControls
-      </script>
     `;
 
     const html = renderAdminPage('Audit Log', auditContent);
@@ -731,40 +748,27 @@ function generateSortingControls(baseUrl, currentSortBy, currentSortOrder, query
   delete cleanParams.sort_by;
   delete cleanParams.sort_order;
   
-  const queryString = new URLSearchParams(cleanParams).toString();
-  const baseQuery = queryString ? `${baseUrl}?${queryString}&` : `${baseUrl}?`;
-
   return `
-    <div style="display: flex; align-items: center; gap: var(--spacing-3); flex-wrap: wrap;">
+    <form method="get" action="${baseUrl}" style="display: flex; align-items: center; gap: var(--spacing-3); flex-wrap: wrap;">
+      ${Object.entries(cleanParams).map(([key, value]) => 
+        `<input type="hidden" name="${key}" value="${value || ''}">`
+      ).join('')}
+      
       <span style="font-weight: 600; color: var(--gs-neutral-700);">Sort by:</span>
-      <select id="adminSortBy" style="padding: 6px 10px; border: 1px solid var(--gs-neutral-300); border-radius: var(--radius);">
+      <select name="sort_by" style="padding: 6px 10px; border: 1px solid var(--gs-neutral-300); border-radius: var(--radius);">
         <option value="id" ${currentSortBy === 'id' ? 'selected' : ''}>Request ID</option>
         <option value="created_at" ${currentSortBy === 'created_at' ? 'selected' : ''}>Date</option>
         <option value="ticker" ${currentSortBy === 'ticker' ? 'selected' : ''}>Ticker</option>
         <option value="employee_email" ${currentSortBy === 'employee_email' ? 'selected' : ''}>Employee</option>
       </select>
-      <select id="adminSortOrder" style="padding: 6px 10px; border: 1px solid var(--gs-neutral-300); border-radius: var(--radius);">
+      <select name="sort_order" style="padding: 6px 10px; border: 1px solid var(--gs-neutral-300); border-radius: var(--radius);">
         <option value="DESC" ${currentSortOrder === 'DESC' ? 'selected' : ''}>↓ Descending</option>
         <option value="ASC" ${currentSortOrder === 'ASC' ? 'selected' : ''}>↑ Ascending</option>
       </select>
-      <button onclick="applyAdminSort()" class="btn btn-primary btn-sm" style="padding: 6px 15px; font-size: var(--font-size-sm);">
+      <button type="submit" class="btn btn-primary btn-sm" style="padding: 6px 15px; font-size: var(--font-size-sm);">
         Apply Sort
       </button>
-    </div>
-    
-    <script>
-      function applyAdminSort() {
-        const sortBy = document.getElementById('adminSortBy').value;
-        const sortOrder = document.getElementById('adminSortOrder').value;
-        
-        // Get current URL and update parameters
-        const url = new URL(window.location.href);
-        url.searchParams.set('sort_by', sortBy);
-        url.searchParams.set('sort_order', sortOrder);
-        
-        window.location.href = url.toString();
-      }
-    </script>
+    </form>
   `;
 }
 

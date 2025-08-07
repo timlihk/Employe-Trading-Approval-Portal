@@ -85,7 +85,7 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"], // Allow inline scripts for sorting functionality
+      scriptSrc: ["'self'"], // No JavaScript used in application
       imgSrc: ["'self'", "data:"],
     },
   },
@@ -417,6 +417,7 @@ app.get('/admin-logout', (req, res) => {
 app.post('/admin-authenticate', authLimiter, validateAdminAuth, AdminController.authenticateAdmin);
 app.get('/admin-dashboard', requireAdmin, AdminController.getDashboard);
 app.get('/admin-requests', requireAdmin, AdminController.getRequests);
+app.get('/admin-reject-form/:requestId', requireAdmin, AdminController.getRejectForm);
 app.get('/admin-restricted-stocks', requireAdmin, AdminController.getRestrictedStocks);
 app.post('/admin-add-stock', requireAdmin, adminActionLimiter, AdminController.addRestrictedStock);
 app.post('/admin-remove-stock', requireAdmin, adminActionLimiter, AdminController.removeRestrictedStock);
