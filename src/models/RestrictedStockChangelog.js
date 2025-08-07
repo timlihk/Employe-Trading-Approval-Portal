@@ -32,6 +32,13 @@ class RestrictedStockChangelog extends BaseModel {
     return this.findAll({}, 'created_at DESC');
   }
 
+  static getRecentChanges(limit = 20) {
+    return new Promise((resolve, reject) => {
+      const sql = `SELECT * FROM ${this.tableName} ORDER BY created_at DESC LIMIT $1`;
+      this.query(sql, [limit]).then(resolve).catch(reject);
+    });
+  }
+
   static getFiltered(filters) {
     return new Promise((resolve, reject) => {
       let sql = 'SELECT * FROM restricted_stock_changelog WHERE 1=1';

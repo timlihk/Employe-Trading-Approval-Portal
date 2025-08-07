@@ -254,14 +254,14 @@ app.get('/', (req, res) => {
         </div>
         <div class="card-body">
           ${cca ? `
-            <a href="/api/auth/microsoft/login" class="btn btn-primary" style="width: 100%; margin-bottom: var(--spacing-4); text-decoration: none; display: inline-block;">
+            <a href="/api/auth/microsoft/login" class="btn btn-primary" style="width: 100%; text-decoration: none; display: inline-block;">
               🔑 Sign in with Microsoft 365
             </a>
-            <p style="text-align: center; color: var(--gs-neutral-600); margin: var(--spacing-4) 0;">or</p>
-          ` : ''}
-          <a href="/employee-login" class="btn btn-secondary" style="width: 100%; text-decoration: none; display: inline-block;">
-            📧 Sign in with Email
-          </a>
+          ` : `
+            <p style="text-align: center; color: var(--gs-neutral-600); margin: var(--spacing-4) 0;">
+              Microsoft 365 SSO is not configured. Please contact your administrator.
+            </p>
+          `}
         </div>
       </div>
 
@@ -277,70 +277,7 @@ app.get('/', (req, res) => {
   res.send(html);
 });
 
-// Employee email login page
-app.get('/employee-login', (req, res) => {
-  const { error } = req.query;
-  let banner = '';
-  
-  if (error === 'invalid_email') {
-    banner = generateNotificationBanner('Please enter a valid company email address', 'error');
-  } else if (error === 'authentication_required') {
-    banner = generateNotificationBanner('Please log in to continue', 'error');
-  }
-
-  const loginContent = `
-    ${banner}
-    <div style="max-width: 400px; margin: 0 auto;">
-      <div class="card">
-        <div class="card-header">
-          <h3 class="card-title">Employee Sign In</h3>
-        </div>
-        <div class="card-body">
-          <form method="post" action="/employee-authenticate">
-            <div style="margin-bottom: var(--spacing-4);">
-              <label style="display: block; margin-bottom: var(--spacing-2); font-weight: 600;">Company Email:</label>
-              <input type="email" name="employee_email" required 
-                     placeholder="your.name@company.com"
-                     style="width: 100%; padding: var(--spacing-3); border: 1px solid var(--gs-neutral-300); border-radius: var(--radius);">
-            </div>
-            <button type="submit" class="btn btn-primary" style="width: 100%;">
-              Continue
-            </button>
-          </form>
-        </div>
-      </div>
-
-      <div style="text-align: center; margin-top: var(--spacing-6);">
-        <a href="/" style="color: var(--gs-primary);">← Back to Home</a>
-      </div>
-    </div>
-  `;
-
-  const html = renderPublicPage('Employee Login', loginContent);
-  res.send(html);
-});
-
-// Employee authentication
-app.post('/employee-authenticate', (req, res) => {
-  const { employee_email } = req.body;
-  
-  if (!employee_email || !employee_email.includes('@')) {
-    return res.redirect('/employee-login?error=invalid_email');
-  }
-
-  // Simple email-based authentication - store in session
-  req.session.employee = {
-    email: employee_email.toLowerCase(),
-    name: employee_email.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
-  };
-
-  logger.info('Employee authenticated', { 
-    email: employee_email.toLowerCase(),
-    sessionId: req.sessionID
-  });
-
-  res.redirect('/employee-dashboard?message=login_success');
-});
+// Email authentication removed - Microsoft 365 SSO only
 
 // Microsoft SSO routes (if enabled)
 if (cca) {
