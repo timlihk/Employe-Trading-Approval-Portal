@@ -39,6 +39,9 @@ console.log('Database initialized successfully');
 
 const app = express();
 
+// Trust Railway's proxy for proper HTTPS detection
+app.set('trust proxy', 1);
+
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
@@ -60,10 +63,12 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: process.env.NODE_ENV === 'production' && process.env.FRONTEND_URL && process.env.FRONTEND_URL.startsWith('https'),
+    secure: false, // Railway handles HTTPS, but the app sees HTTP internally
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000 // 24 hours
-  }
+    maxAge: 24 * 60 * 60 * 1000, // 24 hours
+    sameSite: 'lax' // Important for OAuth redirects
+  },
+  proxy: true // Trust Railway's proxy
 }));
 
 app.use(express.json({ limit: '10mb' }));
@@ -85,6 +90,24 @@ app.get('/health', (req, res) => {
     status: 'healthy', 
     timestamp: new Date().toISOString(),
     uptime: process.uptime()
+  });
+});
+
+// Session test endpoint for debugging
+app.get('/session-test', (req, res) => {
+  const sessionId = req.sessionID;
+  req.session.testValue = req.session.testValue || 0;
+  req.session.testValue++;
+  
+  res.json({
+    sessionId: sessionId,
+    testValue: req.session.testValue,
+    employee: req.session.employee || null,
+    admin: req.session.admin || null,
+    cookies: req.headers.cookie,
+    secure: req.secure,
+    protocol: req.protocol,
+    host: req.get('host')
   });
 });
 
