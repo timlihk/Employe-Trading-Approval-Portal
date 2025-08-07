@@ -2671,105 +2671,126 @@ app.get('/view-escalation/:requestId', async (req, res) => {
     }
     
     const escalationViewHTML = `
-  <!DOCTYPE html>
-  <html lang="en">
-  <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Escalation Details - Inspiration Capital Management Limited</title>
-      <link rel="stylesheet" href="styles-modern.css">
-  </head>
-  <body>
-      <div class="container">
-          <header>
-              <div class="header-content">
-                  <div>
-                      <h1>Trading Compliance Portal</h1>
-                      <div class="header-subtitle">Inspiration Capital Management Limited</div>
-                      <div style="font-size: var(--font-size-sm); color: var(--gs-neutral-500); margin-top: var(--spacing-1);">Pre-Trading Approval & Risk Management System</div>
-                  </div>
-              </div>
-          </header>
-          
-          <nav style="display: flex; gap: var(--spacing-4); padding: var(--spacing-4); background: var(--gs-neutral-200); border-radius: var(--radius); margin-bottom: var(--spacing-6);">
-              <a href="/admin-dashboard" class="btn btn-secondary" style="text-decoration: none;">Dashboard</a>
-              <a href="/admin-restricted-stocks" class="btn btn-secondary" style="text-decoration: none;">Restricted Stocks</a>
-              <a href="/admin-requests" class="btn btn-primary" style="text-decoration: none;">Trading Requests</a>
-              <a href="/admin-logout" class="btn btn-secondary" style="text-decoration: none;">Logout</a>
-          </nav>
-          
-          <main>
-              <div class="card" style="margin-bottom: var(--spacing-6);">
-                  <div class="card-header">
-                      <h3 class="card-title">📋 Escalated Request #${request.id}</h3>
-                  </div>
-                  <div class="card-body">
-                      <div class="summary-grid">
-                          <div class="summary-item">
-                              <span class="summary-label">Employee:</span>
-                              <span class="summary-value">${request.employee_email}</span>
-                          </div>
-                          <div class="summary-item">
-                              <span class="summary-label">Escalated:</span>
-                              <span class="summary-value">${formatHongKongTime(new Date(request.escalated_at), true)}</span>
-                          </div>
-                          <div class="summary-item">
-                              <span class="summary-label">Company:</span>
-                              <span class="summary-value">${request.stock_name}</span>
-                          </div>
-                          <div class="summary-item">
-                              <span class="summary-label">Ticker:</span>
-                              <span class="summary-value">${request.ticker}</span>
-                          </div>
-                          <div class="summary-item">
-                              <span class="summary-label">Shares:</span>
-                              <span class="summary-value">${parseInt(request.shares).toLocaleString()}</span>
-                          </div>
-                          <div class="summary-item">
-                              <span class="summary-label">Type:</span>
-                              <span class="summary-value">${request.trading_type.toUpperCase()}</span>
-                          </div>
-                      </div>
-                  </div>
-              </div>
-              
-              <div class="card">
-                  <div class="card-header">
-                      <h3 class="card-title">💼 Business Justification</h3>
-                      <div style="font-size: var(--font-size-sm); color: var(--gs-neutral-600);">
-                          Employee's reason for requesting manual approval
-                      </div>
-                  </div>
-                  <div class="card-body">
-                      <div class="admin-content-section">
-                          ${request.escalation_reason.replace(/\n/g, '<br>')}
-                      </div>
-                      
-                      <div style="margin-top: var(--spacing-6); text-align: center; display: flex; gap: var(--spacing-4); justify-content: center;">
-                          <form action="/admin-approve-request" method="POST">
-                              <input type="hidden" name="requestId" value="${request.id}">
-                              <button type="submit" class="btn btn-success" 
-                                      onclick="return confirm('Approve this escalated trading request for ${request.ticker}?')">
-                                  ✅ Approve Request
-                              </button>
-                          </form>
-                          <form action="/admin-reject-request" method="POST">
-                              <input type="hidden" name="requestId" value="${request.id}">
-                              <button type="submit" class="btn btn-danger" 
-                                      onclick="return confirm('Reject this escalated trading request for ${request.ticker}?')">
-                                  ❌ Reject Request
-                              </button>
-                          </form>
-                          <a href="/admin-requests" class="btn btn-secondary" style="text-decoration: none;">
-                              ← Back to Requests
-                          </a>
-                      </div>
-                  </div>
-              </div>
-          </main>
-      </div>
-  </body>
-  </html>`;
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Escalation Details - Inspiration Capital Management Limited</title>
+        <link rel="stylesheet" href="styles-modern.css">
+    </head>
+    <body>
+        <div class="container">
+            <header>
+                <div class="header-content">
+                    <div>
+                        <h1>Trading Compliance Portal</h1>
+                        <div class="header-subtitle">Inspiration Capital Management Limited</div>
+                        <div style="font-size: var(--font-size-sm); color: var(--gs-neutral-500); margin-top: var(--spacing-1);">Administrator Dashboard</div>
+                    </div>
+                </div>
+            </header>
+            
+            <nav style="display: flex; gap: var(--spacing-4); padding: var(--spacing-4); background: var(--gs-neutral-200); border-radius: var(--radius); margin-bottom: var(--spacing-6);">
+                <a href="/admin-dashboard" class="btn btn-secondary" style="text-decoration: none;">Dashboard</a>
+                <a href="/admin-restricted-stocks" class="btn btn-secondary" style="text-decoration: none;">Restricted Stocks</a>
+                <a href="/admin-requests" class="btn btn-primary" style="text-decoration: none;">Trading Requests</a>
+                <a href="/admin-logout" class="btn btn-secondary" style="text-decoration: none;">Logout</a>
+            </nav>
+            
+            <main>
+                <div class="card" style="margin-bottom: var(--spacing-6);">
+                    <div class="card-header">
+                        <h3 class="card-title">📋 Escalated Request #${request.id}</h3>
+                        <p style="margin: var(--spacing-2) 0 0 0; color: var(--gs-neutral-600); font-size: var(--font-size-sm);">
+                            Employee escalation request requiring manual review
+                        </p>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-container">
+                            <table class="modern-table">
+                                <tbody>
+                                    <tr>
+                                        <td style="font-weight: 600; width: 150px;">Employee</td>
+                                        <td>${request.employee_email}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-weight: 600;">Escalated Date</td>
+                                        <td>${formatHongKongTime(new Date(request.escalated_at), true)}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-weight: 600;">Company</td>
+                                        <td>${request.stock_name}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-weight: 600;">Ticker</td>
+                                        <td style="font-weight: 600;">${request.ticker}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-weight: 600;">Trading Type</td>
+                                        <td>${request.trading_type.toUpperCase()}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-weight: 600;">Shares</td>
+                                        <td>${parseInt(request.shares).toLocaleString()}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="font-weight: 600;">Total Value</td>
+                                        <td>$${parseFloat(request.total_value_usd || request.estimated_value || 0).toLocaleString('en-US', {minimumFractionDigits: 2})} USD</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card" style="margin-bottom: var(--spacing-6);">
+                    <div class="card-header">
+                        <h3 class="card-title">💼 Business Justification</h3>
+                        <p style="margin: var(--spacing-2) 0 0 0; color: var(--gs-neutral-600); font-size: var(--font-size-sm);">
+                            Employee's reason for requesting manual approval
+                        </p>
+                    </div>
+                    <div class="card-body">
+                        <div style="background: var(--gs-neutral-100); padding: var(--spacing-4); border-radius: var(--radius); border-left: 4px solid var(--color-primary);">
+                            ${request.escalation_reason.replace(/\n/g, '<br>')}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">⚖️ Administrative Decision</h3>
+                        <p style="margin: var(--spacing-2) 0 0 0; color: var(--gs-neutral-600); font-size: var(--font-size-sm);">
+                            Approve or reject this escalated trading request
+                        </p>
+                    </div>
+                    <div class="card-body">
+                        <div style="display: flex; gap: var(--spacing-4); justify-content: center; align-items: center;">
+                            <form action="/admin-approve-request" method="POST" style="display: inline;">
+                                <input type="hidden" name="requestId" value="${request.id}">
+                                <button type="submit" class="btn btn-success" 
+                                        onclick="return confirm('Approve this escalated trading request for ${request.ticker}?')">
+                                    ✅ Approve Request
+                                </button>
+                            </form>
+                            <form action="/admin-reject-request" method="POST" style="display: inline;">
+                                <input type="hidden" name="requestId" value="${request.id}">
+                                <button type="submit" class="btn btn-danger" 
+                                        onclick="return confirm('Reject this escalated trading request for ${request.ticker}?')">
+                                    ❌ Reject Request
+                                </button>
+                            </form>
+                            <a href="/admin-requests" class="btn btn-secondary" style="text-decoration: none;">
+                                ← Back to Requests
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </body>
+    </html>`;
     
     res.send(escalationViewHTML);
     
