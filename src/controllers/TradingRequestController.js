@@ -1,4 +1,5 @@
 const TradingRequestService = require('../services/TradingRequestService');
+const CurrencyService = require('../services/CurrencyService');
 const TradingRequest = require('../models/TradingRequest');
 const { catchAsync } = require('../middleware/errorHandler');
 const { renderEmployeePage, generateNotificationBanner, renderCard } = require('../utils/templates');
@@ -31,6 +32,18 @@ class TradingRequestController {
       const sharePrice = tickerValidation.regularMarketPrice || 0;
       const estimatedValue = sharePrice * parseInt(shares);
       const stockCurrency = tickerValidation.currency || 'USD';
+      
+      // Convert to USD for display
+      let sharePriceUSD = sharePrice;
+      let estimatedValueUSD = estimatedValue;
+      let exchangeRate = 1;
+      
+      if (stockCurrency !== 'USD') {
+        const conversion = await CurrencyService.convertToUSD(sharePrice, stockCurrency);
+        sharePriceUSD = conversion.usdAmount;
+        estimatedValueUSD = sharePriceUSD * parseInt(shares);
+        exchangeRate = conversion.exchangeRate;
+      }
 
       // Only show warning for restricted stocks, no message for non-restricted
       let expectedOutcome = '';
@@ -69,12 +82,26 @@ class TradingRequestController {
                 </div>
                 <div style="display: flex; justify-content: space-between; padding: var(--spacing-3); background: var(--gs-neutral-100); border-radius: var(--radius);">
                   <span style="font-weight: 600;">Current Price:</span>
-                  <span>$${sharePrice.toFixed(2)} ${stockCurrency}</span>
+                  <span>
+                    ${stockCurrency === 'USD' 
+                      ? `$${sharePrice.toFixed(2)} USD`
+                      : `${sharePrice.toFixed(2)} ${stockCurrency} (~$${sharePriceUSD.toFixed(2)} USD)`
+                    }
+                  </span>
                 </div>
                 <div style="display: flex; justify-content: space-between; padding: var(--spacing-3); background: var(--gs-neutral-100); border-radius: var(--radius);">
                   <span style="font-weight: 600;">Estimated Total:</span>
-                  <span style="font-weight: 600;">$${estimatedValue.toLocaleString('en-US', {minimumFractionDigits: 2})} ${stockCurrency}</span>
-                </div>
+                  <span style="font-weight: 600;">
+                    ${stockCurrency === 'USD' 
+                      ? `$${estimatedValue.toLocaleString('en-US', {minimumFractionDigits: 2})} USD`
+                      : `${estimatedValue.toLocaleString('en-US', {minimumFractionDigits: 2})} ${stockCurrency} (~$${estimatedValueUSD.toLocaleString('en-US', {minimumFractionDigits: 2})} USD)`
+                    }
+                  </span>
+                </div>${stockCurrency !== 'USD' ? `
+                <div style="display: flex; justify-content: space-between; padding: var(--spacing-3); background: #e7f3ff; border: 1px solid #b3d9ff; border-radius: var(--radius);">
+                  <span style="font-weight: 600;">Exchange Rate:</span>
+                  <span>1 ${stockCurrency} = $${exchangeRate.toFixed(4)} USD</span>
+                </div>` : ''}
               </div>
             </div>
           </div>

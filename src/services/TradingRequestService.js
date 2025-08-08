@@ -1,6 +1,7 @@
 const TradingRequest = require('../models/TradingRequest');
 const RestrictedStock = require('../models/RestrictedStock');
 const AuditLog = require('../models/AuditLog');
+const CurrencyService = require('./CurrencyService');
 const { AppError } = require('../middleware/errorHandler');
 const { logger } = require('../utils/logger');
 
@@ -102,6 +103,27 @@ class TradingRequestService {
       const sharePrice = tickerValidation.regularMarketPrice || 0;
       const estimatedValue = sharePrice * parseInt(shares);
       
+      // Convert to USD if needed
+      const currency = tickerValidation.currency || 'USD';
+      let sharePriceUSD = sharePrice;
+      let totalValueUSD = estimatedValue;
+      let exchangeRate = 1;
+      
+      if (currency !== 'USD') {
+        const conversion = await CurrencyService.convertToUSD(sharePrice, currency);
+        sharePriceUSD = conversion.usdAmount;
+        totalValueUSD = sharePriceUSD * parseInt(shares);
+        exchangeRate = conversion.exchangeRate;
+        
+        logger.info('Foreign currency converted to USD', {
+          ticker: ticker.toUpperCase(),
+          originalCurrency: currency,
+          originalPrice: sharePrice,
+          usdPrice: sharePriceUSD,
+          exchangeRate: exchangeRate
+        });
+      }
+      
       // Determine initial status and rejection reason based on restricted list
       let initialStatus = 'pending';
       let rejectionReason = null;
@@ -123,12 +145,12 @@ class TradingRequestService {
         shares: parseInt(shares),
         share_price: sharePrice,
         total_value: estimatedValue,
-        currency: tickerValidation.currency,
-        share_price_usd: sharePrice, // Assume USD for now
-        total_value_usd: estimatedValue,
-        exchange_rate: 1,
+        currency: currency,
+        share_price_usd: sharePriceUSD,
+        total_value_usd: totalValueUSD,
+        exchange_rate: exchangeRate,
         trading_type: trading_type.toLowerCase(),
-        estimated_value: estimatedValue,
+        estimated_value: totalValueUSD, // Use USD value for estimated_value
         status: initialStatus,
         rejection_reason: rejectionReason,
         processed_at: new Date().toISOString()
@@ -158,7 +180,10 @@ class TradingRequestService {
         ticker: ticker.toUpperCase(),
         shares,
         trading_type,
-        estimatedValue,
+        originalValue: estimatedValue,
+        originalCurrency: currency,
+        estimatedValueUSD: totalValueUSD,
+        exchangeRate: exchangeRate,
         status: initialStatus,
         isRestricted
       });
