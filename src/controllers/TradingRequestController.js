@@ -50,16 +50,16 @@ class TradingRequestController {
       let expectedOutcome = '';
       if (isRestricted) {
         expectedOutcome = `
-          <div style="background: #fff3cd; border: 1px solid #ffeeba; padding: var(--spacing-4); border-radius: var(--radius); margin-bottom: var(--spacing-4);">
-            <h4 style="margin: 0; color: #856404;">⚠️ Restricted Stock Warning</h4>
-            <p style="margin: var(--spacing-2) 0 0 0; color: #856404;">${ticker.toUpperCase()} is on the restricted trading list. This request will be <strong>automatically rejected</strong> upon submission, but you will have the option to escalate with a business justification.</p>
+          <div class="bg-warning border rounded p-4 mb-4">
+            <h4 class="m-0 text-warning">⚠️ Restricted Stock Warning</h4>
+            <p class="mt-2 m-0 text-warning">${ticker.toUpperCase()} is on the restricted trading list. This request will be <strong>automatically rejected</strong> upon submission, but you will have the option to escalate with a business justification.</p>
           </div>`;
       }
 
       // Render preview page with compliance declaration
       const previewContent = `
-        <div style="max-width: 700px; margin: 0 auto;">
-          <h2 style="text-align: center; color: var(--gs-dark-blue); margin-bottom: var(--spacing-6);">Review Trading Request</h2>
+        <div class="max-w-lg mx-auto">
+          <h2 class="text-center mb-6" style="color: var(--gs-dark-blue);">Review Trading Request</h2>
           
           ${expectedOutcome}
 
@@ -68,21 +68,21 @@ class TradingRequestController {
               <h3 class="card-title">Trading Request Details</h3>
             </div>
             <div class="card-body">
-              <div style="display: grid; gap: var(--spacing-4);">
-                <div style="display: flex; justify-content: space-between; padding: var(--spacing-3); background: var(--gs-neutral-100); border-radius: var(--radius);">
-                  <span style="font-weight: 600;">Stock:</span>
+              <div class="grid gap-4">
+                <div class="d-flex justify-content-between p-3 bg-muted rounded">
+                  <span class="font-weight-600">Stock:</span>
                   <span>${tickerValidation.longName} (<strong>${ticker.toUpperCase()}</strong>)</span>
                 </div>
-                <div style="display: flex; justify-content: space-between; padding: var(--spacing-3); background: var(--gs-neutral-100); border-radius: var(--radius);">
-                  <span style="font-weight: 600;">Action:</span>
-                  <span style="text-transform: uppercase; font-weight: 600; color: ${trading_type === 'buy' ? '#28a745' : '#dc3545'};">${trading_type}</span>
+                <div class="d-flex justify-content-between p-3 bg-muted rounded">
+                  <span class="font-weight-600">Action:</span>
+                  <span class="text-uppercase font-weight-600 ${trading_type === 'buy' ? 'text-success' : 'text-danger'}">${trading_type}</span>
                 </div>
-                <div style="display: flex; justify-content: space-between; padding: var(--spacing-3); background: var(--gs-neutral-100); border-radius: var(--radius);">
-                  <span style="font-weight: 600;">Shares:</span>
-                  <span style="font-weight: 600;">${parseInt(shares).toLocaleString()}</span>
+                <div class="d-flex justify-content-between p-3 bg-muted rounded">
+                  <span class="font-weight-600">Shares:</span>
+                  <span class="font-weight-600">${parseInt(shares).toLocaleString()}</span>
                 </div>
-                <div style="display: flex; justify-content: space-between; padding: var(--spacing-3); background: var(--gs-neutral-100); border-radius: var(--radius);">
-                  <span style="font-weight: 600;">Current Price:</span>
+                <div class="d-flex justify-content-between p-3 bg-muted rounded">
+                  <span class="font-weight-600">Current Price:</span>
                   <span>
                     ${stockCurrency === 'USD' 
                       ? `$${sharePrice.toFixed(2)} USD`
@@ -90,17 +90,17 @@ class TradingRequestController {
                     }
                   </span>
                 </div>
-                <div style="display: flex; justify-content: space-between; padding: var(--spacing-3); background: var(--gs-neutral-100); border-radius: var(--radius);">
-                  <span style="font-weight: 600;">Estimated Total:</span>
-                  <span style="font-weight: 600;">
+                <div class="d-flex justify-content-between p-3 bg-muted rounded">
+                  <span class="font-weight-600">Estimated Total:</span>
+                  <span class="font-weight-600">
                     ${stockCurrency === 'USD' 
                       ? `$${estimatedValue.toLocaleString('en-US', {minimumFractionDigits: 2})} USD`
                       : `${estimatedValue.toLocaleString('en-US', {minimumFractionDigits: 2})} ${stockCurrency} (~$${estimatedValueUSD.toLocaleString('en-US', {minimumFractionDigits: 2})} USD)`
                     }
                   </span>
                 </div>${stockCurrency !== 'USD' ? `
-                <div style="display: flex; justify-content: space-between; padding: var(--spacing-3); background: #e7f3ff; border: 1px solid #b3d9ff; border-radius: var(--radius);">
-                  <span style="font-weight: 600;">Exchange Rate:</span>
+                <div class="d-flex justify-content-between p-3 rounded" style="background: #e7f3ff; border: 1px solid #b3d9ff;">
+                  <span class="font-weight-600">Exchange Rate:</span>
                   <span>1 ${stockCurrency} = $${exchangeRate.toFixed(4)} USD</span>
                 </div>` : ''}
               </div>

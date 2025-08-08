@@ -157,31 +157,29 @@ class AdminController {
 
     // Build table rows for all requests
     const tableRows = allRequests.map(request => {
-      const statusColor = request.status === 'approved' ? '#28a745' : 
-                         request.status === 'rejected' ? '#dc3545' : '#ffc107';
-      const rowClass = request.escalated ? 'style="background: #fff3cd;"' : '';
+      const rowClass = request.escalated ? 'class="bg-warning"' : '';
       
       let actionCell = '';
       if (request.status === 'pending') {
         actionCell = `
-          <form method="post" action="/admin-approve-request" style="display: inline; margin-right: 10px;">\n            ${req.csrfInput()}
+          <form method="post" action="/admin-approve-request" class="d-inline mr-2">\n            ${req.csrfInput()}
             <input type="hidden" name="requestId" value="${request.id}">
-            <button type="submit" class="btn btn-success" style="padding: 5px 10px; font-size: 12px;">
+            <button type="submit" class="btn btn-success btn-sm">
               ✓ Approve
             </button>
           </form>
-          <a href="/admin-reject-form/${request.id}" class="btn btn-danger" style="padding: 5px 10px; font-size: 12px; text-decoration: none;">
+          <a href="/admin-reject-form/${request.id}" class="btn btn-danger btn-sm text-decoration-none">
             ✗ Reject
           </a>
         `;
       } else if (request.escalated) {
         actionCell = `
-          <strong style="color: #856404;">ESCALATED</strong><br>
-          <small style="color: #856404;">${request.escalation_reason || 'N/A'}</small>
+          <strong class="text-warning">ESCALATED</strong><br>
+          <small class="text-warning">${request.escalation_reason || 'N/A'}</small>
         `;
       } else {
         actionCell = `
-          <span style="color: ${statusColor}; font-weight: 600;">
+          <span class="badge ${request.status === 'approved' ? 'badge-success' : request.status === 'rejected' ? 'badge-danger' : 'badge-warning'}">
             ${request.status.toUpperCase()}
           </span>
         `;
@@ -189,22 +187,22 @@ class AdminController {
 
       return `
         <tr ${rowClass}>
-          <td style="text-align: center;">${request.id}</td>
-          <td style="text-align: center;">${formatHongKongTime(new Date(request.created_at))}</td>
+          <td class="text-center">${request.id}</td>
+          <td class="text-center">${formatHongKongTime(new Date(request.created_at))}</td>
           <td>${request.employee_email}</td>
           <td>${request.stock_name || 'N/A'}</td>
-          <td style="text-align: center; font-weight: 600;">${request.ticker}</td>
-          <td style="text-align: center;">${request.trading_type.toUpperCase()}</td>
-          <td style="text-align: center;">${parseInt(request.shares).toLocaleString()}</td>
-          <td style="text-align: center;">
+          <td class="text-center font-weight-600">${request.ticker}</td>
+          <td class="text-center">${request.trading_type.toUpperCase()}</td>
+          <td class="text-center">${parseInt(request.shares).toLocaleString()}</td>
+          <td class="text-center">
             $${parseFloat(request.total_value_usd || request.total_value || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}
           </td>
-          <td style="text-align: center;">
-            <span style="background: ${statusColor}; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 500;">
+          <td class="text-center">
+            <span class="badge ${request.status === 'approved' ? 'badge-success' : request.status === 'rejected' ? 'badge-danger' : 'badge-warning'}">
               ${request.status.toUpperCase()}
             </span>
           </td>
-          <td style="text-align: center;">
+          <td class="text-center">
             ${actionCell}
           </td>
         </tr>
@@ -311,24 +309,24 @@ class AdminController {
               </table>
             </div>
             ${pagination && pagination.pages > 1 ? `
-            <div style="margin-top: var(--spacing-4); display: flex; justify-content: center; align-items: center; gap: var(--spacing-2);">
+            <div class="mt-4 d-flex justify-center align-items-center gap-2">
               ${pagination.page > 1 ? `
                 <a href="/admin-requests?${new URLSearchParams({...req.query, page: pagination.page - 1}).toString()}" 
-                   class="btn btn-secondary btn-sm" style="text-decoration: none;">← Previous</a>
-              ` : '<span class="btn btn-secondary btn-sm" style="opacity: 0.5; cursor: not-allowed;">← Previous</span>'}
+                   class="btn btn-secondary btn-sm text-decoration-none">← Previous</a>
+              ` : '<span class="btn btn-secondary btn-sm opacity-50 cursor-not-allowed">← Previous</span>'}
               
-              <span style="padding: 0 var(--spacing-3);">
+              <span class="px-3">
                 Page ${pagination.page} of ${pagination.pages} (${pagination.total} total)
               </span>
               
               ${pagination.page < pagination.pages ? `
                 <a href="/admin-requests?${new URLSearchParams({...req.query, page: pagination.page + 1}).toString()}" 
-                   class="btn btn-secondary btn-sm" style="text-decoration: none;">Next →</a>
-              ` : '<span class="btn btn-secondary btn-sm" style="opacity: 0.5; cursor: not-allowed;">Next →</span>'}
+                   class="btn btn-secondary btn-sm text-decoration-none">Next →</a>
+              ` : '<span class="btn btn-secondary btn-sm opacity-50 cursor-not-allowed">Next →</span>'}
             </div>
             ` : ''}
           ` : `
-            <div style="text-align: center; padding: var(--spacing-8); color: var(--gs-neutral-600);">
+            <div class="text-center p-8 text-muted">
               <p>No trading requests found${Object.keys(filters).length > 0 ? ' matching your filters' : ''}.</p>
             </div>
           `}
