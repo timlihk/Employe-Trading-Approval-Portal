@@ -4,17 +4,31 @@ A comprehensive employee pre-trading approval system with Microsoft 365 integrat
 
 ## Features
 
+### 🚀 **Core Functionality**
 - **Employee Portal**: Trading request submission with real-time ticker validation and approval tracking
 - **Admin Dashboard**: Complete trading request management with advanced filtering and bulk operations
-- **Dynamic Sorting**: All reporting tables support sorting by Request ID, Date, or Ticker in ascending/descending order
-- **Advanced Filtering**: Comprehensive filtering with date ranges, ticker search, and trading type selection
+- **Two-Step Trading Workflow**: Preview → Compliance Declaration → Submit → Result confirmation
+- **Automatic Processing**: Real-time approval/rejection based on restricted stock list with escalation workflow
+- **Currency Conversion**: Automatic USD conversion for foreign stocks with real-time exchange rates
+- **Pure HTML Forms**: No JavaScript dependency - works with all browsers and security policies
+
+### 📊 **Advanced Reporting & Analytics**
+- **Dynamic Sorting**: All tables support sorting by Request ID, Date, Ticker, Employee, and Value
+- **Advanced Filtering**: Comprehensive filtering with date ranges, ticker search, trading type, and status
+- **Status Management**: Pending, Approved, Rejected status tracking with escalation capabilities
+- **CSV Export**: Full data export functionality for trading requests and audit logs
+- **Timezone Support**: Hong Kong timezone (UTC+8) for accurate date filtering and display
+
+### 🛡️ **Security & Compliance**
 - **Restricted Stock Management**: Dynamic restricted stock list with full audit trail and changelog
 - **Escalation Workflow**: Business justification system for declined trades with admin priority review
-- **CSV Export**: Full data export functionality with current sorting and filtering applied
-- **Advanced Security**: Rate limiting, input validation, comprehensive audit logging, and secure session management
-- **Real-time Validation**: Yahoo Finance API integration for ticker validation and pricing
-- **Database Backup**: Built-in database export functionality for disaster recovery
-- **Microsoft 365 Integration**: Optional single sign-on authentication
+- **Comprehensive Audit Logging**: Complete activity tracking with IP addresses, session IDs, and user actions
+- **Database Management**: Backup and reset functionality with confirmation workflows
+- **Advanced Security**: Rate limiting, input validation, Content Security Policy, and secure session management
+
+### 🔗 **Integration & Authentication**
+- **Microsoft 365 SSO**: Optional single sign-on authentication (can be disabled)
+- **Real-time Validation**: External API integration for ticker validation and currency conversion
 - **Professional UI**: Goldman Sachs-inspired design system with responsive layout
 
 ## Architecture Overview
@@ -42,10 +56,12 @@ The application follows enterprise-grade architectural patterns:
 ## Technology Stack
 
 - **Backend**: Node.js with Express.js framework
-- **Database**: PostgreSQL (Railway) / SQLite (local development)
-- **Authentication**: Microsoft 365 OAuth 2.0 integration + email-based fallback
-- **Architecture**: MVC pattern with service layer and middleware
-- **Security**: Helmet, rate limiting, input validation, audit logging
+- **Database**: PostgreSQL (Railway production) with timezone-aware queries
+- **Authentication**: Microsoft 365 OAuth 2.0 (optional) with admin credential fallback
+- **Frontend**: Pure HTML forms with server-side rendering (no JavaScript)
+- **Architecture**: MVC pattern with service layer and comprehensive middleware
+- **Security**: Helmet, Content Security Policy, rate limiting, input validation, comprehensive audit logging
+- **External APIs**: Currency conversion and ticker validation services
 - **Deployment**: Railway-optimized with health checks and environment detection
 
 ## Deployment Instructions
@@ -114,23 +130,33 @@ The application supports both PostgreSQL (production) and SQLite (development):
 - `GET /db-status` - Database status and connection info (admin only)
 
 ### Authentication
-- `GET /` - Landing page with login options
-- `POST /employee-authenticate` - Employee email authentication
+- `GET /` - Landing page with Microsoft 365 SSO login
 - `POST /admin-authenticate` - Admin credential authentication
 - `GET /api/auth/microsoft/*` - Microsoft 365 OAuth flow (if enabled)
+- `GET /admin-login` - Admin login form
 
 ### Admin Management
-- `GET /admin-dashboard` - Admin dashboard with statistics
-- `GET /admin-requests` - Trading requests management with sorting
-- `GET /admin-restricted-stocks` - Restricted stocks management
+- `GET /admin-dashboard` - Admin dashboard with action buttons and escalated requests review
+- `GET /admin-requests` - Trading requests management with advanced filtering and sorting
+- `GET /admin-restricted-stocks` - Restricted stocks management with changelog
+- `GET /admin-audit-log` - Complete audit log with export functionality
 - `GET /admin-export-trading-requests` - CSV export of all trading requests
-- `GET /admin-backup-database` - Full database backup
+- `GET /admin-export-audit-log` - CSV export of complete audit log
+- `GET /admin-backup-database` - Full database backup as JSON
+- `GET /admin-clear-database-confirm` - Database reset confirmation with warnings
+- `POST /admin-clear-database` - Complete database reset functionality
 
 ### Employee Portal
-- `GET /employee-dashboard` - Employee trading request submission
-- `GET /employee-history` - Personal trading history with sorting and filtering
+- `GET /employee-dashboard` - Employee trading request submission form
+- `GET /employee-history` - Personal trading history with advanced filtering and sorting
 - `GET /employee-export-history` - Personal CSV export with applied filters
-- `GET /escalate-form/:id` - Request escalation form
+- `GET /escalate-form/:id` - Request escalation form with business justification
+
+### Trading Request Workflow
+- `POST /preview-trade` - Preview trading request with compliance declaration
+- `POST /submit-trade` - Submit trading request after compliance confirmation
+- `GET /trade-result/:requestId` - Display approval/rejection result
+- `POST /submit-escalation` - Submit escalation with business justification
 
 ## Reporting & Data Management
 
@@ -161,10 +187,13 @@ Employee history supports comprehensive filtering:
 - **Combined Filters** - Multiple filters work together
 
 ### 📥 **CSV Export Features**
+- **Trading Requests Export** - Complete trading request data with USD values and status
+- **Audit Log Export** - Full audit trail with timestamps, IP addresses, and session IDs  
 - **Maintains Sorting** - Exports respect current sort order
 - **Preserves Filters** - Employee exports include applied filters
 - **Timestamped Files** - Automatic filename generation with timestamps
 - **Complete Data** - All relevant fields included in exports
+- **Hong Kong Timezone** - All dates and times displayed in HK timezone (UTC+8)
 
 ### 📋 **Real-time Table Updates**
 - **Instant Sorting** - Tables update immediately when changing sort options
@@ -188,7 +217,7 @@ SESSION_SECRET=dev_secret_key_change_in_production
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD=password123
 
-# Optional: Microsoft 365 integration
+# Optional: Microsoft 365 integration (can be disabled)
 AZURE_CLIENT_ID=your_client_id
 AZURE_CLIENT_SECRET=your_client_secret
 AZURE_TENANT_ID=your_tenant_id
@@ -202,26 +231,33 @@ npm start
 ### 🔒 **Authentication & Authorization**
 - Secure session-based authentication with configurable expiration
 - Role-based access control (employee vs admin)
-- Optional Microsoft 365 OAuth 2.0 integration
+- Microsoft 365 OAuth 2.0 integration (optional - can be disabled)
+- Admin credential fallback for environments without SSO
 - Automatic session invalidation and cleanup
+- Email-based employee authentication removed for security
 
 ### 🛡️ **Input Protection**
+- Pure HTML forms with no JavaScript dependencies
 - Comprehensive input validation with express-validator
 - SQL injection prevention with parameterized queries
-- XSS protection with proper HTML escaping
+- XSS protection with proper HTML escaping and Content Security Policy
 - Rate limiting to prevent brute force attacks
+- Ticker input sanitization and case normalization
 
 ### 📋 **Audit & Compliance**
-- Complete audit logging of all user actions
-- Security event logging with correlation IDs
-- Request/response logging with IP tracking
-- Structured logging with Winston for analysis
+- Complete audit logging of all user actions with timestamps and IP addresses
+- Security event logging with correlation IDs and session tracking
+- Request/response logging with IP tracking and user agent information
+- Structured logging with Winston for analysis and export capabilities
+- Database backup and restore functionality with admin confirmation
+- Comprehensive activity tracking for compliance requirements
 
 ### 🌐 **Network Security**
-- Helmet.js security headers
-- CSRF protection for all state-changing operations
+- Helmet.js security headers with strict CSP
+- Content Security Policy configured for no JavaScript execution
 - Secure cookie configuration with HTTPOnly flags
-- Content Security Policy (CSP) implementation
+- Rate limiting for authentication and admin actions
+- Proper HTTPS handling for Railway deployment
 
 ## Monitoring & Troubleshooting
 
@@ -243,6 +279,26 @@ npm start
 ✅ **Testability**: Isolated business logic in services for unit testing  
 ✅ **Debugging**: Structured logging with correlation IDs  
 ✅ **Performance**: Optimized database queries and caching-ready architecture  
+✅ **Accessibility**: Pure HTML forms work with all browsers and assistive technologies  
+✅ **Compliance**: Complete audit trails and data export for regulatory requirements  
+
+## Recent Updates & Improvements
+
+### 🚀 **Version 2.0 Features**
+- **No JavaScript Architecture**: Complete removal of client-side JavaScript for maximum security and compatibility
+- **Enhanced Compliance Workflow**: Two-step trading process with mandatory compliance declaration
+- **Currency Conversion**: Automatic USD conversion for foreign stocks with real-time exchange rates
+- **Advanced Admin Tools**: Database reset with confirmation, audit log export, escalated request management
+- **Timezone Support**: Hong Kong timezone (UTC+8) handling for accurate date filtering and display
+- **Improved Security**: Content Security Policy blocking all scripts, comprehensive input validation
+
+### 🔧 **Recent Technical Improvements**
+- **Status Management**: Fixed status tracking to properly show approved/rejected requests
+- **Database Optimization**: PostgreSQL timezone-aware queries for accurate date filtering  
+- **Export Enhancements**: Added audit log CSV export with complete activity tracking
+- **UI Simplification**: Removed complex JavaScript interactions in favor of server-side processing
+- **Admin Dashboard**: Streamlined interface with direct action buttons and escalated request review
+- **Error Handling**: Comprehensive error pages and user-friendly messages
 
 ## Support & Contributing
 
