@@ -31,19 +31,13 @@ class TradingRequestController {
       const estimatedValue = sharePrice * parseInt(shares);
       const stockCurrency = tickerValidation.currency || 'USD';
 
-      // Determine what will happen when submitted
+      // Only show warning for restricted stocks, no message for non-restricted
       let expectedOutcome = '';
       if (isRestricted) {
         expectedOutcome = `
           <div style="background: #fff3cd; border: 1px solid #ffeeba; padding: var(--spacing-4); border-radius: var(--radius); margin-bottom: var(--spacing-4);">
             <h4 style="margin: 0; color: #856404;">⚠️ Restricted Stock Warning</h4>
             <p style="margin: var(--spacing-2) 0 0 0; color: #856404;">${ticker.toUpperCase()} is on the restricted trading list. This request will be <strong>automatically rejected</strong> upon submission, but you will have the option to escalate with a business justification.</p>
-          </div>`;
-      } else {
-        expectedOutcome = `
-          <div style="background: #d4edda; border: 1px solid #c3e6cb; padding: var(--spacing-4); border-radius: var(--radius); margin-bottom: var(--spacing-4);">
-            <h4 style="margin: 0; color: #155724;">✅ Pre-Approved Stock</h4>
-            <p style="margin: var(--spacing-2) 0 0 0; color: #155724;">${ticker.toUpperCase()} is not on the restricted list. This request will be <strong>automatically approved</strong> upon submission.</p>
           </div>`;
       }
 
@@ -99,13 +93,14 @@ class TradingRequestController {
                     <input type="checkbox" name="compliance_declaration" value="confirmed" required 
                            style="margin-top: 5px; width: 20px; height: 20px;">
                     <span style="flex: 1; line-height: 1.6;">
-                      I hereby confirm that:
-                      <ul style="margin: var(--spacing-2) 0 0 var(--spacing-4); list-style-type: disc;">
-                        <li>I am not in possession of any material non-public information regarding ${tickerValidation.longName} (${ticker.toUpperCase()})</li>
-                        <li>This transaction is for my personal investment purposes only</li>
-                        <li>I have reviewed and will comply with all company trading policies</li>
-                        <li>I understand that false declarations may result in disciplinary action</li>
-                      </ul>
+                      <strong>Declaration:</strong><br><br>
+                      I have read the Company's Personal Dealing Policy and believe that the above transaction(s) comply with its requirements. I declare that: (i) I will not buy or sell the investment(s) listed above on a day in which the Company has a pending "buy" or "sell" order in the same investment(s) until that order is executed or withdrawn; (ii) I will not buy or sell the investment(s) listed above within one trading day before (where I am aware of a forthcoming client transaction) or after trading in those investment(s) on behalf of a client unless the client order(s) have been fully executed and any conflicts of interest have been removed; (iii) I will not buy or sell the investment(s) listed above within one trading day before (where I am aware of a forthcoming recommendation) or after a recommendation on those investment(s) is made or proposed by the Company unless the client order(s) have been fully executed and any conflicts of interest have been removed; and (iv) the requested investment(s) will not result in a misuse of inside information or in any conflict of interest or impropriety with regards to any client.<br><br>
+                      
+                      For a trade request for market orders, please note that permission is effective only on the trading day you receive approval.<br><br>
+                      
+                      For a trade request for limit price orders, please note that permission is effective for five (5) trading days including the trading day you receive approval.<br><br>
+                      
+                      Relevant Persons must hold all personal investments for at least 30 calendar days as required pursuant to the FMCC (SFC).
                     </span>
                   </label>
                 </div>
