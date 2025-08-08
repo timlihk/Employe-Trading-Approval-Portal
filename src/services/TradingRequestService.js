@@ -4,56 +4,103 @@ const AuditLog = require('../models/AuditLog');
 const CurrencyService = require('./CurrencyService');
 const { AppError } = require('../middleware/errorHandler');
 const { logger } = require('../utils/logger');
+const { SimpleCache } = require('../utils/simpleCache');
+const { CircuitBreaker, callWithResilience } = require('../utils/retryBreaker');
+
+// Initialize ticker validation cache and circuit breaker
+const tickerCache = new SimpleCache(5 * 60 * 1000); // 5 minutes TTL
+const tickerCircuitBreaker = new CircuitBreaker({
+  failureThreshold: 3,
+  cooldownMs: 30000 // 30 seconds
+});
 
 class TradingRequestService {
   /**
-   * Validate ticker with external API
+   * Validate ticker with external API, caching, and circuit breaker
    */
   async validateTicker(ticker) {
+    const cacheKey = `ticker:${ticker.toUpperCase()}`;
+    
+    // Try cache first
+    const cached = tickerCache.get(cacheKey);
+    if (cached) {
+      logger.debug('Ticker cache hit', { ticker, cached: !!cached });
+      return cached;
+    }
+
     try {
-      // Use Yahoo Finance API to validate ticker and get basic info
-      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}`;
-      
-      // Add timeout to prevent hanging
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
-      
-      const response = await fetch(url, {
-        signal: controller.signal,
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        }
-      });
-      clearTimeout(timeoutId);
-      
-      const data = await response.json();
-      
-      if (data && data.chart && data.chart.result && data.chart.result.length > 0) {
-        const result = data.chart.result[0];
-        const meta = result.meta;
-        
-        if (meta && meta.symbol) {
+      // Use circuit breaker and retry logic
+      const result = await callWithResilience(
+        async () => {
+          // Yahoo Finance API call
+          const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(ticker)}`;
+          
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000);
+          
+          const response = await fetch(url, {
+            signal: controller.signal,
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
+          });
+          clearTimeout(timeoutId);
+          
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+          
+          const data = await response.json();
+          
+          if (data?.chart?.result?.[0]?.meta?.symbol) {
+            const meta = data.chart.result[0].meta;
+            return {
+              isValid: true,
+              symbol: meta.symbol,
+              currency: meta.currency || 'USD',
+              exchangeName: meta.exchangeName || 'Unknown',
+              longName: meta.longName || meta.shortName || `${ticker} Corporation`,
+              regularMarketPrice: meta.regularMarketPrice || 0
+            };
+          }
+          
           return {
-            isValid: true,
-            symbol: meta.symbol,
-            currency: meta.currency || 'USD',
-            exchangeName: meta.exchangeName || 'Unknown',
-            longName: meta.longName || meta.shortName || `${ticker} Corporation`,
-            regularMarketPrice: meta.regularMarketPrice || 0
+            isValid: false,
+            error: 'Ticker not found in market data. Please verify the ticker symbol is correct and the stock is actively traded'
           };
-        }
-      }
+        },
+        tickerCircuitBreaker,
+        { retries: 2, delayMs: 300 }
+      );
+
+      // Cache successful results (both valid and invalid tickers)
+      tickerCache.set(cacheKey, result);
+      logger.debug('Ticker validation completed', { ticker, isValid: result.isValid, fromCache: false });
       
-      return {
-        isValid: false,
-        error: 'Ticker not found in market data. Please verify the ticker symbol is correct and the stock is actively traded'
-      };
+      return result;
+      
     } catch (error) {
-      logger.error('Ticker validation failed', {
+      logger.error('Ticker validation failed after retries', {
         ticker,
-        error: error.message
+        error: error.message,
+        circuitState: tickerCircuitBreaker.getState()
       });
-      
+
+      // Try to return cached value even if expired
+      const staleCache = tickerCache.keyToEntry.get(cacheKey);
+      if (staleCache) {
+        logger.warn('Using stale ticker cache due to API failure', { ticker });
+        return staleCache.value;
+      }
+
+      // Graceful degradation
+      if (error.message.includes('Circuit breaker is OPEN')) {
+        return {
+          isValid: false,
+          error: 'Ticker validation service is temporarily unavailable. Please try again in a few minutes.'
+        };
+      }
+
       if (error.name === 'AbortError') {
         return {
           isValid: false,
@@ -66,6 +113,16 @@ class TradingRequestService {
         error: 'Unable to validate ticker due to network issues. Please try again'
       };
     }
+  }
+
+  /**
+   * Get cache and circuit breaker stats for monitoring
+   */
+  getTickerValidationStats() {
+    return {
+      cache: tickerCache.getStats(),
+      circuitBreaker: tickerCircuitBreaker.getStats()
+    };
   }
 
   /**

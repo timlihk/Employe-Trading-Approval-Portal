@@ -99,6 +99,26 @@ function createMetrics() {
       under200ms: 0, 
       under1000ms: 0,
       over1000ms: 0
+    },
+    externalApis: {
+      tickerValidation: {
+        cacheHits: 0,
+        cacheMisses: 0,
+        apiCalls: 0,
+        apiErrors: 0,
+        circuitBreakerOpens: 0
+      },
+      currencyExchange: {
+        cacheHits: 0,
+        cacheMisses: 0,
+        apiCalls: 0,
+        apiErrors: 0,
+        circuitBreakerOpens: 0
+      }
+    },
+    sessionStore: {
+      fallbackEvents: 0,
+      connectionErrors: 0
     }
   };
 }
@@ -342,8 +362,23 @@ app.get('/health', async (req, res) => {
 });
 
 // Metrics (basic, no PII)
-app.get('/metrics', (req, res) => {
+app.get('/metrics', async (req, res) => {
   const now = Date.now();
+  
+  // Get external API stats
+  let tickerStats = { cache: {}, circuitBreaker: {} };
+  let currencyStats = { cache: {}, circuitBreaker: {} };
+  
+  try {
+    const TradingRequestService = require('./services/TradingRequestService');
+    const CurrencyService = require('./services/CurrencyService');
+    
+    tickerStats = TradingRequestService.getTickerValidationStats();
+    currencyStats = CurrencyService.getCurrencyStats();
+  } catch (error) {
+    // Services might not be fully initialized yet
+  }
+
   res.json({
     uptimeSeconds: Math.round(process.uptime()),
     requests: metrics.requests,
@@ -354,6 +389,17 @@ app.get('/metrics', (req, res) => {
       under1000ms: metrics.latencyBuckets.under1000ms,
       over1000ms: metrics.latencyBuckets.over1000ms
     },
+    externalApis: {
+      ticker: {
+        cache: tickerStats.cache,
+        circuitBreaker: tickerStats.circuitBreaker
+      },
+      currency: {
+        cache: currencyStats.cache,
+        circuitBreaker: currencyStats.circuitBreaker
+      }
+    },
+    sessionStore: metrics.sessionStore,
     startedAt: new Date(metrics.startTime).toISOString(),
     now: new Date(now).toISOString()
   });

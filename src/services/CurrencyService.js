@@ -1,8 +1,17 @@
 const { logger } = require('../utils/logger');
+const { SimpleCache } = require('../utils/simpleCache');
+const { CircuitBreaker, callWithResilience } = require('../utils/retryBreaker');
+
+// Initialize currency cache and circuit breaker
+const currencyCache = new SimpleCache(10 * 60 * 1000); // 10 minutes TTL
+const currencyCircuitBreaker = new CircuitBreaker({
+  failureThreshold: 3,
+  cooldownMs: 60000 // 1 minute cooldown
+});
 
 class CurrencyService {
   /**
-   * Get exchange rate from source currency to USD
+   * Get exchange rate from source currency to USD with caching and resilience
    * Uses exchangerate-api.com free tier (1500 requests/month)
    */
   async getExchangeRateToUSD(fromCurrency) {
@@ -11,44 +20,71 @@ class CurrencyService {
       return 1;
     }
 
+    const cacheKey = `fx:${fromCurrency.toUpperCase()}`;
+    
+    // Try cache first
+    const cached = currencyCache.get(cacheKey);
+    if (cached) {
+      logger.debug('Currency cache hit', { fromCurrency, rate: cached });
+      return cached;
+    }
+
     try {
-      // Use a free exchange rate API
-      const url = `https://api.exchangerate-api.com/v4/latest/${fromCurrency}`;
-      
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
-      
-      const response = await fetch(url, {
-        signal: controller.signal,
-        headers: {
-          'User-Agent': 'Trading-Compliance-Portal/1.0'
-        }
+      const rate = await callWithResilience(
+        async () => {
+          const url = `https://api.exchangerate-api.com/v4/latest/${fromCurrency}`;
+          
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 5000);
+          
+          const response = await fetch(url, {
+            signal: controller.signal,
+            headers: {
+              'User-Agent': 'Trading-Compliance-Portal/1.0'
+            }
+          });
+          clearTimeout(timeoutId);
+          
+          if (!response.ok) {
+            throw new Error(`Exchange rate API responded with ${response.status}`);
+          }
+          
+          const data = await response.json();
+          
+          if (data?.rates?.USD) {
+            return data.rates.USD;
+          } else {
+            throw new Error('Invalid response format from exchange rate API');
+          }
+        },
+        currencyCircuitBreaker,
+        { retries: 2, delayMs: 500 }
+      );
+
+      // Cache the successful result
+      currencyCache.set(cacheKey, rate);
+      logger.info('Currency exchange rate retrieved', {
+        fromCurrency,
+        toUSD: rate,
+        source: 'exchangerate-api.com',
+        fromCache: false
       });
-      clearTimeout(timeoutId);
       
-      if (!response.ok) {
-        throw new Error(`Exchange rate API responded with ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
-      if (data && data.rates && data.rates.USD) {
-        const rate = data.rates.USD;
-        logger.info('Currency exchange rate retrieved', {
-          fromCurrency,
-          toUSD: rate,
-          source: 'exchangerate-api.com'
-        });
-        return rate;
-      } else {
-        throw new Error('Invalid response format from exchange rate API');
-      }
+      return rate;
       
     } catch (error) {
-      logger.error('Failed to get exchange rate', {
+      logger.error('Failed to get exchange rate after retries', {
         fromCurrency,
-        error: error.message
+        error: error.message,
+        circuitState: currencyCircuitBreaker.getState()
       });
+
+      // Try stale cache first
+      const staleCache = currencyCache.keyToEntry.get(cacheKey);
+      if (staleCache) {
+        logger.warn('Using stale currency cache due to API failure', { fromCurrency, rate: staleCache.value });
+        return staleCache.value;
+      }
       
       // Fallback: use approximate rates for major currencies
       const fallbackRates = {
@@ -64,11 +100,15 @@ class CurrencyService {
       };
       
       if (fallbackRates[fromCurrency]) {
+        const fallbackRate = fallbackRates[fromCurrency];
+        // Cache fallback rate for a shorter period
+        currencyCache.set(cacheKey, fallbackRate, 2 * 60 * 1000); // 2 minutes
+        
         logger.warn('Using fallback exchange rate', {
           fromCurrency,
-          fallbackRate: fallbackRates[fromCurrency]
+          fallbackRate
         });
-        return fallbackRates[fromCurrency];
+        return fallbackRate;
       }
       
       // If no fallback available, assume 1:1 (not ideal but prevents crashes)
@@ -77,6 +117,16 @@ class CurrencyService {
       });
       return 1;
     }
+  }
+
+  /**
+   * Get currency service stats for monitoring
+   */
+  getCurrencyStats() {
+    return {
+      cache: currencyCache.getStats(),
+      circuitBreaker: currencyCircuitBreaker.getStats()
+    };
   }
 
   /**
