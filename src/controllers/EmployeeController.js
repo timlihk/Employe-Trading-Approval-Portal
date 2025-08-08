@@ -7,6 +7,11 @@ class EmployeeController {
    * Get employee dashboard
    */
   getDashboard = catchAsync(async (req, res) => {
+    // Check if user is properly authenticated
+    if (!req.session.employee || !req.session.employee.email) {
+      return res.redirect('/?error=authentication_required');
+    }
+    
     const { error, message, ticker, shares, trading_type } = req.query;
     let banner = '';
     
@@ -93,6 +98,12 @@ class EmployeeController {
    */
   getHistory = catchAsync(async (req, res) => {
     const { message, error, start_date, end_date, ticker, trading_type, status, sort_by = 'id', sort_order = 'DESC', page = 1, limit = 25 } = req.query;
+    
+    // Check if user is properly authenticated
+    if (!req.session.employee || !req.session.employee.email) {
+      return res.redirect('/?error=authentication_required');
+    }
+    
     const employeeEmail = req.session.employee.email;
     
     let banner = '';
@@ -119,8 +130,9 @@ class EmployeeController {
 
     const result = await TradingRequestService.getEmployeeRequests(employeeEmail, filters, sort_by, sort_order);
     
-    // Handle service errors gracefully
+    // Handle service errors gracefully  
     if (!result || !result.data) {
+      console.error('EmployeeController.getHistory: Service returned no data', { result, employeeEmail, filters });
       throw new Error('Unable to fetch trading requests - service returned no data');
     }
     
@@ -318,6 +330,12 @@ class EmployeeController {
    */
   getEscalationForm = catchAsync(async (req, res) => {
     const requestId = parseInt(req.params.id);
+    
+    // Check if user is properly authenticated
+    if (!req.session.employee || !req.session.employee.email) {
+      return res.redirect('/?error=authentication_required');
+    }
+    
     const employeeEmail = req.session.employee.email;
 
     // Get the specific request to validate ownership
