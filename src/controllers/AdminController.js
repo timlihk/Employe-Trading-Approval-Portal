@@ -81,44 +81,13 @@ class AdminController {
    * Get admin dashboard
    */
   getDashboard = catchAsync(async (req, res) => {
-    
-    // Get pending requests count
-    const pendingRequests = await TradingRequest.getPendingRequests();
-    const escalatedRequests = await TradingRequest.getEscalatedRequests();
-    const totalRequests = await TradingRequest.getTotalCount();
-    const restrictedStocksCount = await RestrictedStock.getCount();
-
     const dashboardContent = `
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: var(--spacing-6); margin-bottom: var(--spacing-8);">
-        <div class="card">
-          <div class="card-body" style="text-align: center;">
-            <h3 style="font-size: 2.5em; margin: 0; color: var(--gs-primary);">${pendingRequests.length}</h3>
-            <p style="margin: var(--spacing-2) 0 0; color: var(--gs-neutral-600);">Pending Requests</p>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-body" style="text-align: center;">
-            <h3 style="font-size: 2.5em; margin: 0; color: var(--gs-warning);">${escalatedRequests.length}</h3>
-            <p style="margin: var(--spacing-2) 0 0; color: var(--gs-neutral-600);">Escalated Requests</p>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-body" style="text-align: center;">
-            <h3 style="font-size: 2.5em; margin: 0; color: var(--gs-info);">${totalRequests}</h3>
-            <p style="margin: var(--spacing-2) 0 0; color: var(--gs-neutral-600);">Total Requests</p>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-body" style="text-align: center;">
-            <h3 style="font-size: 2.5em; margin: 0; color: var(--gs-danger);">${restrictedStocksCount}</h3>
-            <p style="margin: var(--spacing-2) 0 0; color: var(--gs-neutral-600);">Restricted Stocks</p>
-          </div>
-        </div>
-      </div>
-
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--spacing-4);">
         <a href="/admin-requests" class="btn btn-primary" style="text-decoration: none; text-align: center; padding: var(--spacing-4);">
-          📋 Review Requests
+          📋 Review All Requests
+        </a>
+        <a href="/admin-requests?escalated=true" class="btn btn-warning" style="text-decoration: none; text-align: center; padding: var(--spacing-4);">
+          ⚠️ Review Escalated Requests
         </a>
         <a href="/admin-restricted-stocks" class="btn btn-secondary" style="text-decoration: none; text-align: center; padding: var(--spacing-4);">
           🚫 Manage Restricted Stocks
