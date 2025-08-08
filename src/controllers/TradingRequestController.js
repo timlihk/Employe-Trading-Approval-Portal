@@ -107,7 +107,7 @@ class TradingRequestController {
             </div>
           </div>
 
-          <div class="card" style="margin-top: var(--spacing-6);">
+          <div class="card mt-6">
             <div class="card-header" style="background: var(--gs-danger); color: white;">
               <h3 class="card-title" style="color: white;">⚖️ Compliance Declaration</h3>
             </div>
@@ -118,8 +118,8 @@ class TradingRequestController {
                 <input type="hidden" name="shares" value="${shares}">
                 <input type="hidden" name="trading_type" value="${trading_type}">
                 
-                <div style="margin-bottom: var(--spacing-4);">
-                  <label style="display: flex; align-items: flex-start; gap: var(--spacing-2); cursor: pointer;">
+                <div class="mb-4">
+                  <label class="d-flex align-items-start gap-2 cursor-pointer">
                     <input type="checkbox" name="compliance_declaration" value="confirmed" required 
                            style="margin-top: 5px; width: 20px; height: 20px;">
                     <span style="flex: 1; line-height: 1.6;">
