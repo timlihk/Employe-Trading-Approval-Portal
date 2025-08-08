@@ -86,15 +86,6 @@ class AdminController {
     const dashboardContent = `
       ${banner}
       
-      <script>
-        function confirmDatabaseClear() {
-          if (confirm('⚠️ DANGER: This will permanently delete ALL data from the database and reset it to brand new state. This action cannot be undone! Are you absolutely sure?')) {
-            return confirm('⚠️ FINAL WARNING: You are about to delete ALL trading requests, restricted stocks, audit logs, and reset all data. This action is IRREVERSIBLE. Click OK to proceed or Cancel to abort.');
-          }
-          return false;
-        }
-      </script>
-      
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--spacing-4);">
         <a href="/admin-requests" class="btn btn-primary" style="text-decoration: none; text-align: center; padding: var(--spacing-4);">
           📋 Review All Requests
@@ -111,12 +102,9 @@ class AdminController {
         <a href="/admin-backup-database" class="btn btn-outline" style="text-decoration: none; text-align: center; padding: var(--spacing-4);">
           💾 Backup Database
         </a>
-        <form method="post" action="/admin-clear-database" style="display: inline;">
-          <button type="submit" class="btn btn-danger" style="text-decoration: none; text-align: center; padding: var(--spacing-4); width: 100%;" 
-                  onclick="return confirmDatabaseClear();">
-            🗑️ Clear Database
-          </button>
-        </form>
+        <a href="/admin-clear-database-confirm" class="btn btn-danger" style="text-decoration: none; text-align: center; padding: var(--spacing-4);">
+          🗑️ Clear Database
+        </a>
       </div>
     `;
 
@@ -637,6 +625,101 @@ class AdminController {
   });
 
   /**
+   * Show database clear confirmation page
+   */
+  getClearDatabaseConfirm = catchAsync(async (req, res) => {
+    const confirmContent = `
+      <div style="max-width: 600px; margin: 0 auto;">
+        <div class="card" style="border: 2px solid #dc3545;">
+          <div class="card-header" style="background: #dc3545; color: white;">
+            <h3 class="card-title" style="color: white; margin: 0;">⚠️ DANGER - Confirm Database Reset</h3>
+          </div>
+          <div class="card-body" style="background: #f8f9fa;">
+            <div style="background: #fff3cd; border: 1px solid #ffeeba; padding: var(--spacing-4); border-radius: var(--radius); margin-bottom: var(--spacing-4);">
+              <h4 style="color: #856404; margin: 0 0 var(--spacing-3) 0;">⚠️ WARNING: This action cannot be undone!</h4>
+              <p style="color: #856404; margin: 0; line-height: 1.6;">
+                You are about to <strong>permanently delete ALL data</strong> from the database and reset it to brand new state.
+              </p>
+            </div>
+            
+            <div style="margin: var(--spacing-4) 0;">
+              <h5 style="color: #dc3545; margin-bottom: var(--spacing-3);">This will delete:</h5>
+              <ul style="color: #dc3545; margin: 0; padding-left: var(--spacing-5);">
+                <li>All trading requests (approved, rejected, pending)</li>
+                <li>All restricted stocks and changelog</li>
+                <li>All audit logs and activity history</li>
+                <li>All employee trading history</li>
+              </ul>
+            </div>
+            
+            <div style="background: #f8d7da; border: 1px solid #f5c6cb; padding: var(--spacing-4); border-radius: var(--radius); margin: var(--spacing-4) 0;">
+              <p style="color: #721c24; margin: 0; font-weight: 600; text-align: center;">
+                ⚠️ FINAL WARNING: This action is IRREVERSIBLE ⚠️
+              </p>
+            </div>
+            
+            <div style="display: flex; gap: var(--spacing-4); justify-content: center; margin-top: var(--spacing-6);">
+              <a href="/admin-dashboard" class="btn btn-secondary" style="text-decoration: none; padding: var(--spacing-3) var(--spacing-6);">
+                ← Cancel (Go Back)
+              </a>
+              <form method="post" action="/admin-clear-database" style="display: inline;">
+                <button type="submit" class="btn btn-danger" style="padding: var(--spacing-3) var(--spacing-6);">
+                  🗑️ YES, PERMANENTLY DELETE ALL DATA
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    const html = renderAdminPage('Confirm Database Reset', confirmContent);
+    res.send(html);
+  });
+
+  /**
+   * Export audit log as CSV
+   */
+  exportAuditLog = catchAsync(async (req, res) => {
+    try {
+      // Get all audit logs for export (no limit)
+      const auditLogs = await AuditLog.getAuditLogs({});
+      
+      const now = new Date();
+      const timestamp = now.toISOString().slice(0, 19).replace(/:/g, '-');
+      const filename = `audit-log-export-${timestamp}.csv`;
+
+      let csvContent = 'Date,Time,User Email,User Type,Action,Target Type,Target ID,Details,IP Address,Session ID\n';
+      
+      auditLogs.forEach(log => {
+        const createdDate = formatHongKongTime(new Date(log.created_at));
+        const createdTime = formatHongKongTime(new Date(log.created_at), true).split(', ')[1];
+        const userEmail = (log.user_email || '').replace(/"/g, '""');
+        const userType = (log.user_type || '').replace(/"/g, '""');
+        const action = (log.action || '').replace(/"/g, '""');
+        const targetType = (log.target_type || '').replace(/"/g, '""');
+        const targetId = log.target_id || '';
+        const details = (log.details || '').replace(/"/g, '""');
+        const ipAddress = (log.ip_address || '').replace(/"/g, '""');
+        const sessionId = (log.session_id || '').replace(/"/g, '""');
+        
+        csvContent += `"${createdDate}","${createdTime}","${userEmail}","${userType}","${action}","${targetType}","${targetId}","${details}","${ipAddress}","${sessionId}"\n`;
+      });
+
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.send(csvContent);
+      
+    } catch (error) {
+      console.error('Audit log export error:', error);
+      res.status(500).json({
+        error: 'Failed to export audit log',
+        details: error.message
+      });
+    }
+  });
+
+  /**
    * Get audit log page
    */
   getAuditLog = catchAsync(async (req, res) => {
@@ -686,34 +769,6 @@ class AdminController {
     `).join('');
 
     const auditContent = `
-      <div class="dashboard-grid" style="margin-bottom: var(--spacing-6);">
-        <div class="card">
-          <div class="card-header">
-            <h3 class="card-title">📊 Audit Summary</h3>
-          </div>
-          <div class="card-body">
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--spacing-4);">
-              <div style="text-align: center;">
-                <div class="stat-value">${summary.total_activities || 0}</div>
-                <div class="stat-label">Total Activities</div>
-              </div>
-              <div style="text-align: center;">
-                <div class="stat-value">${summary.unique_users || 0}</div>
-                <div class="stat-label">Unique Users</div>
-              </div>
-              <div style="text-align: center;">
-                <div class="stat-value">${summary.admin_activities || 0}</div>
-                <div class="stat-label">Admin Actions</div>
-              </div>
-              <div style="text-align: center;">
-                <div class="stat-value">${summary.employee_activities || 0}</div>
-                <div class="stat-label">Employee Actions</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <div class="card">
         <div class="card-header">
           <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
@@ -751,6 +806,7 @@ class AdminController {
               <div style="display: flex; align-items: end; gap: var(--spacing-2);">
                 <button type="submit" class="btn btn-primary">Filter</button>
                 <a href="/admin-audit-log" class="btn btn-secondary">Clear</a>
+                <a href="/admin-export-audit-log" class="btn btn-outline">📥 Export CSV</a>
               </div>
             </div>
           </form>

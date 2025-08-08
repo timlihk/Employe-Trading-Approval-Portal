@@ -422,7 +422,9 @@ app.post('/admin-remove-stock', requireAdmin, adminActionLimiter, AdminControlle
 app.post('/admin-approve-request', requireAdmin, adminActionLimiter, AdminController.approveRequest);
 app.post('/admin-reject-request', requireAdmin, adminActionLimiter, AdminController.rejectRequest);
 app.get('/admin-export-trading-requests', requireAdmin, AdminController.exportTradingRequests);
+app.get('/admin-export-audit-log', requireAdmin, AdminController.exportAuditLog);
 app.get('/admin-backup-database', requireAdmin, AdminController.backupDatabase);
+app.get('/admin-clear-database-confirm', requireAdmin, AdminController.getClearDatabaseConfirm);
 app.post('/admin-clear-database', requireAdmin, AdminController.clearDatabase);
 app.get('/admin-audit-log', requireAdmin, AdminController.getAuditLog);
 
