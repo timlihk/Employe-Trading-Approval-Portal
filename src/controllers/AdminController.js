@@ -86,23 +86,23 @@ class AdminController {
     const dashboardContent = `
       ${banner}
       
-      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--spacing-4);">
-        <a href="/admin-requests" class="btn btn-primary" style="text-decoration: none; text-align: center; padding: var(--spacing-4);">
+      <div class="grid-auto gap-4">
+        <a href="/admin-requests" class="btn btn-primary text-decoration-none text-center p-4">
           📋 Review All Requests
         </a>
-        <a href="/admin-requests?escalated=true" class="btn btn-warning" style="text-decoration: none; text-align: center; padding: var(--spacing-4);">
+        <a href="/admin-requests?escalated=true" class="btn btn-warning text-decoration-none text-center p-4">
           ⚠️ Review Escalated Requests
         </a>
-        <a href="/admin-restricted-stocks" class="btn btn-secondary" style="text-decoration: none; text-align: center; padding: var(--spacing-4);">
+        <a href="/admin-restricted-stocks" class="btn btn-secondary text-decoration-none text-center p-4">
           🚫 Manage Restricted Stocks
         </a>
-        <a href="/admin-audit-log" class="btn btn-outline" style="text-decoration: none; text-align: center; padding: var(--spacing-4);">
+        <a href="/admin-audit-log" class="btn btn-outline text-decoration-none text-center p-4">
           📊 View Audit Log
         </a>
-        <a href="/admin-backup-database" class="btn btn-outline" style="text-decoration: none; text-align: center; padding: var(--spacing-4);">
+        <a href="/admin-backup-database" class="btn btn-outline text-decoration-none text-center p-4">
           💾 Backup Database
         </a>
-        <a href="/admin-clear-database-confirm" class="btn btn-danger" style="text-decoration: none; text-align: center; padding: var(--spacing-4);">
+        <a href="/admin-clear-database-confirm" class="btn btn-danger text-decoration-none text-center p-4">
           🗑️ Clear Database
         </a>
       </div>
@@ -220,46 +220,44 @@ class AdminController {
       ${banner}
       
       <!-- Filters Card -->
-      <div class="card" style="margin-bottom: var(--spacing-6);">
+      <div class="card mb-6">
         <div class="card-header">
           <h3 class="card-title">Filter Trading Requests</h3>
         </div>
         <div class="card-body">
           <form method="get" action="/admin-requests">
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--spacing-4);">
+            <div class="grid-auto gap-4">
               <div>
-                <label style="display: block; margin-bottom: var(--spacing-2); font-weight: 600;">Employee Email:</label>
+                <label class="form-label">Employee Email:</label>
                 <input type="email" name="employee_email" value="${employee_email || ''}" placeholder="john@company.com"
-                       style="width: 100%; padding: var(--spacing-2); border: 1px solid var(--gs-neutral-300); border-radius: var(--radius);">
+                       class="form-control-sm">
               </div>
               <div>
-                <label style="display: block; margin-bottom: var(--spacing-2); font-weight: 600;">Start Date:</label>
+                <label class="form-label">Start Date:</label>
                 <input type="date" name="start_date" value="${start_date || ''}" 
-                       style="width: 100%; padding: var(--spacing-2); border: 1px solid var(--gs-neutral-300); border-radius: var(--radius);">
+                       class="form-control-sm">
               </div>
               <div>
-                <label style="display: block; margin-bottom: var(--spacing-2); font-weight: 600;">End Date:</label>
+                <label class="form-label">End Date:</label>
                 <input type="date" name="end_date" value="${end_date || ''}" 
-                       style="width: 100%; padding: var(--spacing-2); border: 1px solid var(--gs-neutral-300); border-radius: var(--radius);">
+                       class="form-control-sm">
               </div>
               <div>
-                <label style="display: block; margin-bottom: var(--spacing-2); font-weight: 600;">Ticker:</label>
+                <label class="form-label">Ticker:</label>
                 <input type="text" name="ticker" value="${ticker || ''}" placeholder="e.g., AAPL" 
-                       style="width: 100%; padding: var(--spacing-2); border: 1px solid var(--gs-neutral-300); border-radius: var(--radius); text-transform: uppercase;">
+                       class="form-control-sm text-uppercase">
               </div>
               <div>
-                <label style="display: block; margin-bottom: var(--spacing-2); font-weight: 600;">Type:</label>
-                <select name="trading_type" 
-                        style="width: 100%; padding: var(--spacing-2); border: 1px solid var(--gs-neutral-300); border-radius: var(--radius);">
+                <label class="form-label">Type:</label>
+                <select name="trading_type" class="form-control-sm">
                   <option value="">All Types</option>
                   <option value="buy" ${trading_type === 'buy' ? 'selected' : ''}>Buy</option>
                   <option value="sell" ${trading_type === 'sell' ? 'selected' : ''}>Sell</option>
                 </select>
               </div>
               <div>
-                <label style="display: block; margin-bottom: var(--spacing-2); font-weight: 600;">Status:</label>
-                <select name="status" 
-                        style="width: 100%; padding: var(--spacing-2); border: 1px solid var(--gs-neutral-300); border-radius: var(--radius);">
+                <label class="form-label">Status:</label>
+                <select name="status" class="form-control-sm">
                   <option value="">All Statuses</option>
                   <option value="pending" ${status === 'pending' ? 'selected' : ''}>Pending</option>
                   <option value="approved" ${status === 'approved' ? 'selected' : ''}>Approved</option>
@@ -267,19 +265,18 @@ class AdminController {
                 </select>
               </div>
               <div>
-                <label style="display: block; margin-bottom: var(--spacing-2); font-weight: 600;">Escalated:</label>
-                <select name="escalated" 
-                        style="width: 100%; padding: var(--spacing-2); border: 1px solid var(--gs-neutral-300); border-radius: var(--radius);">
+                <label class="form-label">Escalated:</label>
+                <select name="escalated" class="form-control-sm">
                   <option value="">All</option>
                   <option value="true" ${escalated === 'true' ? 'selected' : ''}>Yes</option>
                   <option value="false" ${escalated === 'false' ? 'selected' : ''}>No</option>
                 </select>
               </div>
             </div>
-            <div style="margin-top: var(--spacing-4); text-align: center;">
-              <button type="submit" class="btn btn-primary" style="margin-right: var(--spacing-3);">Apply Filters</button>
-              <a href="/admin-requests" class="btn btn-secondary" style="text-decoration: none; margin-right: var(--spacing-3);">Clear Filters</a>
-              <a href="/admin-export-trading-requests" class="btn btn-outline" style="text-decoration: none;">📥 Export CSV</a>
+            <div class="mt-4 text-center">
+              <button type="submit" class="btn btn-primary mr-3">Apply Filters</button>
+              <a href="/admin-requests" class="btn btn-secondary text-decoration-none mr-3">Clear Filters</a>
+              <a href="/admin-export-trading-requests" class="btn btn-outline text-decoration-none">📥 Export CSV</a>
             </div>
           </form>
         </div>
