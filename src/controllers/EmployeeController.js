@@ -91,12 +91,14 @@ class EmployeeController {
    * Get employee history
    */
   getHistory = catchAsync(async (req, res) => {
-    const { message, start_date, end_date, ticker, trading_type, status, sort_by = 'id', sort_order = 'DESC' } = req.query;
+    const { message, error, start_date, end_date, ticker, trading_type, status, sort_by = 'id', sort_order = 'DESC' } = req.query;
     const employeeEmail = req.session.employee.email;
     
     let banner = '';
     if (message === 'escalation_submitted') {
       banner = generateNotificationBanner({ message: 'Your escalation has been submitted successfully and will be reviewed by administrators.' });
+    } else if (error) {
+      banner = generateNotificationBanner({ error: error });
     }
 
     // Build filters
@@ -372,6 +374,19 @@ class EmployeeController {
 
       const requests = await TradingRequestService.getEmployeeRequests(employeeEmail, filters, sort_by, sort_order);
 
+      // Debug logging
+      console.log('Export debug info:', {
+        employeeEmail,
+        filters,
+        requestCount: requests ? requests.length : 0,
+        sort_by,
+        sort_order
+      });
+
+      if (!requests) {
+        throw new Error('No data returned from database query');
+      }
+
     // Create filename with filters
     let filterSuffix = '';
     if (start_date && end_date) {
@@ -384,20 +399,40 @@ class EmployeeController {
     if (ticker) filterSuffix += `-${ticker}`;
     if (trading_type) filterSuffix += `-${trading_type}`;
 
-    const timestamp = formatHongKongTime(new Date(), true).replace(/[/:,\s]/g, '-');
+    let timestamp;
+    try {
+      timestamp = formatHongKongTime(new Date(), true).replace(/[/:,\s]/g, '-');
+    } catch (timeError) {
+      console.error('Error formatting timestamp:', timeError);
+      timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    }
     const filename = `my-trading-history${filterSuffix}-${timestamp}.csv`;
 
     let csvContent = 'Request ID,Date Created,Stock Name,Ticker,Trading Type,Shares,Estimated Value,Status,Escalated,Rejection Reason\n';
     
-    requests.forEach(request => {
-      const createdDate = formatHongKongTime(new Date(request.created_at));
-      const stockName = (request.stock_name || 'N/A').replace(/"/g, '""');
-      const estimatedValue = (request.total_value_usd || request.total_value || 0).toFixed(2);
-      const escalated = request.escalated ? 'Yes' : 'No';
-      const rejectionReason = (request.rejection_reason || '').replace(/"/g, '""');
-      
-      csvContent += `"${request.id}","${createdDate}","${stockName}","${request.ticker}","${request.trading_type.toUpperCase()}","${request.shares}","$${estimatedValue}","${request.status.toUpperCase()}","${escalated}","${rejectionReason}"\n`;
-    });
+    // Handle empty results case
+    if (!requests || requests.length === 0) {
+      csvContent += '"No trading requests found for the selected criteria"\n';
+    } else {
+      requests.forEach(request => {
+        try {
+          const createdDate = formatHongKongTime(new Date(request.created_at));
+          const stockName = (request.stock_name || 'N/A').replace(/"/g, '""');
+          const estimatedValue = (request.total_value_usd || request.total_value || 0).toFixed(2);
+          const escalated = request.escalated ? 'Yes' : 'No';
+          const rejectionReason = (request.rejection_reason || '').replace(/"/g, '""');
+          const ticker = request.ticker || 'N/A';
+          const tradingType = (request.trading_type || 'unknown').toUpperCase();
+          const status = (request.status || 'unknown').toUpperCase();
+          const shares = request.shares || 0;
+          
+          csvContent += `"${request.id}","${createdDate}","${stockName}","${ticker}","${tradingType}","${shares}","$${estimatedValue}","${status}","${escalated}","${rejectionReason}"\n`;
+        } catch (rowError) {
+          console.error('Error processing row:', rowError, 'Request:', request);
+          csvContent += `"Error processing request ${request.id || 'unknown'}"\n`;
+        }
+      });
+    }
 
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
