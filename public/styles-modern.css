@@ -1868,7 +1868,66 @@ button[style*="background: var(--gs-primary-blue)"]:hover {
 /* Cursor utilities */
 .cursor-pointer { cursor: pointer; }
 .cursor-not-allowed { cursor: not-allowed; }
+.cursor-help { cursor: help; }
 
 /* Transition utilities */
 .transition { transition: all var(--transition-base); }
 .transition-fast { transition: all var(--transition-fast); }
+
+/* Badge utilities */
+.badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  color: white;
+  text-transform: uppercase;
+}
+.badge-success { background: var(--success); }
+.badge-danger { background: var(--danger); }
+.badge-warning { background: var(--warning); color: var(--warning-dark); }
+.badge-info { background: var(--info); }
+.badge-secondary { background: var(--gs-neutral-500); }
+
+/* Status-specific colors */
+.text-success { color: var(--success) !important; }
+.text-danger { color: var(--danger) !important; }
+.text-warning { color: var(--warning-dark) !important; }
+.text-muted { color: var(--gs-neutral-500) !important; }
+
+/* Form utilities */
+.form-control {
+  width: 100%;
+  padding: var(--spacing-3);
+  border: 1px solid var(--gs-neutral-300);
+  border-radius: var(--radius);
+}
+.form-control-sm {
+  padding: var(--spacing-2);
+  font-size: var(--font-size-sm);
+}
+.form-label {
+  display: block;
+  margin-bottom: var(--spacing-2);
+  font-weight: 600;
+}
+.form-text {
+  color: var(--gs-neutral-600);
+  font-size: var(--font-size-sm);
+}
+
+/* Additional utilities */
+.opacity-50 { opacity: 0.5; }
+.resize-vertical { resize: vertical; }
+.text-uppercase { text-transform: uppercase; }
+.font-weight-600 { font-weight: 600; }
+.bg-light { background: var(--gs-neutral-100); }
+.bg-muted { background: var(--gs-neutral-200); }
+.border { border: 1px solid var(--gs-neutral-300); }
+.border-radius { border-radius: var(--radius); }
+.overflow-hidden { overflow: hidden; }
+.justify-content-between { justify-content: space-between; }
+.justify-content-center { justify-content: center; }
+.align-items-center { align-items: center; }
+.flex-wrap { flex-wrap: wrap; }

@@ -35,16 +35,16 @@ class EmployeeController {
         <div class="card-body">
           <form method="post" action="/preview-trade" id="tradingForm">
             ${req.csrfInput()}
-            <div style="display: grid; gap: var(--spacing-4);">
+            <div class="grid gap-4">
               <div>
-                <label style="display: block; margin-bottom: var(--spacing-2); font-weight: 600;">Stock Ticker *</label>
+                <label class="form-label">Stock Ticker *</label>
                 <input type="text" name="ticker" value="${prefilledTicker}" required 
                        placeholder="e.g., AAPL, MSFT, GOOGL" 
-                       style="width: 100%; padding: var(--spacing-3); border: 1px solid var(--gs-neutral-300); border-radius: var(--radius); text-transform: uppercase;"
+                       class="form-control text-uppercase"
                        maxlength="15" pattern="[A-Za-z0-9.-]+">
-                <div style="margin-top: var(--spacing-2);">
-                  <small style="color: var(--gs-neutral-600);">Enter a valid stock ticker symbol. Examples:</small>
-                  <div style="margin-top: var(--spacing-1); padding: var(--spacing-2); background: var(--gs-neutral-100); border-radius: var(--radius); font-size: 14px;">
+                <div class="mt-2">
+                  <small class="form-text">Enter a valid stock ticker symbol. Examples:</small>
+                  <div class="mt-1 p-2 bg-muted border-radius" style="font-size: 14px;">
                     <strong>US Markets:</strong> AAPL, MSFT, GOOGL, TSLA, NVDA, AMZN<br>
                     <strong>Hong Kong:</strong> 0700.HK (Tencent), 9988.HK (Alibaba), 2318.HK (Ping An)<br>
                     <strong>UK:</strong> BARC.L (Barclays), LLOY.L (Lloyds), VOD.L (Vodafone)<br>
@@ -54,30 +54,30 @@ class EmployeeController {
               </div>
               
               <div>
-                <label style="display: block; margin-bottom: var(--spacing-2); font-weight: 600;">Number of Shares *</label>
+                <label class="form-label">Number of Shares *</label>
                 <input type="number" name="shares" value="${prefilledShares}" required min="1" max="1000000"
-                       style="width: 100%; padding: var(--spacing-3); border: 1px solid var(--gs-neutral-300); border-radius: var(--radius);">
-                <small style="color: var(--gs-neutral-600);">Enter the number of shares (1 - 1,000,000)</small>
+                       class="form-control">
+                <small class="form-text">Enter the number of shares (1 - 1,000,000)</small>
               </div>
               
               <div>
-                <label style="display: block; margin-bottom: var(--spacing-2); font-weight: 600;">Trading Type *</label>
-                <div style="display: flex; gap: var(--spacing-4);">
-                  <label style="display: flex; align-items: center; cursor: pointer;">
+                <label class="form-label">Trading Type *</label>
+                <div class="d-flex gap-4">
+                  <label class="d-flex align-items-center cursor-pointer">
                     <input type="radio" name="trading_type" value="buy" ${prefilledType === 'buy' ? 'checked' : ''} 
-                           style="margin-right: var(--spacing-2);">
-                    <span style="color: var(--gs-success); font-weight: 600;">BUY</span>
+                           class="mr-2">
+                    <span class="text-success font-weight-600">BUY</span>
                   </label>
-                  <label style="display: flex; align-items: center; cursor: pointer;">
+                  <label class="d-flex align-items-center cursor-pointer">
                     <input type="radio" name="trading_type" value="sell" ${prefilledType === 'sell' ? 'checked' : ''} 
-                           style="margin-right: var(--spacing-2);">
-                    <span style="color: var(--gs-danger); font-weight: 600;">SELL</span>
+                           class="mr-2">
+                    <span class="text-danger font-weight-600">SELL</span>
                   </label>
                 </div>
               </div>
             </div>
             
-            <div style="margin-top: var(--spacing-6); text-align: center;">
+            <div class="mt-6 text-center">
               <button type="submit" class="btn btn-primary" style="padding: 15px 30px; font-size: 16px;">
                 Preview Trading Request
               </button>
@@ -142,33 +142,31 @@ class EmployeeController {
     // Generate table rows
     const tableRows = requests.map(request => {
       const date = formatHongKongTime(new Date(request.created_at));
-      const statusColor = request.status === 'approved' ? '#28a745' : 
-                         request.status === 'rejected' ? '#dc3545' : '#ffc107';
 
       return `
         <tr>
-          <td style="text-align: center;">${request.id}</td>
-          <td style="text-align: center;">${date}</td>
+          <td class="text-center">${request.id}</td>
+          <td class="text-center">${date}</td>
           <td>${request.stock_name || 'N/A'}</td>
-          <td style="text-align: center; font-weight: 600;">${request.ticker}</td>
-          <td style="text-align: center;">${request.trading_type.toUpperCase()}</td>
-          <td style="text-align: center;">${parseInt(request.shares).toLocaleString()}</td>
-          <td style="text-align: center;">
+          <td class="text-center font-weight-600">${request.ticker}</td>
+          <td class="text-center">${request.trading_type.toUpperCase()}</td>
+          <td class="text-center">${parseInt(request.shares).toLocaleString()}</td>
+          <td class="text-center">
             $${parseFloat(request.total_value_usd || request.total_value || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}
           </td>
-          <td style="text-align: center;">
-            <span style="background: ${statusColor}; color: white; padding: 4px 8px; border-radius: 4px; font-size: var(--font-size-xs); font-weight: 500;">
+          <td class="text-center">
+            <span class="badge ${request.status === 'approved' ? 'badge-success' : request.status === 'rejected' ? 'badge-danger' : 'badge-warning'}">
               ${request.status.toUpperCase()}
             </span>
           </td>
-          <td style="text-align: center;">
+          <td class="text-center">
             ${request.status === 'rejected' && request.rejection_reason ? 
-              `<span style="color: #dc3545; font-size: var(--font-size-xs); cursor: help;" title="${request.rejection_reason}">View Reason</span>` :
+              `<span class="text-danger cursor-help" style="font-size: var(--font-size-xs);" title="${request.rejection_reason}">View Reason</span>` :
               (request.status === 'pending' && !request.escalated ? 
-                `<a href="/escalate-form/${request.id}" class="btn btn-outline" style="padding: 2px 8px; font-size: var(--font-size-xs); text-decoration: none;">Escalate</a>` :
+                `<a href="/escalate-form/${request.id}" class="btn btn-outline btn-sm text-decoration-none">Escalate</a>` :
                 (request.escalated ? 
-                  '<span style="color: #ffc107; font-size: var(--font-size-xs);">Escalated</span>' :
-                  '<span style="color: var(--gs-neutral-500); font-size: var(--font-size-xs);">-</span>')
+                  '<span class="text-warning" style="font-size: var(--font-size-xs);">Escalated</span>' :
+                  '<span class="text-muted" style="font-size: var(--font-size-xs);">-</span>')
               )
             }
           </td>
@@ -185,41 +183,39 @@ class EmployeeController {
       ${banner}
       
       <!-- Filters Card -->
-      <div class="card" style="margin-bottom: var(--spacing-6);">
+      <div class="card mb-6">
         <div class="card-header">
           <h3 class="card-title">Filter Requests</h3>
         </div>
         <div class="card-body">
           <form method="get" action="/employee-history">
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--spacing-4);">
+            <div class="grid-auto gap-4">
               <div>
-                <label style="display: block; margin-bottom: var(--spacing-2); font-weight: 600;">Start Date:</label>
+                <label class="form-label">Start Date:</label>
                 <input type="date" name="start_date" value="${start_date || ''}" 
-                       style="width: 100%; padding: var(--spacing-2); border: 1px solid var(--gs-neutral-300); border-radius: var(--radius);">
+                       class="form-control-sm">
               </div>
               <div>
-                <label style="display: block; margin-bottom: var(--spacing-2); font-weight: 600;">End Date:</label>
+                <label class="form-label">End Date:</label>
                 <input type="date" name="end_date" value="${end_date || ''}" 
-                       style="width: 100%; padding: var(--spacing-2); border: 1px solid var(--gs-neutral-300); border-radius: var(--radius);">
+                       class="form-control-sm">
               </div>
               <div>
-                <label style="display: block; margin-bottom: var(--spacing-2); font-weight: 600;">Ticker:</label>
+                <label class="form-label">Ticker:</label>
                 <input type="text" name="ticker" value="${ticker || ''}" placeholder="e.g., AAPL" 
-                       style="width: 100%; padding: var(--spacing-2); border: 1px solid var(--gs-neutral-300); border-radius: var(--radius); text-transform: uppercase;">
+                       class="form-control-sm text-uppercase">
               </div>
               <div>
-                <label style="display: block; margin-bottom: var(--spacing-2); font-weight: 600;">Type:</label>
-                <select name="trading_type" 
-                        style="width: 100%; padding: var(--spacing-2); border: 1px solid var(--gs-neutral-300); border-radius: var(--radius);">
+                <label class="form-label">Type:</label>
+                <select name="trading_type" class="form-control-sm">
                   <option value="">All Types</option>
                   <option value="buy" ${trading_type === 'buy' ? 'selected' : ''}>Buy</option>
                   <option value="sell" ${trading_type === 'sell' ? 'selected' : ''}>Sell</option>
                 </select>
               </div>
               <div>
-                <label style="display: block; margin-bottom: var(--spacing-2); font-weight: 600;">Status:</label>
-                <select name="status" 
-                        style="width: 100%; padding: var(--spacing-2); border: 1px solid var(--gs-neutral-300); border-radius: var(--radius);">
+                <label class="form-label">Status:</label>
+                <select name="status" class="form-control-sm">
                   <option value="">All Statuses</option>
                   <option value="approved" ${req.query.status === 'approved' ? 'selected' : ''}>Approved</option>
                   <option value="rejected" ${req.query.status === 'rejected' ? 'selected' : ''}>Rejected</option>
@@ -227,8 +223,8 @@ class EmployeeController {
                 </select>
               </div>
             </div>
-            <div style="margin-top: var(--spacing-4); text-align: center;">
-              <button type="submit" class="btn btn-primary" style="margin-right: var(--spacing-3);">Apply Filters</button>
+            <div class="mt-4 text-center">
+              <button type="submit" class="btn btn-primary mr-3">Apply Filters</button>
               <a href="/employee-history" class="btn btn-secondary" style="text-decoration: none;">Clear Filters</a>
             </div>
           </form>
@@ -283,26 +279,26 @@ class EmployeeController {
               </table>
             </div>
             ${pagination && pagination.pages > 1 ? `
-            <div style="margin-top: var(--spacing-4); display: flex; justify-content: center; align-items: center; gap: var(--spacing-2);">
+            <div class="mt-4 d-flex justify-content-center align-items-center gap-2">
               ${pagination.page > 1 ? `
                 <a href="/employee-history?${new URLSearchParams({...req.query, page: pagination.page - 1}).toString()}" 
-                   class="btn btn-secondary btn-sm" style="text-decoration: none;">← Previous</a>
-              ` : '<span class="btn btn-secondary btn-sm" style="opacity: 0.5; cursor: not-allowed;">← Previous</span>'}
+                   class="btn btn-secondary btn-sm text-decoration-none">← Previous</a>
+              ` : '<span class="btn btn-secondary btn-sm opacity-50 cursor-not-allowed">← Previous</span>'}
               
-              <span style="padding: 0 var(--spacing-3);">
+              <span class="px-3">
                 Page ${pagination.page} of ${pagination.pages} (${pagination.total} total)
               </span>
               
               ${pagination.page < pagination.pages ? `
                 <a href="/employee-history?${new URLSearchParams({...req.query, page: pagination.page + 1}).toString()}" 
-                   class="btn btn-secondary btn-sm" style="text-decoration: none;">Next →</a>
-              ` : '<span class="btn btn-secondary btn-sm" style="opacity: 0.5; cursor: not-allowed;">Next →</span>'}
+                   class="btn btn-secondary btn-sm text-decoration-none">Next →</a>
+              ` : '<span class="btn btn-secondary btn-sm opacity-50 cursor-not-allowed">Next →</span>'}
             </div>
             ` : ''}
           ` : `
-            <div style="text-align: center; padding: var(--spacing-8); color: var(--gs-neutral-600);">
+            <div class="text-center p-8 text-muted">
               <p>No trading requests found${Object.keys(filters).length > 0 ? ' matching your filters' : ''}.</p>
-              <a href="/employee-dashboard" class="btn btn-primary" style="margin-top: var(--spacing-4); text-decoration: none;">
+              <a href="/employee-dashboard" class="btn btn-primary mt-4 text-decoration-none">
                 Submit Your First Request
               </a>
             </div>
@@ -310,11 +306,11 @@ class EmployeeController {
         </div>
       </div>
 
-      <div style="margin-top: var(--spacing-6); text-align: center;">
-        <a href="/employee-dashboard" class="btn btn-secondary" style="text-decoration: none; margin-right: var(--spacing-3);">
+      <div class="mt-6 text-center">
+        <a href="/employee-dashboard" class="btn btn-secondary text-decoration-none mr-3">
           ← Back to Dashboard
         </a>
-        <a href="/employee-export-history?${new URLSearchParams(req.query).toString()}" class="btn btn-outline" style="text-decoration: none;">
+        <a href="/employee-export-history?${new URLSearchParams(req.query).toString()}" class="btn btn-outline text-decoration-none">
           📥 Export History (CSV)
         </a>
       </div>
@@ -367,9 +363,9 @@ class EmployeeController {
           <h3 class="card-title">Escalate Trading Request #${request.id}</h3>
         </div>
         <div class="card-body">
-          <div style="background: var(--gs-neutral-100); padding: var(--spacing-4); border-radius: var(--radius); margin-bottom: var(--spacing-6);">
-            <h4 style="margin: 0 0 var(--spacing-3) 0;">Request Details:</h4>
-            <div style="display: grid; gap: var(--spacing-2);">
+          <div class="bg-muted p-4 border-radius mb-6">
+            <h4 class="m-0 mb-3">Request Details:</h4>
+            <div class="grid gap-2">
               <div><strong>Stock:</strong> ${request.stock_name} (${request.ticker})</div>
               <div><strong>Type:</strong> ${request.trading_type.toUpperCase()}</div>
               <div><strong>Shares:</strong> ${parseInt(request.shares).toLocaleString()}</div>
@@ -381,20 +377,20 @@ class EmployeeController {
           <form method="post" action="/submit-escalation">\n            ${req.csrfInput()}
             <input type="hidden" name="requestId" value="${request.id}">
             
-            <div style="margin-bottom: var(--spacing-4);">
-              <label style="display: block; margin-bottom: var(--spacing-2); font-weight: 600;">
-                Escalation Reason: <span style="color: var(--gs-danger);">*</span>
+            <div class="mb-4">
+              <label class="form-label">
+                Escalation Reason: <span class="text-danger">*</span>
               </label>
               <textarea name="escalation_reason" required rows="5" 
                         placeholder="Please explain why you are escalating this request. Provide any additional context or urgency that administrators should be aware of."
-                        style="width: 100%; padding: var(--spacing-3); border: 1px solid var(--gs-neutral-300); border-radius: var(--radius); resize: vertical;"></textarea>
-              <small style="color: var(--gs-neutral-600);">
+                        class="form-control resize-vertical"></textarea>
+              <small class="form-text">
                 Escalating a request will notify administrators for priority review. Please provide a clear reason.
               </small>
             </div>
 
-            <div style="text-align: right; margin-top: var(--spacing-6);">
-              <a href="/employee-history" class="btn btn-secondary" style="text-decoration: none; margin-right: var(--spacing-3);">
+            <div class="text-right mt-6">
+              <a href="/employee-history" class="btn btn-secondary text-decoration-none mr-3">
                 Cancel
               </a>
               <button type="submit" class="btn btn-warning">
@@ -595,22 +591,22 @@ function generateSortingControls(baseUrl, currentSortBy, currentSortOrder, query
   delete cleanParams.sort_order;
   
   return `
-    <form method="get" action="${baseUrl}" style="display: flex; align-items: center; gap: var(--spacing-3); flex-wrap: wrap;">
+    <form method="get" action="${baseUrl}" class="d-flex align-items-center gap-3 flex-wrap">
       ${Object.entries(cleanParams).map(([key, value]) => 
         `<input type="hidden" name="${key}" value="${value || ''}">`
       ).join('')}
       
-      <span style="font-weight: 600; color: var(--gs-neutral-700);">Sort by:</span>
-      <select name="sort_by" style="padding: 6px 10px; border: 1px solid var(--gs-neutral-300); border-radius: var(--radius);">
+      <span class="font-weight-600" style="color: var(--gs-neutral-700);">Sort by:</span>
+      <select name="sort_by" class="form-control-sm" style="padding: 6px 10px;">
         <option value="id" ${currentSortBy === 'id' ? 'selected' : ''}>Request ID</option>
         <option value="created_at" ${currentSortBy === 'created_at' ? 'selected' : ''}>Date</option>
         <option value="ticker" ${currentSortBy === 'ticker' ? 'selected' : ''}>Ticker</option>
       </select>
-      <select name="sort_order" style="padding: 6px 10px; border: 1px solid var(--gs-neutral-300); border-radius: var(--radius);">
+      <select name="sort_order" class="form-control-sm" style="padding: 6px 10px;">
         <option value="DESC" ${currentSortOrder === 'DESC' ? 'selected' : ''}>↓ Descending</option>
         <option value="ASC" ${currentSortOrder === 'ASC' ? 'selected' : ''}>↑ Ascending</option>
       </select>
-      <button type="submit" class="btn btn-primary btn-sm" style="padding: 6px 15px; font-size: var(--font-size-sm);">
+      <button type="submit" class="btn btn-primary btn-sm">
         Apply Sort
       </button>
     </form>
