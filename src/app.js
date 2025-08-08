@@ -484,7 +484,7 @@ app.get('/', (req, res) => {
       </div>
 
       <div class="mt-6 text-center">
-        <p class="text-muted" style="font-size: var(--font-size-sm);">
+        <p class="text-muted font-sm">
           Admin? <a href="/admin-login" class="text-primary">Sign in here</a>
         </p>
       </div>
