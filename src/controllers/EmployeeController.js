@@ -428,21 +428,46 @@ class EmployeeController {
             keys: Object.keys(request)
           });
 
-          const createdDate = formatHongKongTime(new Date(request.created_at));
-          const stockName = (request.stock_name || 'N/A').replace(/"/g, '""');
-          const estimatedValue = (request.total_value_usd || request.total_value || 0).toFixed(2);
-          const escalated = request.escalated ? 'Yes' : 'No';
-          const rejectionReason = (request.rejection_reason || '').replace(/"/g, '""');
-          const ticker = request.ticker || 'N/A';
-          const tradingType = (request.trading_type || 'unknown').toUpperCase();
-          const status = (request.status || 'unknown').toUpperCase();
-          const shares = request.shares || 0;
+          // Process each field individually with error handling
+          let createdDate = 'N/A';
+          try {
+            if (request.created_at) {
+              createdDate = formatHongKongTime(new Date(request.created_at));
+            }
+          } catch (dateError) {
+            console.error('Date formatting error:', dateError);
+            createdDate = request.created_at || 'N/A';
+          }
+
+          let stockName = 'N/A';
+          try {
+            stockName = (request.stock_name || 'N/A').toString().replace(/"/g, '""');
+          } catch (nameError) {
+            console.error('Stock name error:', nameError);
+          }
+
+          let estimatedValue = '0.00';
+          try {
+            const value = request.total_value_usd || request.total_value || 0;
+            estimatedValue = parseFloat(value || 0).toFixed(2);
+          } catch (valueError) {
+            console.error('Value error:', valueError);
+          }
+
+          const escalated = (request.escalated === true || request.escalated === 'true') ? 'Yes' : 'No';
+          const rejectionReason = (request.rejection_reason || '').toString().replace(/"/g, '""');
+          const ticker = (request.ticker || 'N/A').toString();
+          const tradingType = (request.trading_type || 'unknown').toString().toUpperCase();
+          const status = (request.status || 'unknown').toString().toUpperCase();
+          const shares = parseInt(request.shares || 0) || 0;
+          const requestId = request.id || 'N/A';
           
-          csvContent += `"${request.id}","${createdDate}","${stockName}","${ticker}","${tradingType}","${shares}","$${estimatedValue}","${status}","${escalated}","${rejectionReason}"\n`;
+          csvContent += `"${requestId}","${createdDate}","${stockName}","${ticker}","${tradingType}","${shares}","$${estimatedValue}","${status}","${escalated}","${rejectionReason}"\n`;
+          
         } catch (rowError) {
-          console.error('Error processing row:', rowError.message, 'Request keys:', Object.keys(request));
+          console.error('Error processing row:', rowError.message, 'Request keys:', request ? Object.keys(request) : 'null');
           console.error('Full request object:', request);
-          csvContent += `"Error processing request ${request.id || 'unknown'}: ${rowError.message}"\n`;
+          csvContent += `"Error processing request ${request?.id || 'unknown'}: ${rowError.message}"\n`;
         }
       });
     }
