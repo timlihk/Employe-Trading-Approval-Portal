@@ -308,7 +308,7 @@ class EmployeeController {
               <a href="/employee-history" class="btn btn-secondary" style="text-decoration: none; margin-right: var(--spacing-3);">
                 Cancel
               </a>
-              <button type="submit" class="btn btn-warning" onclick="return confirm('Are you sure you want to escalate this request? This action cannot be undone.')">
+              <button type="submit" class="btn btn-warning">
                 Escalate Request
               </button>
             </div>

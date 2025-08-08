@@ -364,8 +364,7 @@ class AdminController {
         <td>${stock.company_name}</td>
         <td style="text-align: center;">${formatHongKongTime(new Date(stock.created_at))}</td>
         <td style="text-align: center;">
-          <form method="post" action="/admin-remove-stock" style="display: inline;" 
-                onsubmit="return confirm('Are you sure you want to remove ${stock.ticker} from the restricted list?')">
+          <form method="post" action="/admin-remove-stock" style="display: inline;">
             <input type="hidden" name="ticker" value="${stock.ticker}">
             <button type="submit" class="btn btn-danger btn-sm">Remove</button>
           </form>
