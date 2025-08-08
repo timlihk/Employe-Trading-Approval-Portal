@@ -43,7 +43,6 @@ class TradingRequest extends BaseModel {
       this.run(sql, params).then(result => {
         resolve({ 
           id: result.lastID,
-          status: 'pending',
           ...requestData 
         });
       }).catch(err => {
