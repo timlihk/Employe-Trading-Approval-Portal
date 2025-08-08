@@ -463,8 +463,8 @@ app.get('/', (req, res) => {
 
   const landingContent = `
     ${banner}
-    <div style="text-align: center; max-width: 600px; margin: 0 auto;">
-      <h2 style="color: var(--gs-dark-blue); margin-bottom: var(--spacing-6);">Employee Trading Request Portal</h2>
+    <div class="text-center max-w-lg mx-auto">
+      <h2 class="mb-6" style="color: var(--gs-dark-blue);">Employee Trading Request Portal</h2>
       
       <div class="card">
         <div class="card-header">
@@ -472,20 +472,20 @@ app.get('/', (req, res) => {
         </div>
         <div class="card-body">
           ${cca ? `
-            <a href="/api/auth/microsoft/login" class="btn btn-primary" style="width: 100%; text-decoration: none; display: inline-block;">
+            <a href="/api/auth/microsoft/login" class="btn btn-primary w-full text-decoration-none">
               🔑 Sign in with Microsoft 365
             </a>
           ` : `
-            <p style="text-align: center; color: var(--gs-neutral-600); margin: var(--spacing-4) 0;">
+            <p class="text-center text-muted my-4">
               Microsoft 365 SSO is not configured. Please contact your administrator.
             </p>
           `}
         </div>
       </div>
 
-      <div style="margin-top: var(--spacing-6); text-align: center;">
-        <p style="color: var(--gs-neutral-600); font-size: var(--font-size-sm);">
-          Admin? <a href="/admin-login" style="color: var(--gs-primary);">Sign in here</a>
+      <div class="mt-6 text-center">
+        <p class="text-muted" style="font-size: var(--font-size-sm);">
+          Admin? <a href="/admin-login" class="text-primary">Sign in here</a>
         </p>
       </div>
     </div>
@@ -555,7 +555,7 @@ app.get('/admin-login', (req, res) => {
 
   const adminLoginContent = `
     ${banner}
-    <div style="max-width: 400px; margin: 0 auto;">
+    <div class="max-w-lg mx-auto">
       <div class="card">
         <div class="card-header">
           <h3 class="card-title">Administrator Sign In</h3>
@@ -563,25 +563,23 @@ app.get('/admin-login', (req, res) => {
         <div class="card-body">
           <form method="post" action="/admin-authenticate">
             ${req.csrfInput()}
-            <div style="margin-bottom: var(--spacing-4);">
-              <label style="display: block; margin-bottom: var(--spacing-2); font-weight: 600;">Username:</label>
-              <input type="text" name="username" required 
-                     style="width: 100%; padding: var(--spacing-3); border: 1px solid var(--gs-neutral-300); border-radius: var(--radius);">
+            <div class="mb-4">
+              <label class="form-label">Username:</label>
+              <input type="text" name="username" required class="form-control">
             </div>
-            <div style="margin-bottom: var(--spacing-4);">
-              <label style="display: block; margin-bottom: var(--spacing-2); font-weight: 600;">Password:</label>
-              <input type="password" name="password" required 
-                     style="width: 100%; padding: var(--spacing-3); border: 1px solid var(--gs-neutral-300); border-radius: var(--radius);">
+            <div class="mb-4">
+              <label class="form-label">Password:</label>
+              <input type="password" name="password" required class="form-control">
             </div>
-            <button type="submit" class="btn btn-primary" style="width: 100%;">
+            <button type="submit" class="btn btn-primary w-full">
               Sign In
             </button>
           </form>
         </div>
       </div>
 
-      <div style="text-align: center; margin-top: var(--spacing-6);">
-        <a href="/" style="color: var(--gs-primary);">← Back to Home</a>
+      <div class="text-center mt-6">
+        <a href="/" class="text-primary">← Back to Home</a>
       </div>
     </div>
   `;
