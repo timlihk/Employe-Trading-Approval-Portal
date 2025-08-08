@@ -116,7 +116,7 @@ class AdminController {
    * Get admin requests page
    */
   getRequests = catchAsync(async (req, res) => {
-    const { message, employee_email, start_date, end_date, ticker, trading_type, status, escalated, sort_by = 'id', sort_order = 'DESC' } = req.query;
+    const { message, employee_email, start_date, end_date, ticker, trading_type, status, escalated, sort_by = 'id', sort_order = 'DESC', page = 1, limit = 25 } = req.query;
     let banner = '';
     
     if (message === 'request_approved') {
@@ -125,8 +125,15 @@ class AdminController {
       banner = generateNotificationBanner('Trading request rejected successfully', 'success');
     }
 
+    // Validate pagination params
+    const validatedPage = Math.max(1, parseInt(page) || 1);
+    const validatedLimit = Math.min(100, Math.max(1, parseInt(limit) || 25));
+    
     // Build filters based on query parameters
-    const filters = {};
+    const filters = {
+      page: validatedPage,
+      limit: validatedLimit
+    };
     if (employee_email) filters.employee_email = employee_email;
     if (start_date) filters.start_date = start_date;
     if (end_date) filters.end_date = end_date;
@@ -136,9 +143,10 @@ class AdminController {
     if (escalated === 'true') filters.escalated = true;
     if (escalated === 'false') filters.escalated = false;
 
-    // Get all requests based on filters
+    // Get requests with pagination
     const result = await TradingRequest.getFilteredHistory(filters, sort_by, sort_order);
-    const allRequests = result.data || result; // Handle both paginated and non-paginated responses
+    const allRequests = result.data;
+    const pagination = result.pagination;
 
     // Build table rows for all requests
     const tableRows = allRequests.map(request => {
@@ -273,7 +281,7 @@ class AdminController {
       <!-- Results Card -->
       <div class="card">
         <div class="card-header">
-          <h3 class="card-title">Trading Requests (${allRequests.length}) - Sorted by ${getSortDisplayName(currentSortBy)} ${currentSortOrder === 'DESC' ? '↓' : '↑'}</h3>
+          <h3 class="card-title">Trading Requests (${pagination ? `${pagination.total} total, showing ${allRequests.length}` : `${allRequests.length} requests`}) - Page ${pagination?.page || 1}/${pagination?.pages || 1}</h3>
         </div>
         <div class="card-body">
           ${allRequests.length > 0 ? `
@@ -298,6 +306,23 @@ class AdminController {
                 </tbody>
               </table>
             </div>
+            ${pagination && pagination.pages > 1 ? `
+            <div style="margin-top: var(--spacing-4); display: flex; justify-content: center; align-items: center; gap: var(--spacing-2);">
+              ${pagination.page > 1 ? `
+                <a href="/admin-requests?${new URLSearchParams({...req.query, page: pagination.page - 1}).toString()}" 
+                   class="btn btn-secondary btn-sm" style="text-decoration: none;">← Previous</a>
+              ` : '<span class="btn btn-secondary btn-sm" style="opacity: 0.5; cursor: not-allowed;">← Previous</span>'}
+              
+              <span style="padding: 0 var(--spacing-3);">
+                Page ${pagination.page} of ${pagination.pages} (${pagination.total} total)
+              </span>
+              
+              ${pagination.page < pagination.pages ? `
+                <a href="/admin-requests?${new URLSearchParams({...req.query, page: pagination.page + 1}).toString()}" 
+                   class="btn btn-secondary btn-sm" style="text-decoration: none;">Next →</a>
+              ` : '<span class="btn btn-secondary btn-sm" style="opacity: 0.5; cursor: not-allowed;">Next →</span>'}
+            </div>
+            ` : ''}
           ` : `
             <div style="text-align: center; padding: var(--spacing-8); color: var(--gs-neutral-600);">
               <p>No trading requests found${Object.keys(filters).length > 0 ? ' matching your filters' : ''}.</p>

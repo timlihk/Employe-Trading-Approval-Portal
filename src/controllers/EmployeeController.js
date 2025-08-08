@@ -102,10 +102,14 @@ class EmployeeController {
       banner = generateNotificationBanner({ error: error });
     }
 
+    // Validate pagination params
+    const validatedPage = Math.max(1, parseInt(page) || 1);
+    const validatedLimit = Math.min(100, Math.max(1, parseInt(limit) || 25));
+    
     // Build filters
     const filters = {
-      page: parseInt(page),
-      limit: parseInt(limit)
+      page: validatedPage,
+      limit: validatedLimit
     };
     if (start_date) filters.start_date = start_date;
     if (end_date) filters.end_date = end_date;
@@ -114,7 +118,7 @@ class EmployeeController {
     if (status) filters.status = status;
 
     const result = await TradingRequestService.getEmployeeRequests(employeeEmail, filters, sort_by, sort_order);
-    const requests = result.data || result; // Handle both paginated and non-paginated responses
+    const requests = result.data;
     const pagination = result.pagination;
 
     // Generate table rows
@@ -388,14 +392,15 @@ class EmployeeController {
     const employeeEmail = req.session.employee.email;
     
     try {
-      // Build filters
+      // Build filters (no pagination for CSV export)
       const filters = { employee_email: employeeEmail };
       if (start_date) filters.start_date = start_date;
       if (end_date) filters.end_date = end_date;
       if (ticker) filters.ticker = ticker.toUpperCase();
       if (trading_type) filters.trading_type = trading_type;
 
-      const requests = await TradingRequestService.getEmployeeRequests(employeeEmail, filters, sort_by, sort_order);
+      const result = await TradingRequestService.getEmployeeRequests(employeeEmail, filters, sort_by, sort_order);
+      const requests = result.data;
 
       // Debug logging
       console.log('Export debug info:', {

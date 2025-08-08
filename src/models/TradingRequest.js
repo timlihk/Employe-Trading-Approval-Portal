@@ -182,34 +182,52 @@ class TradingRequest extends BaseModel {
       const sortColumn = validSortColumns.includes(sortBy) ? sortBy : 'id';
       const sortDirection = validSortOrders.includes(sortOrder.toUpperCase()) ? sortOrder.toUpperCase() : 'DESC';
       
-      // Get total count for pagination
-      const countSql = sql.replace('SELECT *', 'SELECT COUNT(*) as total');
-      
-      // Add pagination
-      const page = filters.page || 1;
-      const limit = filters.limit || 25;
-      const offset = (page - 1) * limit;
-      
       sql += ` ORDER BY ${sortColumn} ${sortDirection}`;
-      sql += ` LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
-      params.push(limit, offset);
 
-      Promise.all([
-        this.query(countSql, params.slice(0, -2)), // Count without LIMIT/OFFSET
-        this.query(sql, params) // Paginated results
-      ]).then(([countResult, rows]) => {
-        resolve({
-          data: rows,
-          pagination: {
-            total: countResult[0]?.total || 0,
-            page: page,
-            limit: limit,
-            pages: Math.ceil((countResult[0]?.total || 0) / limit)
-          }
+      // Check if pagination is requested
+      if (filters.page !== undefined && filters.limit !== undefined) {
+        // Paginated response
+        const countSql = sql.replace('SELECT *', 'SELECT COUNT(*) as total');
+        const page = filters.page || 1;
+        const limit = filters.limit || 25;
+        const offset = (page - 1) * limit;
+        
+        sql += ` LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+        params.push(limit, offset);
+
+        Promise.all([
+          this.query(countSql, params.slice(0, -2)), // Count without LIMIT/OFFSET
+          this.query(sql, params) // Paginated results
+        ]).then(([countResult, rows]) => {
+          const total = parseInt(countResult[0]?.total || 0, 10);
+          resolve({
+            data: rows,
+            pagination: {
+              total: total,
+              page: parseInt(page, 10),
+              limit: parseInt(limit, 10),
+              pages: Math.ceil(total / limit)
+            }
+          });
+        }).catch(err => {
+          reject(err);
         });
-      }).catch(err => {
-        reject(err);
-      });
+      } else {
+        // Non-paginated response (for exports)
+        this.query(sql, params).then(rows => {
+          resolve({
+            data: rows,
+            pagination: {
+              total: rows.length,
+              page: 1,
+              limit: rows.length,
+              pages: 1
+            }
+          });
+        }).catch(err => {
+          reject(err);
+        });
+      }
     });
   }
 
