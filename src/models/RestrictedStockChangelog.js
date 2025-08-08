@@ -64,13 +64,13 @@ class RestrictedStockChangelog extends BaseModel {
       }
 
       if (filters.start_date) {
-        sql += ` AND DATE(created_at) >= $${paramIndex}`;
+        sql += ` AND DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Hong_Kong') >= $${paramIndex}`;
         params.push(filters.start_date);
         paramIndex++;
       }
 
       if (filters.end_date) {
-        sql += ` AND DATE(created_at) <= $${paramIndex}`;
+        sql += ` AND DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Hong_Kong') <= $${paramIndex}`;
         params.push(filters.end_date);
         paramIndex++;
       }
@@ -97,13 +97,13 @@ class RestrictedStockChangelog extends BaseModel {
       let paramIndex = 1;
 
       if (filters.start_date) {
-        sql += ` AND DATE(created_at) >= $${paramIndex}`;
+        sql += ` AND DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Hong_Kong') >= $${paramIndex}`;
         params.push(filters.start_date);
         paramIndex++;
       }
 
       if (filters.end_date) {
-        sql += ` AND DATE(created_at) <= $${paramIndex}`;
+        sql += ` AND DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Hong_Kong') <= $${paramIndex}`;
         params.push(filters.end_date);
         paramIndex++;
       }

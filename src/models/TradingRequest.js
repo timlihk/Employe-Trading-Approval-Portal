@@ -135,13 +135,15 @@ class TradingRequest extends BaseModel {
       }
 
       if (filters.start_date) {
-        sql += ` AND DATE(created_at) >= $${paramIndex}`;
+        // Convert to Hong Kong timezone (UTC+8) for date comparison
+        sql += ` AND DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Hong_Kong') >= $${paramIndex}`;
         params.push(filters.start_date);
         paramIndex++;
       }
 
       if (filters.end_date) {
-        sql += ` AND DATE(created_at) <= $${paramIndex}`;
+        // Convert to Hong Kong timezone (UTC+8) for date comparison
+        sql += ` AND DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Hong_Kong') <= $${paramIndex}`;
         params.push(filters.end_date);
         paramIndex++;
       }
@@ -247,13 +249,15 @@ class TradingRequest extends BaseModel {
       }
 
       if (filters.start_date) {
-        sql += ` AND DATE(created_at) >= $${paramIndex}`;
+        // Convert to Hong Kong timezone (UTC+8) for date comparison
+        sql += ` AND DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Hong_Kong') >= $${paramIndex}`;
         params.push(filters.start_date);
         paramIndex++;
       }
 
       if (filters.end_date) {
-        sql += ` AND DATE(created_at) <= $${paramIndex}`;
+        // Convert to Hong Kong timezone (UTC+8) for date comparison
+        sql += ` AND DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Hong_Kong') <= $${paramIndex}`;
         params.push(filters.end_date);
         paramIndex++;
       }

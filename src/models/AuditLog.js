@@ -54,14 +54,14 @@ class AuditLog extends BaseModel {
       }
 
       if (filters.startDate) {
-        conditions.push(`created_at >= $${paramIndex}`);
-        params.push(filters.startDate + ' 00:00:00');
+        conditions.push(`DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Hong_Kong') >= $${paramIndex}`);
+        params.push(filters.startDate);
         paramIndex++;
       }
 
       if (filters.endDate) {
-        conditions.push(`created_at <= $${paramIndex}`);
-        params.push(filters.endDate + ' 23:59:59');
+        conditions.push(`DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Hong_Kong') <= $${paramIndex}`);
+        params.push(filters.endDate);
         paramIndex++;
       }
 
@@ -99,14 +99,14 @@ class AuditLog extends BaseModel {
       let paramIndex = 1;
 
       if (filters.startDate) {
-        conditions.push(`created_at >= $${paramIndex}`);
-        params.push(filters.startDate + ' 00:00:00');
+        conditions.push(`DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Hong_Kong') >= $${paramIndex}`);
+        params.push(filters.startDate);
         paramIndex++;
       }
 
       if (filters.endDate) {
-        conditions.push(`created_at <= $${paramIndex}`);
-        params.push(filters.endDate + ' 23:59:59');
+        conditions.push(`DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Hong_Kong') <= $${paramIndex}`);
+        params.push(filters.endDate);
         paramIndex++;
       }
 
