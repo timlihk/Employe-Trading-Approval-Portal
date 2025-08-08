@@ -464,15 +464,15 @@ app.get('/', (req, res) => {
   const landingContent = `
     ${banner}
     <div class="text-center max-w-lg mx-auto">
-      <h2 class="mb-6" style="color: var(--gs-dark-blue);">Employee Trading Request Portal</h2>
+      <h2 class="mb-6 text-2xl" style="color: var(--gs-dark-blue);">Employee Trading Request Portal</h2>
       
-      <div class="card">
+      <div class="card hover-shadow">
         <div class="card-header">
-          <h3 class="card-title">Sign In</h3>
+          <h3 class="card-title m-0">Sign In</h3>
         </div>
-        <div class="card-body">
+        <div class="card-body p-6">
           ${cca ? `
-            <a href="/api/auth/microsoft/login" class="btn btn-primary w-full text-decoration-none">
+            <a href="/api/auth/microsoft/login" class="btn btn-primary w-full text-decoration-none focus-ring hover-lift">
               🔑 Sign in with Microsoft 365
             </a>
           ` : `
@@ -484,8 +484,8 @@ app.get('/', (req, res) => {
       </div>
 
       <div class="mt-6 text-center">
-        <p class="text-muted font-sm">
-          Admin? <a href="/admin-login" class="text-primary">Sign in here</a>
+        <p class="text-muted text-sm">
+          Admin? <a href="/admin-login" class="link focus-ring">Sign in here</a>
         </p>
       </div>
     </div>
@@ -556,11 +556,11 @@ app.get('/admin-login', (req, res) => {
   const adminLoginContent = `
     ${banner}
     <div class="max-w-lg mx-auto">
-      <div class="card">
+      <div class="card hover-shadow">
         <div class="card-header">
-          <h3 class="card-title">Administrator Sign In</h3>
+          <h3 class="card-title m-0">Administrator Sign In</h3>
         </div>
-        <div class="card-body">
+        <div class="card-body p-6">
           <form method="post" action="/admin-authenticate">
             ${req.csrfInput()}
             <div class="mb-4">
@@ -571,7 +571,7 @@ app.get('/admin-login', (req, res) => {
               <label class="form-label">Password:</label>
               <input type="password" name="password" required class="form-control">
             </div>
-            <button type="submit" class="btn btn-primary w-full">
+            <button type="submit" class="btn btn-primary w-full focus-ring hover-lift">
               Sign In
             </button>
           </form>
@@ -579,7 +579,7 @@ app.get('/admin-login', (req, res) => {
       </div>
 
       <div class="text-center mt-6">
-        <a href="/" class="text-primary">← Back to Home</a>
+        <a href="/" class="link focus-ring">← Back to Home</a>
       </div>
     </div>
   `;

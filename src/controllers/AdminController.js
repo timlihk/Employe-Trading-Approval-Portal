@@ -198,6 +198,7 @@ class AdminController {
             $${parseFloat(request.total_value_usd || request.total_value || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}
           </td>
           <td class="text-center">
+            <span class="status-dot ${request.status === 'approved' ? 'status-dot-success' : request.status === 'rejected' ? 'status-dot-danger' : 'status-dot-warning'}"></span>
             <span class="badge ${request.status === 'approved' ? 'badge-success' : request.status === 'rejected' ? 'badge-danger' : 'badge-warning'}">
               ${request.status.toUpperCase()}
             </span>
@@ -222,9 +223,9 @@ class AdminController {
         <div class="card-header">
           <h3 class="card-title">Filter Trading Requests</h3>
         </div>
-        <div class="card-body">
+        <div class="card-body p-6">
           <form method="get" action="/admin-requests">
-            <div class="grid-auto gap-4">
+            <div class="grid grid-auto gap-4 grid-mobile-stack">
               <div>
                 <label class="form-label">Employee Email:</label>
                 <input type="email" name="employee_email" value="${employee_email || ''}" placeholder="john@company.com"
@@ -271,24 +272,27 @@ class AdminController {
                 </select>
               </div>
             </div>
-            <div class="mt-4 text-center">
-              <button type="submit" class="btn btn-primary mr-3">Apply Filters</button>
-              <a href="/admin-requests" class="btn btn-secondary text-decoration-none mr-3">Clear Filters</a>
-              <a href="/admin-export-trading-requests" class="btn btn-outline text-decoration-none">📥 Export CSV</a>
+            <div class="mt-6 text-center">
+              <div class="btn-group btn-group-mobile">
+                <button type="submit" class="btn btn-primary w-full-mobile focus-ring">Apply Filters</button>
+                <a href="/admin-requests" class="btn btn-secondary text-decoration-none w-full-mobile focus-ring">Clear Filters</a>
+                <a href="/admin-export-trading-requests" class="btn btn-outline text-decoration-none w-full-mobile focus-ring hover-lift">📥 Export CSV</a>
+              </div>
             </div>
           </form>
         </div>
       </div>
       
       <!-- Results Card -->
-      <div class="card">
+      <div class="card hover-shadow">
         <div class="card-header">
-          <h3 class="card-title">Trading Requests (${pagination ? `${pagination.total} total, showing ${allRequests.length}` : `${allRequests.length} requests`}) - Page ${pagination?.page || 1}/${pagination?.pages || 1}</h3>
+          <h3 class="card-title m-0">Trading Requests</h3>
+          <p class="mt-2 m-0 text-muted text-sm">${pagination ? `${pagination.total} total, showing ${allRequests.length}` : `${allRequests.length} requests`} - Page ${pagination?.page || 1}/${pagination?.pages || 1}</p>
         </div>
-        <div class="card-body">
+        <div class="card-body p-0">
           ${allRequests.length > 0 ? `
-            <div class="table-container">
-              <table class="table">
+            <div class="table-responsive">
+              <table class="table table-zebra table-hover table-sticky">
                 <thead>
                   <tr>
                     <th>ID</th>

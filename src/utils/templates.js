@@ -17,7 +17,7 @@ function renderBasePage(title, subtitle, content, navigation = '') {
                 <div>
                     <h1>Trading Compliance Portal</h1>
                     <div class="header-subtitle">Inspiration Capital Management Limited</div>
-                    <div class="font-sm text-muted mt-1">${subtitle}</div>
+                    <div class="text-sm text-muted mt-1">${subtitle}</div>
                 </div>
             </div>
         </header>

@@ -155,6 +155,7 @@ class EmployeeController {
             $${parseFloat(request.total_value_usd || request.total_value || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}
           </td>
           <td class="text-center">
+            <span class="status-dot ${request.status === 'approved' ? 'status-dot-success' : request.status === 'rejected' ? 'status-dot-danger' : 'status-dot-warning'}"></span>
             <span class="badge ${request.status === 'approved' ? 'badge-success' : request.status === 'rejected' ? 'badge-danger' : 'badge-warning'}">
               ${request.status.toUpperCase()}
             </span>
@@ -187,9 +188,9 @@ class EmployeeController {
         <div class="card-header">
           <h3 class="card-title">Filter Requests</h3>
         </div>
-        <div class="card-body">
+        <div class="card-body p-6">
           <form method="get" action="/employee-history">
-            <div class="grid-auto gap-4">
+            <div class="grid grid-auto gap-4 grid-mobile-stack">
               <div>
                 <label class="form-label">Start Date:</label>
                 <input type="date" name="start_date" value="${start_date || ''}" 
@@ -223,50 +224,53 @@ class EmployeeController {
                 </select>
               </div>
             </div>
-            <div class="mt-4 text-center">
-              <button type="submit" class="btn btn-primary mr-3">Apply Filters</button>
-              <a href="/employee-history" class="btn btn-secondary text-decoration-none">Clear Filters</a>
+            <div class="mt-6 text-center">
+              <div class="btn-group btn-group-mobile">
+                <button type="submit" class="btn btn-primary w-full-mobile">Apply Filters</button>
+                <a href="/employee-history" class="btn btn-secondary text-decoration-none w-full-mobile">Clear Filters</a>
+              </div>
             </div>
           </form>
         </div>
       </div>
 
       <!-- Results Card -->
-      <div class="card">
+      <div class="card hover-shadow">
         <div class="card-header">
-          <h3 class="card-title">Trading Request History (${pagination ? `${pagination.total} total, showing ${requests.length}` : `${requests.length} requests`}) - Page ${pagination?.page || 1}/${pagination?.pages || 1}</h3>
+          <h3 class="card-title m-0">Trading Request History</h3>
+          <p class="mt-2 m-0 text-muted text-sm">${pagination ? `${pagination.total} total, showing ${requests.length}` : `${requests.length} requests`} - Page ${pagination?.page || 1}/${pagination?.pages || 1}</p>
         </div>
-        <div class="card-body">
+        <div class="card-body p-0">
           ${requests.length > 0 ? `
-            <div class="table-container">
-              <table class="table">
+            <div class="table-responsive">
+              <table class="table table-zebra table-hover table-sticky">
                 <thead>
                   <tr>
-                    <th>
+                    <th class="th-sortable" ${currentSortBy === 'id' ? `aria-sort="${currentSortOrder === 'ASC' ? 'ascending' : 'descending'}"` : ''}>
                       <a href="/employee-history?${new URLSearchParams({...req.query, sort_by: 'id', sort_order: currentSortBy === 'id' && currentSortOrder === 'ASC' ? 'DESC' : 'ASC'}).toString()}" 
-                         class="text-decoration-none d-flex align-items-center justify-content-between" style="color: inherit;">
-                        ID ${currentSortBy === 'id' ? (currentSortOrder === 'ASC' ? '↑' : '↓') : ''}
+                         class="link focus-ring">
+                        ID<span class="sr-only"> - Click to sort</span>
                       </a>
                     </th>
-                    <th>
+                    <th class="th-sortable" ${currentSortBy === 'created_at' ? `aria-sort="${currentSortOrder === 'ASC' ? 'ascending' : 'descending'}"` : ''}>
                       <a href="/employee-history?${new URLSearchParams({...req.query, sort_by: 'created_at', sort_order: currentSortBy === 'created_at' && currentSortOrder === 'ASC' ? 'DESC' : 'ASC'}).toString()}" 
-                         class="text-decoration-none d-flex align-items-center justify-content-between" style="color: inherit;">
-                        Date ${currentSortBy === 'created_at' ? (currentSortOrder === 'ASC' ? '↑' : '↓') : ''}
+                         class="link focus-ring">
+                        Date<span class="sr-only"> - Click to sort</span>
                       </a>
                     </th>
                     <th>Company</th>
-                    <th>
+                    <th class="th-sortable" ${currentSortBy === 'ticker' ? `aria-sort="${currentSortOrder === 'ASC' ? 'ascending' : 'descending'}"` : ''}>
                       <a href="/employee-history?${new URLSearchParams({...req.query, sort_by: 'ticker', sort_order: currentSortBy === 'ticker' && currentSortOrder === 'ASC' ? 'DESC' : 'ASC'}).toString()}" 
-                         class="text-decoration-none d-flex align-items-center justify-content-between" style="color: inherit;">
-                        Ticker ${currentSortBy === 'ticker' ? (currentSortOrder === 'ASC' ? '↑' : '↓') : ''}
+                         class="link focus-ring">
+                        Ticker<span class="sr-only"> - Click to sort</span>
                       </a>
                     </th>
                     <th>Type</th>
                     <th>Shares</th>
-                    <th>
+                    <th class="th-sortable" ${currentSortBy === 'total_value_usd' ? `aria-sort="${currentSortOrder === 'ASC' ? 'ascending' : 'descending'}"` : ''}>
                       <a href="/employee-history?${new URLSearchParams({...req.query, sort_by: 'total_value_usd', sort_order: currentSortBy === 'total_value_usd' && currentSortOrder === 'ASC' ? 'DESC' : 'ASC'}).toString()}" 
-                         class="text-decoration-none d-flex align-items-center justify-content-between" style="color: inherit;">
-                        Total Value (USD) ${currentSortBy === 'total_value_usd' ? (currentSortOrder === 'ASC' ? '↑' : '↓') : ''}
+                         class="link focus-ring">
+                        Total Value (USD)<span class="sr-only"> - Click to sort</span>
                       </a>
                     </th>
                     <th>Status</th>
@@ -279,20 +283,24 @@ class EmployeeController {
               </table>
             </div>
             ${pagination && pagination.pages > 1 ? `
-            <div class="mt-4 d-flex justify-content-center align-items-center gap-2">
+            <div class="pagination">
               ${pagination.page > 1 ? `
                 <a href="/employee-history?${new URLSearchParams({...req.query, page: pagination.page - 1}).toString()}" 
-                   class="btn btn-secondary btn-sm text-decoration-none">← Previous</a>
-              ` : '<span class="btn btn-secondary btn-sm opacity-50 cursor-not-allowed">← Previous</span>'}
+                   class="btn btn-secondary focus-ring" aria-label="Go to previous page">← Previous</a>
+              ` : '<span class="btn btn-secondary" disabled aria-label="Previous page (disabled)">← Previous</span>'}
               
-              <span class="px-3">
-                Page ${pagination.page} of ${pagination.pages} (${pagination.total} total)
+              <span class="btn btn-primary" aria-current="page">
+                ${pagination.page}
               </span>
               
               ${pagination.page < pagination.pages ? `
                 <a href="/employee-history?${new URLSearchParams({...req.query, page: pagination.page + 1}).toString()}" 
-                   class="btn btn-secondary btn-sm text-decoration-none">Next →</a>
-              ` : '<span class="btn btn-secondary btn-sm opacity-50 cursor-not-allowed">Next →</span>'}
+                   class="btn btn-secondary focus-ring" aria-label="Go to next page">Next →</a>
+              ` : '<span class="btn btn-secondary" disabled aria-label="Next page (disabled)">Next →</span>'}
+              
+              <span class="text-muted text-sm px-3">
+                Page ${pagination.page} of ${pagination.pages} (${pagination.total} total)
+              </span>
             </div>
             ` : ''}
           ` : `
@@ -307,12 +315,14 @@ class EmployeeController {
       </div>
 
       <div class="mt-6 text-center">
-        <a href="/employee-dashboard" class="btn btn-secondary text-decoration-none mr-3">
-          ← Back to Dashboard
-        </a>
-        <a href="/employee-export-history?${new URLSearchParams(req.query).toString()}" class="btn btn-outline text-decoration-none">
-          📥 Export History (CSV)
-        </a>
+        <div class="btn-group btn-group-mobile">
+          <a href="/employee-dashboard" class="btn btn-secondary text-decoration-none w-full-mobile focus-ring">
+            ← Back to Dashboard
+          </a>
+          <a href="/employee-export-history?${new URLSearchParams(req.query).toString()}" class="btn btn-outline text-decoration-none w-full-mobile focus-ring hover-lift">
+            📥 Export History (CSV)
+          </a>
+        </div>
       </div>
 
     `;

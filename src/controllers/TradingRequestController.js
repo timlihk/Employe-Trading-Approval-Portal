@@ -59,15 +59,15 @@ class TradingRequestController {
       // Render preview page with compliance declaration
       const previewContent = `
         <div class="max-w-lg mx-auto">
-          <h2 class="text-center mb-6" style="color: var(--gs-dark-blue);">Review Trading Request</h2>
+          <h2 class="text-center mb-6 text-2xl" style="color: var(--gs-dark-blue);">Review Trading Request</h2>
           
           ${expectedOutcome}
 
-          <div class="card">
+          <div class="card hover-shadow">
             <div class="card-header">
-              <h3 class="card-title">Trading Request Details</h3>
+              <h3 class="card-title m-0">Trading Request Details</h3>
             </div>
-            <div class="card-body">
+            <div class="card-body p-6">
               <div class="grid gap-4">
                 <div class="d-flex justify-content-between p-3 bg-muted rounded">
                   <span class="font-weight-600">Stock:</span>
@@ -107,11 +107,11 @@ class TradingRequestController {
             </div>
           </div>
 
-          <div class="card mt-6">
+          <div class="card hover-shadow mt-6">
             <div class="card-header" style="background: var(--gs-danger); color: white;">
-              <h3 class="card-title" style="color: white;">⚖️ Compliance Declaration</h3>
+              <h3 class="card-title m-0" style="color: white;">⚖️ Compliance Declaration</h3>
             </div>
-            <div class="card-body" style="background: #fef5f5;">
+            <div class="card-body p-6" style="background: #fef5f5;">
               <form method="post" action="/submit-trade">
                 ${req.csrfInput()}
                 <input type="hidden" name="ticker" value="${ticker}">
@@ -135,13 +135,15 @@ class TradingRequestController {
                   </label>
                 </div>
 
-                <div class="text-center d-flex gap-3 justify-center">
-                  <a href="/employee-dashboard" class="btn btn-secondary text-decoration-none p-3">
-                    Cancel
-                  </a>
-                  <button type="submit" class="btn btn-primary p-3">
-                    Submit Trading Request
-                  </button>
+                <div class="text-center">
+                  <div class="btn-group btn-group-mobile">
+                    <a href="/employee-dashboard" class="btn btn-secondary text-decoration-none p-3 w-full-mobile focus-ring">
+                      Cancel
+                    </a>
+                    <button type="submit" class="btn btn-primary p-3 w-full-mobile focus-ring hover-lift">
+                      Submit Trading Request
+                    </button>
+                  </div>
                 </div>
               </form>
             </div>
@@ -249,14 +251,14 @@ class TradingRequestController {
       }
 
       const resultContent = `
-        <div style="max-width: 600px; margin: 0 auto;">
+        <div class="max-w-xl mx-auto">
           ${statusBanner}
 
-        <div class="card">
+        <div class="card hover-shadow">
           <div class="card-header">
-            <h3 class="card-title">Trading Request Details</h3>
+            <h3 class="card-title m-0">Trading Request Details</h3>
           </div>
-          <div class="card-body">
+          <div class="card-body p-6">
             <div style="display: grid; gap: var(--spacing-4);">
               <div style="display: flex; justify-content: space-between; padding: var(--spacing-3); background: var(--gs-neutral-100); border-radius: var(--radius);">
                 <span style="font-weight: 600;">Request ID:</span>
@@ -292,11 +294,11 @@ class TradingRequestController {
         </div>
 
         ${request.status === 'rejected' ? `
-        <div class="card" style="margin-top: var(--spacing-6);">
+        <div class="card hover-shadow mt-6">
           <div class="card-header">
-            <h3 class="card-title">🚀 Request Escalation</h3>
+            <h3 class="card-title m-0">🚀 Request Escalation</h3>
           </div>
-          <div class="card-body">
+          <div class="card-body p-6">
             <p style="margin-bottom: var(--spacing-4); color: var(--gs-neutral-700);">
               If you have a valid business reason for this trade, you can escalate this request for admin review.
             </p>
@@ -319,12 +321,14 @@ class TradingRequestController {
         </div>` : ''}
 
         <div class="mt-6 text-center">
-          <a href="/employee-dashboard" class="btn btn-primary text-decoration-none mr-3 p-3">
-            ← Back to Dashboard
-          </a>
-          <a href="/employee-history" class="btn btn-secondary text-decoration-none p-3">
-            View Request History
-          </a>
+          <div class="btn-group btn-group-mobile">
+            <a href="/employee-dashboard" class="btn btn-primary text-decoration-none p-3 w-full-mobile focus-ring">
+              ← Back to Dashboard
+            </a>
+            <a href="/employee-history" class="btn btn-secondary text-decoration-none p-3 w-full-mobile focus-ring">
+              View Request History
+            </a>
+          </div>
         </div>
         </div>
       `;
