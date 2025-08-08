@@ -42,6 +42,32 @@ if (process.env.AZURE_CLIENT_ID && process.env.AZURE_CLIENT_SECRET && process.en
   logger.info('Microsoft 365 SSO disabled - using email-based authentication');
 }
 
+// Middleware to generate and verify CSRF tokens (manual, zero-deps)
+function generateCsrfToken(req) {
+  const token = (require('crypto').randomBytes(24)).toString('hex');
+  req.session.csrfToken = token;
+  return token;
+}
+
+function verifyCsrfToken(req, res, next) {
+  // Read token from form body
+  const sent = req.body && (req.body.csrf_token || req.body._csrf);
+  const valid = sent && req.session && req.session.csrfToken && sent === req.session.csrfToken;
+  if (!valid) {
+    logSecurityEvent('CSRF_VALIDATION_FAILED', { url: req.originalUrl, method: req.method }, req);
+    return res.status(403).send('Forbidden: invalid CSRF token');
+  }
+  // Rotate token after successful validation
+  generateCsrfToken(req);
+  next();
+}
+
+// Helper to include hidden CSRF input in forms
+function csrfInput(req) {
+  const token = (req.session && req.session.csrfToken) || generateCsrfToken(req);
+  return `<input type="hidden" name="csrf_token" value="${token}">`;
+}
+
 // Helper function to get the correct base URL
 function getBaseUrl(req) {
   if (process.env.NODE_ENV === 'production' && req) {
@@ -89,7 +115,7 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"], // No JavaScript used in application
+      scriptSrc: ["'none'"],
       imgSrc: ["'self'", "data:"],
     },
   },
@@ -106,6 +132,14 @@ app.use(helmet({
 if (!process.env.SESSION_SECRET) {
   logger.error('❌ FATAL: SESSION_SECRET environment variable is required for security');
   process.exit(1);
+}
+
+// Enforce admin creds in production
+if (process.env.NODE_ENV === 'production') {
+  if (!process.env.ADMIN_USERNAME || !process.env.ADMIN_PASSWORD) {
+    logger.error('❌ FATAL: ADMIN_USERNAME and ADMIN_PASSWORD are required in production');
+    process.exit(1);
+  }
 }
 
 app.use(session({
@@ -128,6 +162,12 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(addRequestId);
 app.use(logRequest);
 app.use(generalLimiter);
+
+// Inject csrfInput helper into request for templates
+app.use((req, res, next) => {
+  req.csrfInput = () => csrfInput(req);
+  next();
+});
 
 // Serve static files
 app.use(express.static(path.join(__dirname, '../public'), {
@@ -367,6 +407,7 @@ app.get('/admin-login', (req, res) => {
         </div>
         <div class="card-body">
           <form method="post" action="/admin-authenticate">
+            ${req.csrfInput()}
             <div style="margin-bottom: var(--spacing-4);">
               <label style="display: block; margin-bottom: var(--spacing-2); font-weight: 600;">Username:</label>
               <input type="text" name="username" required 
@@ -413,20 +454,20 @@ app.get('/admin-logout', (req, res) => {
 // ADMIN ROUTES
 // ===========================================
 
-app.post('/admin-authenticate', authLimiter, validateAdminAuth, AdminController.authenticateAdmin);
+app.post('/admin-authenticate', authLimiter, validateAdminAuth, verifyCsrfToken, AdminController.authenticateAdmin);
 app.get('/admin-dashboard', requireAdmin, AdminController.getDashboard);
 app.get('/admin-requests', requireAdmin, AdminController.getRequests);
 app.get('/admin-reject-form/:requestId', requireAdmin, AdminController.getRejectForm);
 app.get('/admin-restricted-stocks', requireAdmin, AdminController.getRestrictedStocks);
-app.post('/admin-add-stock', requireAdmin, adminActionLimiter, AdminController.addRestrictedStock);
-app.post('/admin-remove-stock', requireAdmin, adminActionLimiter, AdminController.removeRestrictedStock);
-app.post('/admin-approve-request', requireAdmin, adminActionLimiter, AdminController.approveRequest);
-app.post('/admin-reject-request', requireAdmin, adminActionLimiter, AdminController.rejectRequest);
+app.post('/admin-add-stock', requireAdmin, adminActionLimiter, verifyCsrfToken, AdminController.addRestrictedStock);
+app.post('/admin-remove-stock', requireAdmin, adminActionLimiter, verifyCsrfToken, AdminController.removeRestrictedStock);
+app.post('/admin-approve-request', requireAdmin, adminActionLimiter, verifyCsrfToken, AdminController.approveRequest);
+app.post('/admin-reject-request', requireAdmin, adminActionLimiter, verifyCsrfToken, AdminController.rejectRequest);
 app.get('/admin-export-trading-requests', requireAdmin, AdminController.exportTradingRequests);
 app.get('/admin-export-audit-log', requireAdmin, AdminController.exportAuditLog);
 app.get('/admin-backup-database', requireAdmin, AdminController.backupDatabase);
 app.get('/admin-clear-database-confirm', requireAdmin, AdminController.getClearDatabaseConfirm);
-app.post('/admin-clear-database', requireAdmin, AdminController.clearDatabase);
+app.post('/admin-clear-database', requireAdmin, verifyCsrfToken, AdminController.clearDatabase);
 app.get('/admin-audit-log', requireAdmin, AdminController.getAuditLog);
 
 // ===========================================
@@ -442,10 +483,10 @@ app.get('/escalate-form/:id', requireEmployee, EmployeeController.getEscalationF
 // TRADING REQUEST ROUTES
 // ===========================================
 
-app.post('/preview-trade', requireEmployee, validateTradingRequest, TradingRequestController.previewTrade);
-app.post('/submit-trade', requireEmployee, validateTradingRequest, TradingRequestController.submitTrade);
+app.post('/preview-trade', requireEmployee, verifyCsrfToken, validateTradingRequest, TradingRequestController.previewTrade);
+app.post('/submit-trade', requireEmployee, verifyCsrfToken, validateTradingRequest, TradingRequestController.submitTrade);
 app.get('/trade-result/:requestId', requireEmployee, TradingRequestController.showTradeResult);
-app.post('/submit-escalation', requireEmployee, TradingRequestController.escalateRequest);
+app.post('/submit-escalation', requireEmployee, verifyCsrfToken, TradingRequestController.escalateRequest);
 
 // ===========================================
 // ERROR HANDLING

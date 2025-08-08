@@ -113,6 +113,7 @@ class TradingRequestController {
             </div>
             <div class="card-body" style="background: #fef5f5;">
               <form method="post" action="/submit-trade">
+                ${req.csrfInput()}
                 <input type="hidden" name="ticker" value="${ticker}">
                 <input type="hidden" name="shares" value="${shares}">
                 <input type="hidden" name="trading_type" value="${trading_type}">
@@ -300,6 +301,7 @@ class TradingRequestController {
               If you have a valid business reason for this trade, you can escalate this request for admin review.
             </p>
             <form method="post" action="/submit-escalation">
+              ${req.csrfInput()}
               <input type="hidden" name="requestId" value="${request.id}">
               <div style="margin-bottom: var(--spacing-4);">
                 <label style="display: block; margin-bottom: var(--spacing-2); font-weight: 600;">Business Justification:</label>

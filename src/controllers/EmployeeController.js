@@ -29,6 +29,7 @@ class EmployeeController {
         </div>
         <div class="card-body">
           <form method="post" action="/preview-trade" id="tradingForm">
+            ${req.csrfInput()}
             <div style="display: grid; gap: var(--spacing-4);">
               <div>
                 <label style="display: block; margin-bottom: var(--spacing-2); font-weight: 600;">Stock Ticker *</label>
@@ -320,7 +321,7 @@ class EmployeeController {
             </div>
           </div>
 
-          <form method="post" action="/submit-escalation">
+          <form method="post" action="/submit-escalation">\n            ${req.csrfInput()}
             <input type="hidden" name="requestId" value="${request.id}">
             
             <div style="margin-bottom: var(--spacing-4);">

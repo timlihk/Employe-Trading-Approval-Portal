@@ -148,7 +148,7 @@ class AdminController {
       let actionCell = '';
       if (request.status === 'pending') {
         actionCell = `
-          <form method="post" action="/admin-approve-request" style="display: inline; margin-right: 10px;">
+          <form method="post" action="/admin-approve-request" style="display: inline; margin-right: 10px;">\n            ${req.csrfInput()}
             <input type="hidden" name="requestId" value="${request.id}">
             <button type="submit" class="btn btn-success" style="padding: 5px 10px; font-size: 12px;">
               ✓ Approve
@@ -337,7 +337,7 @@ class AdminController {
               <p><strong>Estimated Value:</strong> $${parseFloat(request.total_value_usd || request.total_value || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</p>
             </div>
 
-            <form method="post" action="/admin-reject-request">
+            <form method="post" action="/admin-reject-request">\n            ${req.csrfInput()}
               <input type="hidden" name="requestId" value="${requestId}">
               <div style="margin-bottom: var(--spacing-4);">
                 <label style="display: block; margin-bottom: var(--spacing-2); font-weight: 600;">Rejection Reason:</label>
@@ -390,7 +390,7 @@ class AdminController {
         <td>${stock.company_name}</td>
         <td style="text-align: center;">${formatHongKongTime(new Date(stock.created_at))}</td>
         <td style="text-align: center;">
-          <form method="post" action="/admin-remove-stock" style="display: inline;">
+          <form method="post" action="/admin-remove-stock" style="display: inline;">\n            ${req.csrfInput()}
             <input type="hidden" name="ticker" value="${stock.ticker}">
             <button type="submit" class="btn btn-danger btn-sm">Remove</button>
           </form>
@@ -426,7 +426,7 @@ class AdminController {
           <h3 class="card-title">Add Restricted Stock</h3>
         </div>
         <div class="card-body">
-          <form method="post" action="/admin-add-stock">
+          <form method="post" action="/admin-add-stock">\n            ${req.csrfInput()}
             <div style="display: flex; gap: var(--spacing-3); align-items: end;">
               <div style="flex: 1;">
                 <label style="display: block; margin-bottom: var(--spacing-2); font-weight: 600;">Stock Ticker:</label>
@@ -668,7 +668,7 @@ csvContent += `"${sanitizeCsv(request.id)}","${sanitizeCsv(createdDate)}","${san
               <a href="/admin-dashboard" class="btn btn-secondary" style="text-decoration: none; padding: var(--spacing-3) var(--spacing-6);">
                 ← Cancel (Go Back)
               </a>
-              <form method="post" action="/admin-clear-database" style="display: inline;">
+              <form method="post" action="/admin-clear-database" style="display: inline;">\n                ${req.csrfInput()}
                 <button type="submit" class="btn btn-danger" style="padding: var(--spacing-3) var(--spacing-6);">
                   🗑️ YES, PERMANENTLY DELETE ALL DATA
                 </button>
