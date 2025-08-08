@@ -77,7 +77,8 @@ const logger = winston.createLogger({
 
 // Add request correlation ID middleware
 const addRequestId = (req, res, next) => {
-  req.id = Math.random().toString(36).substr(2, 9);
+  const uuid = (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : require('crypto').randomUUID();
+  req.id = uuid;
   res.setHeader('X-Request-ID', req.id);
   next();
 };

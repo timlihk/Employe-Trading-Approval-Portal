@@ -520,7 +520,13 @@ class AdminController {
         const escalationReason = (request.escalation_reason || '').replace(/"/g, '""');
         const processedDate = request.processed_at ? new Date(request.processed_at).toLocaleDateString('en-GB') : 'N/A';
         
-        csvContent += `"${request.id}","${createdDate}","${request.employee_email}","${stockName}","${request.ticker}","${request.trading_type.toUpperCase()}","${request.shares}","${estimatedValue}","${request.status.toUpperCase()}","${escalated}","${escalationReason}","${processedDate}"\n`;
+        const sanitizeCsv = (v) => {
+  const s = String(v ?? '');
+  const needsEscape = /^[=+\-@]/.test(s);
+  const escapedQuotes = s.replace(/"/g, '""');
+  return needsEscape ? `'${escapedQuotes}` : escapedQuotes;
+};
+csvContent += `"${sanitizeCsv(request.id)}","${sanitizeCsv(createdDate)}","${sanitizeCsv(request.employee_email)}","${sanitizeCsv(stockName)}","${sanitizeCsv(request.ticker)}","${sanitizeCsv(request.trading_type.toUpperCase())}","${sanitizeCsv(request.shares)}","${sanitizeCsv(estimatedValue)}","${sanitizeCsv(request.status.toUpperCase())}","${sanitizeCsv(escalated)}","${sanitizeCsv(escalationReason)}","${sanitizeCsv(processedDate)}"\n`;
       });
 
       res.setHeader('Content-Type', 'text/csv');
@@ -703,7 +709,13 @@ class AdminController {
         const ipAddress = (log.ip_address || '').replace(/"/g, '""');
         const sessionId = (log.session_id || '').replace(/"/g, '""');
         
-        csvContent += `"${createdDate}","${createdTime}","${userEmail}","${userType}","${action}","${targetType}","${targetId}","${details}","${ipAddress}","${sessionId}"\n`;
+        const sanitizeCsv = (v) => {
+  const s = String(v ?? '');
+  const needsEscape = /^[=+\-@]/.test(s);
+  const escapedQuotes = s.replace(/"/g, '""');
+  return needsEscape ? `'${escapedQuotes}` : escapedQuotes;
+};
+csvContent += `"${sanitizeCsv(createdDate)}","${sanitizeCsv(createdTime)}","${sanitizeCsv(userEmail)}","${sanitizeCsv(userType)}","${sanitizeCsv(action)}","${sanitizeCsv(targetType)}","${sanitizeCsv(targetId)}","${sanitizeCsv(details)}","${sanitizeCsv(ipAddress)}","${sanitizeCsv(sessionId)}"\n`;
       });
 
       res.setHeader('Content-Type', 'text/csv');

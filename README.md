@@ -117,9 +117,9 @@ POST_LOGOUT_REDIRECT_URI=https://your-app.railway.app
 
 ## Database
 
-The application supports both PostgreSQL (production) and SQLite (development):
-- **Railway Deployment**: Automatically uses PostgreSQL with `DATABASE_URL`
-- **Local Development**: Falls back to SQLite if no `DATABASE_URL` provided
+The application uses PostgreSQL in all environments:
+- **Railway Deployment**: Uses PostgreSQL with `DATABASE_URL`
+- **Local Development**: Configure `DATABASE_URL` to a local or hosted PostgreSQL instance
 - **Auto-initialization**: Creates all necessary tables on first run
 - **Audit Trail**: Complete activity logging for compliance requirements
 

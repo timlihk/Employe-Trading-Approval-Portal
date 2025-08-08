@@ -95,10 +95,12 @@ app.use(helmet({
   },
 }));
 
-app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3001',
-  credentials: true
-}));
+// CORS is not required for same-origin SSR; disable by default
+// If you must expose APIs cross-origin, restrict origin explicitly
+// app.use(cors({
+//   origin: process.env.FRONTEND_URL || 'http://localhost:3001',
+//   credentials: true
+// }));
 
 // Ensure SESSION_SECRET is provided - fail fast for security
 if (!process.env.SESSION_SECRET) {
@@ -111,12 +113,12 @@ app.use(session({
   resave: false,
   saveUninitialized: false,
   cookie: {
-    secure: false, // Railway handles HTTPS, but the app sees HTTP internally
+    secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000, // 24 hours
-    sameSite: 'lax' // Important for OAuth redirects
+    maxAge: 24 * 60 * 60 * 1000,
+    sameSite: 'lax'
   },
-  proxy: true // Trust Railway's proxy
+  proxy: true
 }));
 
 app.use(express.json({ limit: '10mb' }));
@@ -145,13 +147,12 @@ app.get('/health', async (req, res) => {
     // Check database connectivity
     try {
       if (process.env.DATABASE_URL) {
-        const db = database.getDb();
-        if (db.pool) {
-          // Quick connection test
-          await db.query('SELECT 1 as test');
+        try {
+          await database.query('SELECT 1 as test');
           dbStatus = 'connected';
-        } else {
-          dbStatus = 'not_initialized';
+        } catch (e) {
+          dbStatus = 'error';
+          dbError = e.message;
         }
       } else {
         dbStatus = 'no_url_provided';
