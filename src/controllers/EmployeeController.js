@@ -131,14 +131,6 @@ class EmployeeController {
     const result = await TradingRequestService.getEmployeeRequests(employeeEmail, filters, sort_by, sort_order);
     
     // Handle service errors gracefully  
-    console.log('EmployeeController.getHistory: Service response', { 
-      resultExists: !!result, 
-      resultDataExists: !!(result && result.data),
-      resultKeys: result ? Object.keys(result) : 'null',
-      employeeEmail, 
-      filters 
-    });
-    
     if (!result || !result.data) {
       console.error('EmployeeController.getHistory: Service returned no data', { result, employeeEmail, filters });
       throw new Error('Unable to fetch trading requests - service returned no data');

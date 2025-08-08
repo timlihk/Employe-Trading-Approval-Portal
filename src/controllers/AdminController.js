@@ -147,13 +147,6 @@ class AdminController {
     const result = await TradingRequest.getFilteredHistory(filters, sort_by, sort_order);
     
     // Handle database errors gracefully
-    console.log('AdminController.getRequests: Database response', { 
-      resultExists: !!result, 
-      resultDataExists: !!(result && result.data),
-      resultKeys: result ? Object.keys(result) : 'null',
-      filters 
-    });
-    
     if (!result || !result.data) {
       console.error('AdminController.getRequests: Database returned no data', { result, filters });
       throw new Error('Unable to fetch trading requests - database returned no data');

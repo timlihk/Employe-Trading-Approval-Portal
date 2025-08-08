@@ -186,8 +186,8 @@ class TradingRequest extends BaseModel {
 
       // Check if pagination is requested
       if (filters.page !== undefined && filters.limit !== undefined) {
-        // Paginated response
-        const countSql = sql.replace('SELECT *', 'SELECT COUNT(*) as total');
+        // Paginated response - build count query without ORDER BY
+        const countSql = sql.replace('SELECT *', 'SELECT COUNT(*) as total').replace(/ ORDER BY .+$/, '');
         const page = filters.page || 1;
         const limit = filters.limit || 25;
         const offset = (page - 1) * limit;
