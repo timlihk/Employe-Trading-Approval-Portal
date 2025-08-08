@@ -224,16 +224,14 @@ class TradingRequestController {
         if (status === 'approved') {
           statusBanner = `
             <div style="background: #d4edda; border: 1px solid #c3e6cb; padding: var(--spacing-4); border-radius: var(--radius); margin-bottom: var(--spacing-6); text-align: center;">
-              <h3 style="margin: 0; color: #155724;">✅ Request Automatically Approved</h3>
-              <p style="margin: var(--spacing-2) 0 0 0; color: #155724;">Your trading request has been automatically approved since ${request.ticker} is not on the restricted list.</p>
+              <h3 style="margin: 0; color: #155724;">✅ Request Approved</h3>
             </div>`;
           statusText = 'APPROVED';
           statusColor = '#28a745';
       } else if (status === 'rejected') {
         statusBanner = `
           <div style="background: #f8d7da; border: 1px solid #f5c6cb; padding: var(--spacing-4); border-radius: var(--radius); margin-bottom: var(--spacing-6); text-align: center;">
-            <h3 style="margin: 0; color: #721c24;">❌ Request Automatically Rejected</h3>
-            <p style="margin: var(--spacing-2) 0 0 0; color: #721c24;">Your trading request has been automatically rejected because ${request.ticker} is on the restricted trading list.</p>
+            <h3 style="margin: 0; color: #721c24;">❌ Request Rejected</h3>
             <p style="margin: var(--spacing-2) 0 0 0; color: #721c24;"><strong>You can escalate this request with a business justification below.</strong></p>
           </div>`;
         statusText = 'REJECTED';
