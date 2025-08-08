@@ -350,13 +350,13 @@ class AdminController {
     }
 
     const rejectFormContent = `
-      <div style="max-width: 600px; margin: 0 auto;">
+      <div class="max-w-lg mx-auto">
         <div class="card">
           <div class="card-header">
             <h3 class="card-title">Reject Trading Request #${requestId}</h3>
           </div>
           <div class="card-body">
-            <div style="background: var(--gs-neutral-100); padding: var(--spacing-4); border-radius: var(--radius); margin-bottom: var(--spacing-4);">
+            <div class="bg-muted p-4 rounded mb-4">
               <h4>Request Details:</h4>
               <p><strong>Employee:</strong> ${request.employee_email}</p>
               <p><strong>Stock:</strong> ${request.stock_name} (${request.ticker})</p>
@@ -367,17 +367,17 @@ class AdminController {
 
             <form method="post" action="/admin-reject-request">\n            ${req.csrfInput()}
               <input type="hidden" name="requestId" value="${requestId}">
-              <div style="margin-bottom: var(--spacing-4);">
-                <label style="display: block; margin-bottom: var(--spacing-2); font-weight: 600;">Rejection Reason:</label>
+              <div class="mb-4">
+                <label class="form-label">Rejection Reason:</label>
                 <textarea name="rejection_reason" required rows="4" 
                          placeholder="Please provide a detailed reason for rejection..." 
-                         style="width: 100%; padding: var(--spacing-3); border: 1px solid var(--gs-neutral-300); border-radius: var(--radius); font-family: inherit; resize: vertical;"></textarea>
+                         class="form-control resize-vertical"></textarea>
               </div>
-              <div style="text-align: center; display: flex; gap: var(--spacing-3); justify-content: center;">
-                <a href="/admin-requests" class="btn btn-secondary" style="text-decoration: none; padding: var(--spacing-3) var(--spacing-6);">
+              <div class="text-center d-flex gap-3 justify-center">
+                <a href="/admin-requests" class="btn btn-secondary text-decoration-none p-3">
                   Cancel
                 </a>
-                <button type="submit" class="btn btn-danger" style="padding: var(--spacing-3) var(--spacing-6);">
+                <button type="submit" class="btn btn-danger p-3">
                   Reject Request
                 </button>
               </div>

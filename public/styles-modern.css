@@ -1950,6 +1950,10 @@ button[style*="background: var(--gs-primary-blue)"]:hover {
 /* Color utilities */
 .text-primary { color: var(--gs-primary) !important; }
 
+/* Font utilities */
+.font-sm { font-size: var(--font-size-sm) !important; }
+.font-xs { font-size: var(--font-size-xs) !important; }
+
 /* Table utilities */
 .table-container { 
   overflow-x: auto; 

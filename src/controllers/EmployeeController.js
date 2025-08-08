@@ -44,7 +44,7 @@ class EmployeeController {
                        maxlength="15" pattern="[A-Za-z0-9.-]+">
                 <div class="mt-2">
                   <small class="form-text">Enter a valid stock ticker symbol. Examples:</small>
-                  <div class="mt-1 p-2 bg-muted border-radius" style="font-size: 14px;">
+                  <div class="mt-1 p-2 bg-muted border-radius font-sm">
                     <strong>US Markets:</strong> AAPL, MSFT, GOOGL, TSLA, NVDA, AMZN<br>
                     <strong>Hong Kong:</strong> 0700.HK (Tencent), 9988.HK (Alibaba), 2318.HK (Ping An)<br>
                     <strong>UK:</strong> BARC.L (Barclays), LLOY.L (Lloyds), VOD.L (Vodafone)<br>
@@ -78,7 +78,7 @@ class EmployeeController {
             </div>
             
             <div class="mt-6 text-center">
-              <button type="submit" class="btn btn-primary" style="padding: 15px 30px; font-size: 16px;">
+              <button type="submit" class="btn btn-primary py-2 px-3">
                 Preview Trading Request
               </button>
             </div>
@@ -161,12 +161,12 @@ class EmployeeController {
           </td>
           <td class="text-center">
             ${request.status === 'rejected' && request.rejection_reason ? 
-              `<span class="text-danger cursor-help" style="font-size: var(--font-size-xs);" title="${request.rejection_reason}">View Reason</span>` :
+              `<span class="text-danger cursor-help font-xs" title="${request.rejection_reason}">View Reason</span>` :
               (request.status === 'pending' && !request.escalated ? 
                 `<a href="/escalate-form/${request.id}" class="btn btn-outline btn-sm text-decoration-none">Escalate</a>` :
                 (request.escalated ? 
-                  '<span class="text-warning" style="font-size: var(--font-size-xs);">Escalated</span>' :
-                  '<span class="text-muted" style="font-size: var(--font-size-xs);">-</span>')
+                  '<span class="text-warning font-xs">Escalated</span>' :
+                  '<span class="text-muted font-xs">-</span>')
               )
             }
           </td>
@@ -225,7 +225,7 @@ class EmployeeController {
             </div>
             <div class="mt-4 text-center">
               <button type="submit" class="btn btn-primary mr-3">Apply Filters</button>
-              <a href="/employee-history" class="btn btn-secondary" style="text-decoration: none;">Clear Filters</a>
+              <a href="/employee-history" class="btn btn-secondary text-decoration-none">Clear Filters</a>
             </div>
           </form>
         </div>
@@ -244,20 +244,20 @@ class EmployeeController {
                   <tr>
                     <th>
                       <a href="/employee-history?${new URLSearchParams({...req.query, sort_by: 'id', sort_order: currentSortBy === 'id' && currentSortOrder === 'ASC' ? 'DESC' : 'ASC'}).toString()}" 
-                         style="text-decoration: none; color: inherit; display: flex; align-items: center; justify-content: space-between;">
+                         class="text-decoration-none d-flex align-items-center justify-content-between" style="color: inherit;">
                         ID ${currentSortBy === 'id' ? (currentSortOrder === 'ASC' ? '↑' : '↓') : ''}
                       </a>
                     </th>
                     <th>
                       <a href="/employee-history?${new URLSearchParams({...req.query, sort_by: 'created_at', sort_order: currentSortBy === 'created_at' && currentSortOrder === 'ASC' ? 'DESC' : 'ASC'}).toString()}" 
-                         style="text-decoration: none; color: inherit; display: flex; align-items: center; justify-content: space-between;">
+                         class="text-decoration-none d-flex align-items-center justify-content-between" style="color: inherit;">
                         Date ${currentSortBy === 'created_at' ? (currentSortOrder === 'ASC' ? '↑' : '↓') : ''}
                       </a>
                     </th>
                     <th>Company</th>
                     <th>
                       <a href="/employee-history?${new URLSearchParams({...req.query, sort_by: 'ticker', sort_order: currentSortBy === 'ticker' && currentSortOrder === 'ASC' ? 'DESC' : 'ASC'}).toString()}" 
-                         style="text-decoration: none; color: inherit; display: flex; align-items: center; justify-content: space-between;">
+                         class="text-decoration-none d-flex align-items-center justify-content-between" style="color: inherit;">
                         Ticker ${currentSortBy === 'ticker' ? (currentSortOrder === 'ASC' ? '↑' : '↓') : ''}
                       </a>
                     </th>
@@ -265,7 +265,7 @@ class EmployeeController {
                     <th>Shares</th>
                     <th>
                       <a href="/employee-history?${new URLSearchParams({...req.query, sort_by: 'total_value_usd', sort_order: currentSortBy === 'total_value_usd' && currentSortOrder === 'ASC' ? 'DESC' : 'ASC'}).toString()}" 
-                         style="text-decoration: none; color: inherit; display: flex; align-items: center; justify-content: space-between;">
+                         class="text-decoration-none d-flex align-items-center justify-content-between" style="color: inherit;">
                         Total Value (USD) ${currentSortBy === 'total_value_usd' ? (currentSortOrder === 'ASC' ? '↑' : '↓') : ''}
                       </a>
                     </th>
@@ -597,12 +597,12 @@ function generateSortingControls(baseUrl, currentSortBy, currentSortOrder, query
       ).join('')}
       
       <span class="font-weight-600" style="color: var(--gs-neutral-700);">Sort by:</span>
-      <select name="sort_by" class="form-control-sm" style="padding: 6px 10px;">
+      <select name="sort_by" class="form-control-sm py-2">
         <option value="id" ${currentSortBy === 'id' ? 'selected' : ''}>Request ID</option>
         <option value="created_at" ${currentSortBy === 'created_at' ? 'selected' : ''}>Date</option>
         <option value="ticker" ${currentSortBy === 'ticker' ? 'selected' : ''}>Ticker</option>
       </select>
-      <select name="sort_order" class="form-control-sm" style="padding: 6px 10px;">
+      <select name="sort_order" class="form-control-sm py-2">
         <option value="DESC" ${currentSortOrder === 'DESC' ? 'selected' : ''}>↓ Descending</option>
         <option value="ASC" ${currentSortOrder === 'ASC' ? 'selected' : ''}>↑ Ascending</option>
       </select>
