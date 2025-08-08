@@ -71,12 +71,58 @@ class AuditLog extends BaseModel {
 
       query += ' ORDER BY created_at DESC';
 
-      if (filters.limit) {
-        query += ` LIMIT $${paramIndex}`;
-        params.push(filters.limit);
-      }
+      // Check if pagination is requested
+      if (filters.page !== undefined && filters.limit !== undefined) {
+        // Paginated response - build count query without ORDER BY
+        const countQuery = query.replace('SELECT *', 'SELECT COUNT(*) as total').replace(/ ORDER BY .+$/, '');
+        const page = filters.page || 1;
+        const limit = filters.limit || 50;
+        const offset = (page - 1) * limit;
+        
+        query += ` LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+        params.push(limit, offset);
 
-      this.query(query, params).then(resolve).catch(reject);
+        Promise.all([
+          this.query(countQuery, params.slice(0, -2)), // Count without LIMIT/OFFSET
+          this.query(query, params) // Paginated results
+        ]).then(([countResult, rows]) => {
+          const total = parseInt(countResult[0]?.total || 0, 10);
+          resolve({
+            data: rows,
+            pagination: {
+              total: total,
+              page: parseInt(page, 10),
+              limit: parseInt(limit, 10),
+              pages: Math.ceil(total / limit)
+            }
+          });
+        }).catch(err => {
+          reject(err);
+        });
+      } else {
+        // Non-paginated response (for exports or legacy usage)
+        if (filters.limit) {
+          query += ` LIMIT $${paramIndex}`;
+          params.push(filters.limit);
+        }
+
+        this.query(query, params).then(rows => {
+          // Return consistent format for backward compatibility
+          if (Array.isArray(rows)) {
+            resolve(rows);
+          } else {
+            resolve({
+              data: rows,
+              pagination: {
+                total: rows.length,
+                page: 1,
+                limit: rows.length,
+                pages: 1
+              }
+            });
+          }
+        }).catch(reject);
+      }
     });
   }
 

@@ -799,6 +799,7 @@ csvContent += `"${sanitizeCsv(createdDate)}","${sanitizeCsv(createdTime)}","${sa
 
     const result = await AuditLog.getAuditLogs(filters);
     const auditLogs = result.data || result; // Handle both formats for now
+    const pagination = result.pagination;
     const summary = await AuditLog.getAuditSummary(filters);
 
     // Generate sorting controls
