@@ -8,7 +8,7 @@ function renderBasePage(title, subtitle, content, navigation = '') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${title} - Inspiration Capital Management Limited</title>
-    <link rel="stylesheet" href="/styles-modern.css?v=${Date.now()}">
+    <link rel="stylesheet" href="/styles-modern.css?v=${new Date().getTime()}">
 </head>
 <body>
     <div class="container">
