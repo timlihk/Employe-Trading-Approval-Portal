@@ -136,15 +136,21 @@ if (process.env.NODE_ENV === 'production') {
 // Postgres-backed session store in production
 let sessionStore = undefined;
 if (process.env.NODE_ENV === 'production' && process.env.DATABASE_URL) {
-  const PgSession = pgSessionFactory(session);
-  sessionStore = new PgSession({
-    conObject: {
-      connectionString: process.env.DATABASE_URL,
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-    },
-    createTableIfMissing: true,
-    tableName: 'session'
-  });
+  try {
+    const PgSession = pgSessionFactory(session);
+    sessionStore = new PgSession({
+      conObject: {
+        connectionString: process.env.DATABASE_URL,
+        ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+      },
+      createTableIfMissing: true,
+      tableName: 'session'
+    });
+    logger.info('PostgreSQL session store configured');
+  } catch (error) {
+    logger.warn('Failed to configure PostgreSQL session store, falling back to memory store', { error: error.message });
+    sessionStore = undefined;
+  }
 }
 
 app.use(session({
