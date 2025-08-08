@@ -118,6 +118,12 @@ class EmployeeController {
     if (status) filters.status = status;
 
     const result = await TradingRequestService.getEmployeeRequests(employeeEmail, filters, sort_by, sort_order);
+    
+    // Handle service errors gracefully
+    if (!result || !result.data) {
+      throw new Error('Unable to fetch trading requests - service returned no data');
+    }
+    
     const requests = result.data;
     const pagination = result.pagination;
 
@@ -316,6 +322,12 @@ class EmployeeController {
 
     // Get the specific request to validate ownership
     const result = await TradingRequestService.getEmployeeRequests(employeeEmail, {});
+    
+    // Handle service errors gracefully
+    if (!result || !result.data) {
+      return res.redirect('/employee-history?error=' + encodeURIComponent('Unable to access request data'));
+    }
+    
     const requests = result.data;
     const request = requests.find(r => r.id === requestId);
 
@@ -401,6 +413,12 @@ class EmployeeController {
       if (trading_type) filters.trading_type = trading_type;
 
       const result = await TradingRequestService.getEmployeeRequests(employeeEmail, filters, sort_by, sort_order);
+      
+      // Handle service errors gracefully
+      if (!result || !result.data) {
+        throw new Error('Unable to fetch trading requests for export - service returned no data');
+      }
+      
       const requests = result.data;
 
       // Debug logging

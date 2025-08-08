@@ -145,6 +145,12 @@ class AdminController {
 
     // Get requests with pagination
     const result = await TradingRequest.getFilteredHistory(filters, sort_by, sort_order);
+    
+    // Handle database errors gracefully
+    if (!result || !result.data) {
+      throw new Error('Unable to fetch trading requests - database returned no data');
+    }
+    
     const allRequests = result.data;
     const pagination = result.pagination;
 
