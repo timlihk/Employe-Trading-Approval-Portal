@@ -5,6 +5,8 @@ const helmet = require('helmet');
 const session = require('express-session');
 const path = require('path');
 const msal = require('@azure/msal-node');
+const compression = require('compression');
+const pgSessionFactory = require('connect-pg-simple');
 
 // Security and logging utilities
 const { logger, addRequestId, logRequest, logSecurityEvent } = require('./utils/logger');
@@ -24,9 +26,9 @@ const TradingRequestService = require('./services/TradingRequestService');
 // Models
 const TradingRequest = require('./models/TradingRequest');
 const RestrictedStock = require('./models/RestrictedStock');
+const database = require('./models/database');
 
 // Initialize database on startup
-const database = require('./models/database');
 logger.info('Database initialized successfully');
 
 // Template utilities
@@ -42,31 +44,10 @@ if (process.env.AZURE_CLIENT_ID && process.env.AZURE_CLIENT_SECRET && process.en
   logger.info('Microsoft 365 SSO disabled - using email-based authentication');
 }
 
-// Middleware to generate and verify CSRF tokens (manual, zero-deps)
-function generateCsrfToken(req) {
-  const token = (require('crypto').randomBytes(24)).toString('hex');
-  req.session.csrfToken = token;
-  return token;
-}
-
-function verifyCsrfToken(req, res, next) {
-  // Read token from form body
-  const sent = req.body && (req.body.csrf_token || req.body._csrf);
-  const valid = sent && req.session && req.session.csrfToken && sent === req.session.csrfToken;
-  if (!valid) {
-    logSecurityEvent('CSRF_VALIDATION_FAILED', { url: req.originalUrl, method: req.method }, req);
-    return res.status(403).send('Forbidden: invalid CSRF token');
-  }
-  // Rotate token after successful validation
-  generateCsrfToken(req);
-  next();
-}
-
-// Helper to include hidden CSRF input in forms
-function csrfInput(req) {
-  const token = (req.session && req.session.csrfToken) || generateCsrfToken(req);
-  return `<input type="hidden" name="csrf_token" value="${token}">`;
-}
+// Manual CSRF utilities (already defined below in earlier edit)
+function generateCsrfToken(req) { const token = (require('crypto').randomBytes(24)).toString('hex'); req.session.csrfToken = token; return token; }
+function verifyCsrfToken(req, res, next) { const sent = req.body && (req.body.csrf_token || req.body._csrf); const valid = sent && req.session && req.session.csrfToken && sent === req.session.csrfToken; if (!valid) { logSecurityEvent('CSRF_VALIDATION_FAILED', { url: req.originalUrl, method: req.method }, req); return res.status(403).send('Forbidden: invalid CSRF token'); } generateCsrfToken(req); next(); }
+function csrfInput(req) { const token = (req.session && req.session.csrfToken) || generateCsrfToken(req); return `<input type="hidden" name="csrf_token" value="${token}">`; }
 
 // Helper function to get the correct base URL
 function getBaseUrl(req) {
@@ -78,62 +59,45 @@ function getBaseUrl(req) {
   return process.env.FRONTEND_URL || 'http://localhost:3001';
 }
 
-// Middleware functions
-function requireAdmin(req, res, next) {
-  if (!req.session.admin || !req.session.admin.username) {
-    logSecurityEvent('UNAUTHORIZED_ADMIN_ACCESS', {
-      url: req.originalUrl,
-      method: req.method
-    }, req);
-    
-    if (req.accepts('json') && !req.accepts('html')) {
-      return res.status(401).json({ error: 'Admin authentication required' });
-    }
-    return res.redirect('/admin-login?error=authentication_required');
-  }
-  next();
+function createMetrics() {
+  return { startTime: Date.now(), requests: 0, errors: 0 };
 }
-
-function requireEmployee(req, res, next) {
-  if (!req.session.employee || !req.session.employee.email) {
-    logSecurityEvent('UNAUTHORIZED_EMPLOYEE_ACCESS', {
-      url: req.originalUrl,
-      method: req.method
-    }, req);
-    return res.redirect('/?error=authentication_required');
-  }
-  next();
-}
+const metrics = createMetrics();
 
 const app = express();
-
-// Trust Railway's proxy for proper HTTPS detection
 app.set('trust proxy', 1);
 
 app.use(helmet({
   contentSecurityPolicy: {
+    useDefaults: false,
     directives: {
       defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+      frameAncestors: ["'self'"],
+      objectSrc: ["'none'"],
       scriptSrc: ["'none'"],
+      styleSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", "data:"],
-    },
+      fontSrc: ["'self'", 'https:', 'data:'],
+      upgradeInsecureRequests: []
+    }
   },
+  referrerPolicy: { policy: 'no-referrer' },
+  crossOriginOpenerPolicy: true,
+  crossOriginResourcePolicy: { policy: 'same-origin' },
+  frameguard: { action: 'sameorigin' },
+  hsts: { maxAge: 31536000, includeSubDomains: true },
+  xssFilter: false
 }));
 
-// CORS is not required for same-origin SSR; disable by default
-// If you must expose APIs cross-origin, restrict origin explicitly
-// app.use(cors({
-//   origin: process.env.FRONTEND_URL || 'http://localhost:3001',
-//   credentials: true
-// }));
+app.use(compression());
 
 // Ensure SESSION_SECRET is provided - fail fast for security
 if (!process.env.SESSION_SECRET) {
   logger.error('❌ FATAL: SESSION_SECRET environment variable is required for security');
   process.exit(1);
 }
-
 // Enforce admin creds in production
 if (process.env.NODE_ENV === 'production') {
   if (!process.env.ADMIN_USERNAME || !process.env.ADMIN_PASSWORD) {
@@ -142,10 +106,25 @@ if (process.env.NODE_ENV === 'production') {
   }
 }
 
+// Postgres-backed session store in production
+let sessionStore = undefined;
+if (process.env.NODE_ENV === 'production' && process.env.DATABASE_URL) {
+  const PgSession = pgSessionFactory(session);
+  sessionStore = new PgSession({
+    conObject: {
+      connectionString: process.env.DATABASE_URL,
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+    },
+    createTableIfMissing: true,
+    tableName: 'session'
+  });
+}
+
 app.use(session({
   secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
+  store: sessionStore,
   cookie: {
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
@@ -158,33 +137,28 @@ app.use(session({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Security middleware
 app.use(addRequestId);
+app.use((req, res, next) => { metrics.requests += 1; next(); });
 app.use(logRequest);
 app.use(generalLimiter);
+app.use((req, res, next) => { req.csrfInput = () => csrfInput(req); next(); });
 
-// Inject csrfInput helper into request for templates
-app.use((req, res, next) => {
-  req.csrfInput = () => csrfInput(req);
-  next();
-});
-
-// Serve static files
+// Serve static files with caching
 app.use(express.static(path.join(__dirname, '../public'), {
-  index: false  // Don't serve index.html automatically
+  index: false,
+  maxAge: process.env.NODE_ENV === 'production' ? '1d' : 0,
+  etag: true
 }));
 
 // ===========================================
 // SYSTEM ROUTES
 // ===========================================
 
-// Health check endpoint for Railway
+// Health
 app.get('/health', async (req, res) => {
   try {
     let dbStatus = 'unknown';
     let dbError = null;
-    
-    // Check database connectivity
     try {
       if (process.env.DATABASE_URL) {
         try {
@@ -201,47 +175,34 @@ app.get('/health', async (req, res) => {
       dbStatus = 'error';
       dbError = error.message;
     }
-
-    res.status(200).json({ 
-      status: 'healthy', 
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-      database: {
-        status: dbStatus,
-        error: dbError,
-        hasUrl: !!process.env.DATABASE_URL
-      }
-    });
+    res.status(200).json({ status: 'healthy', timestamp: new Date().toISOString(), uptime: process.uptime(), database: { status: dbStatus, error: dbError, hasUrl: !!process.env.DATABASE_URL } });
   } catch (error) {
-    res.status(200).json({ 
-      status: 'healthy', 
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-      database: {
-        status: 'healthcheck_error',
-        error: error.message
-      }
-    });
+    metrics.errors += 1;
+    res.status(200).json({ status: 'healthy', timestamp: new Date().toISOString(), uptime: process.uptime(), database: { status: 'healthcheck_error', error: error.message } });
   }
 });
 
-// Session test endpoint for debugging
-app.get('/session-test', (req, res) => {
-  const sessionId = req.sessionID;
-  req.session.testValue = req.session.testValue || 0;
-  req.session.testValue++;
-  
+// Metrics (basic, no PII)
+app.get('/metrics', (req, res) => {
+  const now = Date.now();
   res.json({
-    sessionId: sessionId,
-    testValue: req.session.testValue,
-    employee: req.session.employee || null,
-    admin: req.session.admin || null,
-    cookies: req.headers.cookie,
-    secure: req.secure,
-    protocol: req.protocol,
-    host: req.get('host')
+    uptimeSeconds: Math.round(process.uptime()),
+    requests: metrics.requests,
+    errors: metrics.errors,
+    startedAt: new Date(metrics.startTime).toISOString(),
+    now: new Date(now).toISOString()
   });
 });
+
+// Session test only in non-production
+if (process.env.NODE_ENV !== 'production') {
+  app.get('/session-test', (req, res) => {
+    const sessionId = req.sessionID;
+    req.session.testValue = req.session.testValue || 0;
+    req.session.testValue++;
+    res.json({ sessionId, testValue: req.session.testValue });
+  });
+}
 
 // Database status endpoint for admin debugging
 app.get('/db-status', requireAdmin, async (req, res) => {
@@ -330,18 +291,14 @@ if (cca) {
   app.get('/api/auth/microsoft/login', async (req, res) => {
     const baseUrl = getBaseUrl(req);
     const REDIRECT_URI = `${baseUrl}/api/auth/microsoft/callback`;
-    
-    const authCodeUrlParameters = {
-      scopes: ['user.read'],
-      redirectUri: REDIRECT_URI,
-    };
+    const state = (require('crypto').randomBytes(16)).toString('hex');
+    req.session.oauthState = state;
+
+    const authCodeUrlParameters = { scopes: ['user.read'], redirectUri: REDIRECT_URI, state };
 
     try {
       const authUrl = await cca.getAuthCodeUrl(authCodeUrlParameters);
-      logger.info('Redirecting to Microsoft login', { 
-        redirectUri: REDIRECT_URI,
-        sessionId: req.sessionID 
-      });
+      logger.info('Redirecting to Microsoft login', { redirectUri: REDIRECT_URI, sessionId: req.sessionID });
       res.redirect(authUrl);
     } catch (error) {
       logger.error('Error generating auth URL', { error: error.message });
@@ -352,45 +309,32 @@ if (cca) {
   app.get('/api/auth/microsoft/callback', async (req, res) => {
     const baseUrl = getBaseUrl(req);
     const REDIRECT_URI = `${baseUrl}/api/auth/microsoft/callback`;
-    
-    const tokenRequest = {
-      code: req.query.code,
-      scopes: ['user.read'],
-      redirectUri: REDIRECT_URI,
-    };
+
+    // Validate state
+    if (!req.session.oauthState || req.query.state !== req.session.oauthState) {
+      logSecurityEvent('OAUTH_STATE_MISMATCH', { expected: req.session.oauthState, received: req.query.state }, req);
+      return res.redirect('/?error=sso_state_mismatch');
+    }
+
+    const tokenRequest = { code: req.query.code, scopes: ['user.read'], redirectUri: REDIRECT_URI };
 
     try {
       const response = await cca.acquireTokenByCode(tokenRequest);
       const userInfo = response.account;
 
-      req.session.employee = {
-        email: userInfo.username.toLowerCase(),
-        name: userInfo.name || userInfo.username.split('@')[0]
-      };
+      req.session.employee = { email: userInfo.username.toLowerCase(), name: userInfo.name || userInfo.username.split('@')[0] };
+      delete req.session.oauthState;
 
-      logger.info('Microsoft SSO successful', { 
-        email: userInfo.username.toLowerCase(),
-        name: userInfo.name,
-        sessionId: req.sessionID
-      });
-
+      logger.info('Microsoft SSO successful', { email: userInfo.username.toLowerCase(), name: userInfo.name, sessionId: req.sessionID });
       res.redirect('/employee-dashboard?message=login_success');
     } catch (error) {
-      logger.error('Microsoft SSO callback error', { 
-        error: error.message,
-        code: req.query.code ? 'present' : 'missing'
-      });
+      logger.error('Microsoft SSO callback error', { error: error.message, code: req.query.code ? 'present' : 'missing' });
       res.redirect('/?error=sso_callback_error');
     }
   });
 
   app.get('/api/auth/microsoft/logout', (req, res) => {
-    req.session.destroy((err) => {
-      if (err) {
-        logger.error('Session destruction error', { error: err.message });
-      }
-      res.redirect('/?message=logged_out');
-    });
+    req.session.destroy((err) => { if (err) { logger.error('Session destruction error', { error: err.message }); } res.redirect('/?message=logged_out'); });
   });
 }
 
@@ -503,13 +447,24 @@ app.use(globalErrorHandler);
 // ===========================================
 
 const PORT = process.env.PORT || 3001;
-
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   logger.info(`🚀 Server running on port ${PORT}`);
   logger.info(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
   logger.info(`🔒 Session secret: ${process.env.SESSION_SECRET ? 'configured' : 'using default (insecure!)'}`);
   logger.info(`🔑 Microsoft SSO: ${cca ? 'enabled' : 'disabled'}`);
-  logger.info(`🗄️  Database: ${process.env.DATABASE_URL ? 'PostgreSQL (Railway)' : 'SQLite (local)'}`);
+  logger.info(`🗄️  Database: ${process.env.DATABASE_URL ? 'PostgreSQL (Railway)' : 'PostgreSQL URL not set'}`);
 });
+
+function shutdown(signal) {
+  return () => {
+    logger.info(`Received ${signal}, shutting down...`);
+    server.close(async () => {
+      try { if (database && database.close) { await database.close(); } } catch (e) { logger.error('Error closing database', { error: e.message }); }
+      process.exit(0);
+    });
+  };
+}
+process.on('SIGTERM', shutdown('SIGTERM'));
+process.on('SIGINT', shutdown('SIGINT'));
 
 module.exports = app;
