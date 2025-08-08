@@ -414,8 +414,20 @@ class EmployeeController {
     if (!requests || requests.length === 0) {
       csvContent += '"No trading requests found for the selected criteria"\n';
     } else {
-      requests.forEach(request => {
+      requests.forEach((request, index) => {
         try {
+          // Log the request object structure for debugging
+          console.log(`Processing request ${index}:`, {
+            id: request.id,
+            created_at: request.created_at,
+            stock_name: request.stock_name,
+            ticker: request.ticker,
+            trading_type: request.trading_type,
+            shares: request.shares,
+            status: request.status,
+            keys: Object.keys(request)
+          });
+
           const createdDate = formatHongKongTime(new Date(request.created_at));
           const stockName = (request.stock_name || 'N/A').replace(/"/g, '""');
           const estimatedValue = (request.total_value_usd || request.total_value || 0).toFixed(2);
@@ -428,8 +440,9 @@ class EmployeeController {
           
           csvContent += `"${request.id}","${createdDate}","${stockName}","${ticker}","${tradingType}","${shares}","$${estimatedValue}","${status}","${escalated}","${rejectionReason}"\n`;
         } catch (rowError) {
-          console.error('Error processing row:', rowError, 'Request:', request);
-          csvContent += `"Error processing request ${request.id || 'unknown'}"\n`;
+          console.error('Error processing row:', rowError.message, 'Request keys:', Object.keys(request));
+          console.error('Full request object:', request);
+          csvContent += `"Error processing request ${request.id || 'unknown'}: ${rowError.message}"\n`;
         }
       });
     }
