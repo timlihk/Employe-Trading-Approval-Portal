@@ -21,6 +21,9 @@ const TradingRequestController = require('./controllers/TradingRequestController
 const AdminService = require('./services/AdminService');
 const TradingRequestService = require('./services/TradingRequestService');
 
+// Models
+const TradingRequest = require('./models/TradingRequest');
+
 // Initialize database on startup
 const database = require('./models/database');
 logger.info('Database initialized successfully');
@@ -441,6 +444,8 @@ app.get('/escalate-form/:id', requireEmployee, EmployeeController.getEscalationF
 // ===========================================
 
 app.post('/preview-trade', requireEmployee, validateTradingRequest, TradingRequestController.previewTrade);
+app.post('/submit-trade', requireEmployee, validateTradingRequest, TradingRequestController.submitTrade);
+app.get('/trade-result/:requestId', requireEmployee, TradingRequestController.showTradeResult);
 app.post('/submit-escalation', requireEmployee, TradingRequestController.escalateRequest);
 
 // ===========================================
