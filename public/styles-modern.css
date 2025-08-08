@@ -2294,7 +2294,7 @@ button[style*="background: var(--gs-primary-blue)"]:hover {
 
 .nav-link:hover,
 .nav-link.active {
-  border-bottom-color: #222;
+  border-bottom-color: var(--gs-primary-blue);
 }
 
 /* Cards → Tesla-style Panels (Flat, Minimal) */
@@ -2351,14 +2351,14 @@ button[style*="background: var(--gs-primary-blue)"]:hover {
 }
 
 .btn-primary {
-  background: #111;
+  background: var(--gs-primary-blue);
   color: #fff;
-  border: 2px solid #111;
+  border: 2px solid var(--gs-primary-blue);
 }
 
 .btn-primary:hover {
-  background: #222;
-  border-color: #222;
+  background: var(--gs-dark-blue);
+  border-color: var(--gs-dark-blue);
   transform: translateY(-1px);
 }
 
@@ -2455,7 +2455,7 @@ button[style*="background: var(--gs-primary-blue)"]:hover {
 
 .form-control:focus,
 .form-control-sm:focus {
-  border-color: #111;
+  border-color: var(--gs-primary-blue);
   outline: none;
   box-shadow: none;
   background: #fff;
@@ -2574,12 +2574,12 @@ textarea.form-control {
 }
 
 .th-sortable[aria-sort="ascending"]::after {
-  border-bottom: 5px solid #111;
+  border-bottom: 5px solid var(--gs-primary-blue);
   opacity: 1;
 }
 
 .th-sortable[aria-sort="descending"]::after {
-  border-top: 5px solid #111;
+  border-top: 5px solid var(--gs-primary-blue);
   opacity: 1;
 }
 
@@ -2632,7 +2632,7 @@ textarea.form-control {
   background: #fafafa;
   color: #222;
   padding: 16px 20px;
-  border-left: 4px solid #111;
+  border-left: 4px solid var(--gs-primary-blue);
   border-radius: 4px;
   margin-bottom: 24px;
   font-size: 14px;
@@ -2684,9 +2684,9 @@ textarea.form-control {
 }
 
 .pagination .btn[aria-current="page"] {
-  background: #111;
+  background: var(--gs-primary-blue);
   color: #fff;
-  border-color: #111;
+  border-color: var(--gs-primary-blue);
   font-weight: 600;
 }
 
@@ -2843,14 +2843,14 @@ textarea.form-control {
 
 /* Link styles - Tesla-like */
 .link {
-  color: #111;
+  color: var(--gs-primary-blue);
   text-decoration: none;
   border-bottom: 1px solid transparent;
   transition: border-color 0.2s ease;
 }
 
 .link:hover {
-  border-bottom-color: #111;
+  border-bottom-color: var(--gs-primary-blue);
 }
 
 .text-decoration-none {
@@ -2861,7 +2861,7 @@ textarea.form-control {
 .focus-ring:focus-visible,
 .btn:focus-visible,
 .form-control:focus-visible {
-  outline: 2px solid #111;
+  outline: 2px solid var(--gs-primary-blue);
   outline-offset: 2px;
 }
 .bg-muted { background: var(--gs-neutral-200); }
