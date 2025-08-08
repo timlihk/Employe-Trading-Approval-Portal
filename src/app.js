@@ -294,6 +294,12 @@ app.post('/fix-pending-statuses', requireAdmin, async (req, res) => {
       FROM trading_requests
     `);
     
+    // For browser requests, redirect back to admin dashboard with success message
+    if (req.headers.accept && req.headers.accept.includes('text/html')) {
+      return res.redirect(`/admin-dashboard?message=status_fix_complete&processed=${results.processed}&approved=${results.approved}&rejected=${results.rejected}`);
+    }
+    
+    // For API requests, return JSON
     res.json({
       success: true,
       message: `Fixed ${results.processed} pending requests`,

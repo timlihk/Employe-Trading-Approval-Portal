@@ -81,6 +81,16 @@ class AdminController {
    * Get admin dashboard
    */
   getDashboard = catchAsync(async (req, res) => {
+    const { message, processed, approved, rejected } = req.query;
+    
+    let banner = '';
+    if (message === 'status_fix_complete') {
+      banner = generateNotificationBanner(
+        `Status fix completed! Updated ${processed} requests: ${approved} approved, ${rejected} rejected.`, 
+        'success'
+      );
+    }
+    
     // Get pending requests count
     const pendingRequests = await TradingRequest.getPendingRequests();
     const escalatedRequests = await TradingRequest.getEscalatedRequests();
@@ -88,6 +98,7 @@ class AdminController {
     const restrictedStocksCount = await RestrictedStock.getCount();
 
     const dashboardContent = `
+      ${banner}
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: var(--spacing-6); margin-bottom: var(--spacing-8);">
         <div class="card">
           <div class="card-body" style="text-align: center;">
@@ -128,6 +139,12 @@ class AdminController {
         <a href="/admin-backup-database" class="btn btn-outline" style="text-decoration: none; text-align: center; padding: var(--spacing-4);">
           💾 Backup Database
         </a>
+        <form method="post" action="/fix-pending-statuses" style="display: inline;">
+          <button type="submit" class="btn btn-warning" style="text-decoration: none; text-align: center; padding: var(--spacing-4); width: 100%;" 
+                  onclick="return confirm('This will update all pending requests to their correct approved/rejected status. Continue?');">
+            🔧 Fix Pending Statuses
+          </button>
+        </form>
       </div>
     `;
 
