@@ -94,7 +94,7 @@ function generateNotificationBanner(query) {
         message = 'You have been logged out successfully';
         break;
       case 'database_cleared':
-        message = 'Database has been reset to brand new state - all data cleared';
+        message = '✅ Database Successfully Reset! All data has been permanently cleared and the system has been reset to brand new state.';
         break;
       default:
         message = decodeURIComponent(query.message);

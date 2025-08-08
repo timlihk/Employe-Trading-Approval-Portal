@@ -81,7 +81,20 @@ class AdminController {
    * Get admin dashboard
    */
   getDashboard = catchAsync(async (req, res) => {
+    const banner = generateNotificationBanner(req.query);
+    
     const dashboardContent = `
+      ${banner}
+      
+      <script>
+        function confirmDatabaseClear() {
+          if (confirm('⚠️ DANGER: This will permanently delete ALL data from the database and reset it to brand new state. This action cannot be undone! Are you absolutely sure?')) {
+            return confirm('⚠️ FINAL WARNING: You are about to delete ALL trading requests, restricted stocks, audit logs, and reset all data. This action is IRREVERSIBLE. Click OK to proceed or Cancel to abort.');
+          }
+          return false;
+        }
+      </script>
+      
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--spacing-4);">
         <a href="/admin-requests" class="btn btn-primary" style="text-decoration: none; text-align: center; padding: var(--spacing-4);">
           📋 Review All Requests
@@ -100,7 +113,7 @@ class AdminController {
         </a>
         <form method="post" action="/admin-clear-database" style="display: inline;">
           <button type="submit" class="btn btn-danger" style="text-decoration: none; text-align: center; padding: var(--spacing-4); width: 100%;" 
-                  onclick="return confirm('⚠️ DANGER: This will permanently delete ALL data from the database and reset it to brand new state. This action cannot be undone! Are you absolutely sure?');">
+                  onclick="return confirmDatabaseClear();">
             🗑️ Clear Database
           </button>
         </form>
