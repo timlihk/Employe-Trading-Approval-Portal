@@ -243,9 +243,9 @@ app.get('/', (req, res) => {
   let banner = '';
   
   if (error === 'authentication_required') {
-    banner = generateNotificationBanner('Please log in to access that page', 'error');
+    banner = generateNotificationBanner({ error: 'Please log in to access that page' });
   } else if (message === 'logged_out') {
-    banner = generateNotificationBanner('You have been successfully logged out', 'success');
+    banner = generateNotificationBanner({ message: 'You have been successfully logged out' });
   }
 
   const landingContent = `

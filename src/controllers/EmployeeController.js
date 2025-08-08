@@ -11,9 +11,9 @@ class EmployeeController {
     let banner = '';
     
     if (error) {
-      banner = generateNotificationBanner(decodeURIComponent(error), 'error');
+      banner = generateNotificationBanner({ error: error });
     } else if (message === 'login_success') {
-      banner = generateNotificationBanner('Welcome! You have been successfully logged in.', 'success');
+      banner = generateNotificationBanner({ message: 'Welcome! You have been successfully logged in.' });
     }
 
     // Pre-fill form if provided in query params
@@ -96,7 +96,7 @@ class EmployeeController {
     
     let banner = '';
     if (message === 'escalation_submitted') {
-      banner = generateNotificationBanner('Your escalation has been submitted successfully and will be reviewed by administrators.', 'success');
+      banner = generateNotificationBanner({ message: 'Your escalation has been submitted successfully and will be reviewed by administrators.' });
     }
 
     // Build filters
