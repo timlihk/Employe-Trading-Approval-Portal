@@ -118,8 +118,8 @@ class EmployeeController {
     if (status) filters.status = status;
 
     const result = await TradingRequestService.getEmployeeRequests(employeeEmail, filters, sort_by, sort_order);
-    const requests = result?.data || [];
-    const pagination = result?.pagination;
+    const requests = result.data;
+    const pagination = result.pagination;
 
     // Generate table rows
     const tableRows = requests.map(request => {
@@ -316,7 +316,7 @@ class EmployeeController {
 
     // Get the specific request to validate ownership
     const result = await TradingRequestService.getEmployeeRequests(employeeEmail, {});
-    const requests = result?.data || [];
+    const requests = result.data;
     const request = requests.find(r => r.id === requestId);
 
     if (!request) {
@@ -393,15 +393,15 @@ class EmployeeController {
     const employeeEmail = req.session.employee.email;
     
     try {
-      // Build filters (no pagination for CSV export)
-      const filters = { employee_email: employeeEmail };
+      // Build filters (no pagination for CSV export - explicitly exclude page/limit)
+      const filters = {};
       if (start_date) filters.start_date = start_date;
       if (end_date) filters.end_date = end_date;
       if (ticker) filters.ticker = ticker.toUpperCase();
       if (trading_type) filters.trading_type = trading_type;
 
       const result = await TradingRequestService.getEmployeeRequests(employeeEmail, filters, sort_by, sort_order);
-      const requests = result?.data || [];
+      const requests = result.data;
 
       // Debug logging
       console.log('Export debug info:', {

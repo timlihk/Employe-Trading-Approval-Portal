@@ -769,20 +769,29 @@ csvContent += `"${sanitizeCsv(createdDate)}","${sanitizeCsv(createdTime)}","${sa
       start_date, 
       end_date,
       sort_by = 'created_at',
-      sort_order = 'DESC'
+      sort_order = 'DESC',
+      page = 1,
+      limit = 50
     } = req.query;
 
+    // Validate pagination params
+    const validatedPage = Math.max(1, parseInt(page) || 1);
+    const validatedLimit = Math.min(100, Math.max(1, parseInt(limit) || 50));
+
     // Build filters
-    const filters = {};
+    const filters = {
+      page: validatedPage,
+      limit: validatedLimit
+    };
     if (user_email) filters.userEmail = user_email;
     if (user_type) filters.userType = user_type;
     if (action) filters.action = action;
     if (target_type) filters.targetType = target_type;
     if (start_date) filters.startDate = start_date;
     if (end_date) filters.endDate = end_date;
-    filters.limit = 100; // Limit for performance
 
-    const auditLogs = await AuditLog.getAuditLogs(filters);
+    const result = await AuditLog.getAuditLogs(filters);
+    const auditLogs = result.data || result; // Handle both formats for now
     const summary = await AuditLog.getAuditSummary(filters);
 
     // Generate sorting controls

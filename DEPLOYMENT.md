@@ -45,6 +45,7 @@ DATABASE_URL=postgresql://[auto-provided-by-railway]
 PORT=3000
 LOG_LEVEL=info
 FRONTEND_URL=https://your-app-name.up.railway.app
+SESSION_STORE_NO_FALLBACK=true
 ```
 
 **⚠️ CRITICAL**: Railway automatically provides `DATABASE_URL` for PostgreSQL - do not set this manually.
