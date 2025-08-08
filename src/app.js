@@ -59,7 +59,17 @@ function getBaseUrl(req) {
 }
 
 function createMetrics() {
-  return { startTime: Date.now(), requests: 0, errors: 0 };
+  return { 
+    startTime: Date.now(), 
+    requests: 0, 
+    errors: 0,
+    latencyBuckets: {
+      under50ms: 0,
+      under200ms: 0, 
+      under1000ms: 0,
+      over1000ms: 0
+    }
+  };
 }
 const metrics = createMetrics();
 
@@ -242,7 +252,21 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 app.use(addRequestId);
-app.use((req, res, next) => { metrics.requests += 1; next(); });
+app.use((req, res, next) => { 
+  metrics.requests += 1; 
+  req.startTime = Date.now();
+  
+  // Track latency when response finishes
+  res.on('finish', () => {
+    const latency = Date.now() - req.startTime;
+    if (latency < 50) metrics.latencyBuckets.under50ms++;
+    else if (latency < 200) metrics.latencyBuckets.under200ms++;
+    else if (latency < 1000) metrics.latencyBuckets.under1000ms++;
+    else metrics.latencyBuckets.over1000ms++;
+  });
+  
+  next(); 
+});
 app.use(logRequest);
 app.use(generalLimiter);
 app.use((req, res, next) => { req.csrfInput = () => csrfInput(req); next(); });
@@ -293,6 +317,12 @@ app.get('/metrics', (req, res) => {
     uptimeSeconds: Math.round(process.uptime()),
     requests: metrics.requests,
     errors: metrics.errors,
+    latency: {
+      under50ms: metrics.latencyBuckets.under50ms,
+      under200ms: metrics.latencyBuckets.under200ms,
+      under1000ms: metrics.latencyBuckets.under1000ms,
+      over1000ms: metrics.latencyBuckets.over1000ms
+    },
     startedAt: new Date(metrics.startTime).toISOString(),
     now: new Date(now).toISOString()
   });
