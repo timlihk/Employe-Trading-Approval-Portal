@@ -92,7 +92,7 @@ class EmployeeController {
    * Get employee history
    */
   getHistory = catchAsync(async (req, res) => {
-    const { message, error, start_date, end_date, ticker, trading_type, status, sort_by = 'id', sort_order = 'DESC' } = req.query;
+    const { message, error, start_date, end_date, ticker, trading_type, status, sort_by = 'id', sort_order = 'DESC', page = 1, limit = 25 } = req.query;
     const employeeEmail = req.session.employee.email;
     
     let banner = '';
@@ -103,14 +103,19 @@ class EmployeeController {
     }
 
     // Build filters
-    const filters = {};
+    const filters = {
+      page: parseInt(page),
+      limit: parseInt(limit)
+    };
     if (start_date) filters.start_date = start_date;
     if (end_date) filters.end_date = end_date;
     if (ticker) filters.ticker = ticker.toUpperCase();
     if (trading_type) filters.trading_type = trading_type;
     if (status) filters.status = status;
 
-    const requests = await TradingRequestService.getEmployeeRequests(employeeEmail, filters, sort_by, sort_order);
+    const result = await TradingRequestService.getEmployeeRequests(employeeEmail, filters, sort_by, sort_order);
+    const requests = result.data || result; // Handle both paginated and non-paginated responses
+    const pagination = result.pagination;
 
     // Generate table rows
     const tableRows = requests.map(request => {
@@ -211,7 +216,7 @@ class EmployeeController {
       <!-- Results Card -->
       <div class="card">
         <div class="card-header">
-          <h3 class="card-title">Trading Request History (${requests.length} requests) - Sorted by ${getSortDisplayName(currentSortBy)} ${currentSortOrder === 'DESC' ? '↓' : '↑'}</h3>
+          <h3 class="card-title">Trading Request History (${pagination ? `${pagination.total} total, showing ${requests.length}` : `${requests.length} requests`}) - Page ${pagination?.page || 1}/${pagination?.pages || 1}</h3>
         </div>
         <div class="card-body">
           ${requests.length > 0 ? `
@@ -255,6 +260,23 @@ class EmployeeController {
                 </tbody>
               </table>
             </div>
+            ${pagination && pagination.pages > 1 ? `
+            <div style="margin-top: var(--spacing-4); display: flex; justify-content: center; align-items: center; gap: var(--spacing-2);">
+              ${pagination.page > 1 ? `
+                <a href="/employee-history?${new URLSearchParams({...req.query, page: pagination.page - 1}).toString()}" 
+                   class="btn btn-secondary btn-sm" style="text-decoration: none;">← Previous</a>
+              ` : '<span class="btn btn-secondary btn-sm" style="opacity: 0.5; cursor: not-allowed;">← Previous</span>'}
+              
+              <span style="padding: 0 var(--spacing-3);">
+                Page ${pagination.page} of ${pagination.pages} (${pagination.total} total)
+              </span>
+              
+              ${pagination.page < pagination.pages ? `
+                <a href="/employee-history?${new URLSearchParams({...req.query, page: pagination.page + 1}).toString()}" 
+                   class="btn btn-secondary btn-sm" style="text-decoration: none;">Next →</a>
+              ` : '<span class="btn btn-secondary btn-sm" style="opacity: 0.5; cursor: not-allowed;">Next →</span>'}
+            </div>
+            ` : ''}
           ` : `
             <div style="text-align: center; padding: var(--spacing-8); color: var(--gs-neutral-600);">
               <p>No trading requests found${Object.keys(filters).length > 0 ? ' matching your filters' : ''}.</p>

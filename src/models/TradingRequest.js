@@ -182,10 +182,31 @@ class TradingRequest extends BaseModel {
       const sortColumn = validSortColumns.includes(sortBy) ? sortBy : 'id';
       const sortDirection = validSortOrders.includes(sortOrder.toUpperCase()) ? sortOrder.toUpperCase() : 'DESC';
       
+      // Get total count for pagination
+      const countSql = sql.replace('SELECT *', 'SELECT COUNT(*) as total');
+      
+      // Add pagination
+      const page = filters.page || 1;
+      const limit = filters.limit || 25;
+      const offset = (page - 1) * limit;
+      
       sql += ` ORDER BY ${sortColumn} ${sortDirection}`;
+      sql += ` LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
+      params.push(limit, offset);
 
-      this.query(sql, params).then(rows => {
-        resolve(rows);
+      Promise.all([
+        this.query(countSql, params.slice(0, -2)), // Count without LIMIT/OFFSET
+        this.query(sql, params) // Paginated results
+      ]).then(([countResult, rows]) => {
+        resolve({
+          data: rows,
+          pagination: {
+            total: countResult[0]?.total || 0,
+            page: page,
+            limit: limit,
+            pages: Math.ceil((countResult[0]?.total || 0) / limit)
+          }
+        });
       }).catch(err => {
         reject(err);
       });
