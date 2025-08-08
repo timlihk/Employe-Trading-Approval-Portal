@@ -23,6 +23,7 @@ const TradingRequestService = require('./services/TradingRequestService');
 
 // Models
 const TradingRequest = require('./models/TradingRequest');
+const RestrictedStock = require('./models/RestrictedStock');
 
 // Initialize database on startup
 const database = require('./models/database');
@@ -226,6 +227,83 @@ app.get('/db-status', requireAdmin, async (req, res) => {
   } catch (error) {
     res.status(500).json({
       database_status: 'error',
+      error: error.message
+    });
+  }
+});
+
+// Fix pending status endpoint for admin
+app.post('/fix-pending-statuses', requireAdmin, async (req, res) => {
+  try {
+    // Get all trading requests that are currently 'pending'
+    const pendingRequests = await database.query(`
+      SELECT id, ticker, status, created_at 
+      FROM trading_requests 
+      WHERE status = 'pending'
+      ORDER BY created_at DESC
+    `);
+    
+    const results = {
+      processed: 0,
+      approved: 0,
+      rejected: 0,
+      requests: []
+    };
+    
+    for (const request of pendingRequests) {
+      // Check if the ticker is restricted
+      const isRestricted = await RestrictedStock.isRestricted(request.ticker);
+      
+      let newStatus;
+      let rejectionReason = null;
+      
+      if (isRestricted) {
+        newStatus = 'rejected';
+        rejectionReason = `${request.ticker} is on the restricted trading list. This request has been automatically rejected. You may escalate with a business justification if needed.`;
+        results.rejected++;
+      } else {
+        newStatus = 'approved';
+        results.approved++;
+      }
+      
+      // Update the status
+      await database.run(`
+        UPDATE trading_requests 
+        SET status = $1, rejection_reason = $2, processed_at = CURRENT_TIMESTAMP 
+        WHERE id = $3
+      `, [newStatus, rejectionReason, request.id]);
+      
+      results.requests.push({
+        id: request.id,
+        ticker: request.ticker,
+        oldStatus: 'pending',
+        newStatus: newStatus,
+        isRestricted: isRestricted
+      });
+      
+      results.processed++;
+    }
+    
+    // Get final counts
+    const finalCounts = await database.get(`
+      SELECT 
+        COUNT(CASE WHEN status = 'approved' THEN 1 END) as approved_count,
+        COUNT(CASE WHEN status = 'rejected' THEN 1 END) as rejected_count,
+        COUNT(CASE WHEN status = 'pending' THEN 1 END) as still_pending_count,
+        COUNT(*) as total_count
+      FROM trading_requests
+    `);
+    
+    res.json({
+      success: true,
+      message: `Fixed ${results.processed} pending requests`,
+      results: results,
+      finalCounts: finalCounts
+    });
+    
+  } catch (error) {
+    res.status(500).json({
+      success: false,
       error: error.message
     });
   }
