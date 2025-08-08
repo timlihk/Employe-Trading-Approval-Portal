@@ -354,17 +354,23 @@ class EmployeeController {
    * Export employee history as CSV
    */
   exportHistory = catchAsync(async (req, res) => {
+    // Check authentication (redundant check for safety)
+    if (!req.session.employee || !req.session.employee.email) {
+      return res.redirect('/?error=authentication_required');
+    }
+
     const { start_date, end_date, ticker, trading_type, sort_by = 'id', sort_order = 'DESC' } = req.query;
     const employeeEmail = req.session.employee.email;
     
-    // Build filters
-    const filters = { employee_email: employeeEmail };
-    if (start_date) filters.start_date = start_date;
-    if (end_date) filters.end_date = end_date;
-    if (ticker) filters.ticker = ticker.toUpperCase();
-    if (trading_type) filters.trading_type = trading_type;
+    try {
+      // Build filters
+      const filters = { employee_email: employeeEmail };
+      if (start_date) filters.start_date = start_date;
+      if (end_date) filters.end_date = end_date;
+      if (ticker) filters.ticker = ticker.toUpperCase();
+      if (trading_type) filters.trading_type = trading_type;
 
-    const requests = await TradingRequestService.getEmployeeRequests(employeeEmail, filters, sort_by, sort_order);
+      const requests = await TradingRequestService.getEmployeeRequests(employeeEmail, filters, sort_by, sort_order);
 
     // Create filename with filters
     let filterSuffix = '';
@@ -393,9 +399,14 @@ class EmployeeController {
       csvContent += `"${request.id}","${createdDate}","${stockName}","${request.ticker}","${request.trading_type.toUpperCase()}","${request.shares}","$${estimatedValue}","${request.status.toUpperCase()}","${escalated}","${rejectionReason}"\n`;
     });
 
-    res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    res.send(csvContent);
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.send(csvContent);
+      
+    } catch (error) {
+      console.error('Export history error:', error);
+      return res.redirect('/employee-history?error=export_failed');
+    }
   });
 }
 

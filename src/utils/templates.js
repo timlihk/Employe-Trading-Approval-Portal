@@ -132,6 +132,9 @@ function generateNotificationBanner(query) {
           message += `: ${decodeURIComponent(query.details)}`;
         }
         break;
+      case 'export_failed':
+        message = 'Failed to export trading history. Please try again or contact support if the problem persists.';
+        break;
       default:
         message = decodeURIComponent(query.error);
     }
