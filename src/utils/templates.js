@@ -17,7 +17,7 @@ function renderBasePage(title, subtitle, content, navigation = '') {
                 <div>
                     <h1>Trading Compliance Portal</h1>
                     <div class="header-subtitle">Inspiration Capital Management Limited</div>
-                    <div style="font-size: var(--font-size-sm); color: var(--gs-neutral-500); margin-top: var(--spacing-1);">${subtitle}</div>
+                    <div class="font-sm text-muted mt-1">${subtitle}</div>
                 </div>
             </div>
         </header>
@@ -34,11 +34,11 @@ function renderBasePage(title, subtitle, content, navigation = '') {
 
 function renderAdminPage(title, content) {
   const navigation = `
-        <nav style="display: flex; gap: var(--spacing-4); padding: var(--spacing-4); background: var(--gs-neutral-200); border-radius: var(--radius); margin-bottom: var(--spacing-6);">
-            <a href="/admin-dashboard" class="btn ${title === 'Admin Dashboard' ? 'btn-primary' : 'btn-secondary'}" style="text-decoration: none;">Dashboard</a>
-            <a href="/admin-restricted-stocks" class="btn ${title === 'Restricted Stocks Management' ? 'btn-primary' : 'btn-secondary'}" style="text-decoration: none;">Restricted Stocks</a>
-            <a href="/admin-requests" class="btn ${title === 'Trading Requests' ? 'btn-primary' : 'btn-secondary'}" style="text-decoration: none;">Trading Requests</a>
-            <a href="/admin-logout" class="btn btn-secondary" style="text-decoration: none;">Logout</a>
+        <nav class="d-flex gap-4 p-4 bg-muted rounded mb-6">
+            <a href="/admin-dashboard" class="btn ${title === 'Admin Dashboard' ? 'btn-primary' : 'btn-secondary'}" class="text-decoration-none">Dashboard</a>
+            <a href="/admin-restricted-stocks" class="btn ${title === 'Restricted Stocks Management' ? 'btn-primary' : 'btn-secondary'}" class="text-decoration-none">Restricted Stocks</a>
+            <a href="/admin-requests" class="btn ${title === 'Trading Requests' ? 'btn-primary' : 'btn-secondary'}" class="text-decoration-none">Trading Requests</a>
+            <a href="/admin-logout" class="btn btn-secondary" class="text-decoration-none">Logout</a>
         </nav>`;
   
   return renderBasePage(title, 'Administrator Dashboard', content, navigation);
@@ -46,10 +46,10 @@ function renderAdminPage(title, content) {
 
 function renderEmployeePage(title, content, employeeName = '', employeeEmail = '') {
   const navigation = `
-        <nav style="display: flex; gap: var(--spacing-4); padding: var(--spacing-4); background: var(--gs-neutral-200); border-radius: var(--radius); margin-bottom: var(--spacing-6);">
-            <a href="/employee-dashboard" class="btn ${title === 'Employee Dashboard' ? 'btn-primary' : 'btn-secondary'}" style="text-decoration: none;">Dashboard</a>
-            <a href="/employee-history" class="btn ${title === 'Trading History' ? 'btn-primary' : 'btn-secondary'}" style="text-decoration: none;">My History</a>
-            <a href="/employee-logout" class="btn btn-secondary" style="text-decoration: none;">Logout</a>
+        <nav class="d-flex gap-4 p-4 bg-muted rounded mb-6">
+            <a href="/employee-dashboard" class="btn ${title === 'Employee Dashboard' ? 'btn-primary' : 'btn-secondary'}" class="text-decoration-none">Dashboard</a>
+            <a href="/employee-history" class="btn ${title === 'Trading History' ? 'btn-primary' : 'btn-secondary'}" class="text-decoration-none">My History</a>
+            <a href="/employee-logout" class="btn btn-secondary" class="text-decoration-none">Logout</a>
         </nav>`;
   
   const subtitle = employeeName ? `Welcome, ${employeeName}` : 'Pre-Trading Approval & Risk Management System';
@@ -148,17 +148,17 @@ function generateNotificationBanner(query) {
   const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
 
   return `
-        <div style="background: ${bgColor}; border: 1px solid ${borderColor}; color: ${textColor}; padding: var(--spacing-4); border-radius: var(--radius); margin-bottom: var(--spacing-6);">
+        <div class="border rounded p-4 mb-6" style="background: ${bgColor}; border-color: ${borderColor}; color: ${textColor};">
             <strong>${icon} ${message}</strong>
         </div>`;
 }
 
 function renderCard(title, content, subtitle = '') {
   return `
-        <div class="card" style="margin-bottom: var(--spacing-6);">
+        <div class="card mb-6">
             <div class="card-header">
                 <h3 class="card-title">${title}</h3>
-                ${subtitle ? `<p style="margin: var(--spacing-2) 0 0 0; color: var(--gs-neutral-600); font-size: var(--font-size-sm);">${subtitle}</p>` : ''}
+                ${subtitle ? `<p class="mt-2 m-0 text-muted font-sm">${subtitle}</p>` : ''}
             </div>
             <div class="card-body">
                 ${content}
@@ -169,7 +169,7 @@ function renderCard(title, content, subtitle = '') {
 function renderTable(headers, rows, emptyMessage = 'No data found') {
   const headerCells = headers.map(header => `<th>${header}</th>`).join('');
   const tableRows = rows.length > 0 ? rows.join('') : 
-    `<tr><td colspan="${headers.length}" style="text-align: center; padding: var(--spacing-6); color: var(--gs-neutral-600);">${emptyMessage}</td></tr>`;
+    `<tr><td colspan="${headers.length}" class="text-center p-6 text-muted">${emptyMessage}</td></tr>`;
 
   return `
                 <div class="table-container">
