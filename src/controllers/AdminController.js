@@ -81,15 +81,6 @@ class AdminController {
    * Get admin dashboard
    */
   getDashboard = catchAsync(async (req, res) => {
-    const { message, processed, approved, rejected } = req.query;
-    
-    let banner = '';
-    if (message === 'status_fix_complete') {
-      banner = generateNotificationBanner(
-        `Status fix completed! Updated ${processed} requests: ${approved} approved, ${rejected} rejected.`, 
-        'success'
-      );
-    }
     
     // Get pending requests count
     const pendingRequests = await TradingRequest.getPendingRequests();
@@ -98,7 +89,6 @@ class AdminController {
     const restrictedStocksCount = await RestrictedStock.getCount();
 
     const dashboardContent = `
-      ${banner}
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: var(--spacing-6); margin-bottom: var(--spacing-8);">
         <div class="card">
           <div class="card-body" style="text-align: center;">
@@ -139,12 +129,6 @@ class AdminController {
         <a href="/admin-backup-database" class="btn btn-outline" style="text-decoration: none; text-align: center; padding: var(--spacing-4);">
           💾 Backup Database
         </a>
-        <form method="post" action="/fix-pending-statuses" style="display: inline;">
-          <button type="submit" class="btn btn-warning" style="text-decoration: none; text-align: center; padding: var(--spacing-4); width: 100%;" 
-                  onclick="return confirm('This will update all pending requests to their correct approved/rejected status. Continue?');">
-            🔧 Fix Pending Statuses
-          </button>
-        </form>
       </div>
     `;
 
@@ -156,7 +140,7 @@ class AdminController {
    * Get admin requests page
    */
   getRequests = catchAsync(async (req, res) => {
-    const { message, sort_by = 'id', sort_order = 'DESC' } = req.query;
+    const { message, employee_email, start_date, end_date, ticker, trading_type, status, escalated, sort_by = 'id', sort_order = 'DESC' } = req.query;
     let banner = '';
     
     if (message === 'request_approved') {
@@ -165,23 +149,29 @@ class AdminController {
       banner = generateNotificationBanner('Trading request rejected successfully', 'success');
     }
 
-    const pendingRequests = await TradingRequest.getPendingRequests(sort_by, sort_order);
-    const escalatedRequests = await TradingRequest.getEscalatedRequests(sort_by, sort_order);
+    // Build filters based on query parameters
+    const filters = {};
+    if (employee_email) filters.employee_email = employee_email;
+    if (start_date) filters.start_date = start_date;
+    if (end_date) filters.end_date = end_date;
+    if (ticker) filters.ticker = ticker.toUpperCase();
+    if (trading_type) filters.trading_type = trading_type;
+    if (status) filters.status = status;
+    if (escalated === 'true') filters.escalated = true;
+    if (escalated === 'false') filters.escalated = false;
 
-    // Build table rows for pending requests
-    const pendingRows = pendingRequests.map(request => `
-      <tr>
-        <td style="text-align: center;">${request.id}</td>
-        <td style="text-align: center;">${formatHongKongTime(new Date(request.created_at))}</td>
-        <td>${request.employee_email}</td>
-        <td>${request.stock_name || 'N/A'}</td>
-        <td style="text-align: center; font-weight: 600;">${request.ticker}</td>
-        <td style="text-align: center;">${request.trading_type.toUpperCase()}</td>
-        <td style="text-align: center;">${parseInt(request.shares).toLocaleString()}</td>
-        <td style="text-align: center;">
-          $${parseFloat(request.total_value_usd || request.total_value || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}
-        </td>
-        <td style="text-align: center;">
+    // Get all requests based on filters
+    const allRequests = await TradingRequest.getFilteredHistory(filters, sort_by, sort_order);
+
+    // Build table rows for all requests
+    const tableRows = allRequests.map(request => {
+      const statusColor = request.status === 'approved' ? '#28a745' : 
+                         request.status === 'rejected' ? '#dc3545' : '#ffc107';
+      const rowClass = request.escalated ? 'style="background: #fff3cd;"' : '';
+      
+      let actionCell = '';
+      if (request.status === 'pending') {
+        actionCell = `
           <form method="post" action="/admin-approve-request" style="display: inline; margin-right: 10px;">
             <input type="hidden" name="requestId" value="${request.id}">
             <button type="submit" class="btn btn-success" style="padding: 5px 10px; font-size: 12px;">
@@ -191,29 +181,43 @@ class AdminController {
           <a href="/admin-reject-form/${request.id}" class="btn btn-danger" style="padding: 5px 10px; font-size: 12px; text-decoration: none;">
             ✗ Reject
           </a>
-        </td>
-      </tr>
-    `).join('');
-
-    // Build table rows for escalated requests
-    const escalatedRows = escalatedRequests.map(request => `
-      <tr style="background: #fff3cd;">
-        <td style="text-align: center;">${request.id}</td>
-        <td style="text-align: center;">${formatHongKongTime(new Date(request.created_at))}</td>
-        <td>${request.employee_email}</td>
-        <td>${request.stock_name || 'N/A'}</td>
-        <td style="text-align: center; font-weight: 600;">${request.ticker}</td>
-        <td style="text-align: center;">${request.trading_type.toUpperCase()}</td>
-        <td style="text-align: center;">${parseInt(request.shares).toLocaleString()}</td>
-        <td style="text-align: center;">
-          $${parseFloat(request.total_value_usd || request.total_value || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}
-        </td>
-        <td style="text-align: center;">
+        `;
+      } else if (request.escalated) {
+        actionCell = `
           <strong style="color: #856404;">ESCALATED</strong><br>
           <small style="color: #856404;">${request.escalation_reason || 'N/A'}</small>
-        </td>
-      </tr>
-    `).join('');
+        `;
+      } else {
+        actionCell = `
+          <span style="color: ${statusColor}; font-weight: 600;">
+            ${request.status.toUpperCase()}
+          </span>
+        `;
+      }
+
+      return `
+        <tr ${rowClass}>
+          <td style="text-align: center;">${request.id}</td>
+          <td style="text-align: center;">${formatHongKongTime(new Date(request.created_at))}</td>
+          <td>${request.employee_email}</td>
+          <td>${request.stock_name || 'N/A'}</td>
+          <td style="text-align: center; font-weight: 600;">${request.ticker}</td>
+          <td style="text-align: center;">${request.trading_type.toUpperCase()}</td>
+          <td style="text-align: center;">${parseInt(request.shares).toLocaleString()}</td>
+          <td style="text-align: center;">
+            $${parseFloat(request.total_value_usd || request.total_value || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}
+          </td>
+          <td style="text-align: center;">
+            <span style="background: ${statusColor}; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 500;">
+              ${request.status.toUpperCase()}
+            </span>
+          </td>
+          <td style="text-align: center;">
+            ${actionCell}
+          </td>
+        </tr>
+      `;
+    }).join('');
 
     // Generate sorting controls
     const currentSortBy = req.query.sort_by || 'id';
@@ -222,23 +226,80 @@ class AdminController {
 
     const requestsContent = `
       ${banner}
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-6);">
-        <div>
-          ${sortingControls}
+      
+      <!-- Filters Card -->
+      <div class="card" style="margin-bottom: var(--spacing-6);">
+        <div class="card-header">
+          <h3 class="card-title">Filter Trading Requests</h3>
         </div>
-        <div>
-          <a href="/admin-export-trading-requests" class="btn btn-outline" style="text-decoration: none;">
-            📥 Export All Requests (CSV)
-          </a>
+        <div class="card-body">
+          <form method="get" action="/admin-requests">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--spacing-4);">
+              <div>
+                <label style="display: block; margin-bottom: var(--spacing-2); font-weight: 600;">Employee Email:</label>
+                <input type="email" name="employee_email" value="${employee_email || ''}" placeholder="john@company.com"
+                       style="width: 100%; padding: var(--spacing-2); border: 1px solid var(--gs-neutral-300); border-radius: var(--radius);">
+              </div>
+              <div>
+                <label style="display: block; margin-bottom: var(--spacing-2); font-weight: 600;">Start Date:</label>
+                <input type="date" name="start_date" value="${start_date || ''}" 
+                       style="width: 100%; padding: var(--spacing-2); border: 1px solid var(--gs-neutral-300); border-radius: var(--radius);">
+              </div>
+              <div>
+                <label style="display: block; margin-bottom: var(--spacing-2); font-weight: 600;">End Date:</label>
+                <input type="date" name="end_date" value="${end_date || ''}" 
+                       style="width: 100%; padding: var(--spacing-2); border: 1px solid var(--gs-neutral-300); border-radius: var(--radius);">
+              </div>
+              <div>
+                <label style="display: block; margin-bottom: var(--spacing-2); font-weight: 600;">Ticker:</label>
+                <input type="text" name="ticker" value="${ticker || ''}" placeholder="e.g., AAPL" 
+                       style="width: 100%; padding: var(--spacing-2); border: 1px solid var(--gs-neutral-300); border-radius: var(--radius); text-transform: uppercase;">
+              </div>
+              <div>
+                <label style="display: block; margin-bottom: var(--spacing-2); font-weight: 600;">Type:</label>
+                <select name="trading_type" 
+                        style="width: 100%; padding: var(--spacing-2); border: 1px solid var(--gs-neutral-300); border-radius: var(--radius);">
+                  <option value="">All Types</option>
+                  <option value="buy" ${trading_type === 'buy' ? 'selected' : ''}>Buy</option>
+                  <option value="sell" ${trading_type === 'sell' ? 'selected' : ''}>Sell</option>
+                </select>
+              </div>
+              <div>
+                <label style="display: block; margin-bottom: var(--spacing-2); font-weight: 600;">Status:</label>
+                <select name="status" 
+                        style="width: 100%; padding: var(--spacing-2); border: 1px solid var(--gs-neutral-300); border-radius: var(--radius);">
+                  <option value="">All Statuses</option>
+                  <option value="pending" ${status === 'pending' ? 'selected' : ''}>Pending</option>
+                  <option value="approved" ${status === 'approved' ? 'selected' : ''}>Approved</option>
+                  <option value="rejected" ${status === 'rejected' ? 'selected' : ''}>Rejected</option>
+                </select>
+              </div>
+              <div>
+                <label style="display: block; margin-bottom: var(--spacing-2); font-weight: 600;">Escalated:</label>
+                <select name="escalated" 
+                        style="width: 100%; padding: var(--spacing-2); border: 1px solid var(--gs-neutral-300); border-radius: var(--radius);">
+                  <option value="">All</option>
+                  <option value="true" ${escalated === 'true' ? 'selected' : ''}>Yes</option>
+                  <option value="false" ${escalated === 'false' ? 'selected' : ''}>No</option>
+                </select>
+              </div>
+            </div>
+            <div style="margin-top: var(--spacing-4); text-align: center;">
+              <button type="submit" class="btn btn-primary" style="margin-right: var(--spacing-3);">Apply Filters</button>
+              <a href="/admin-requests" class="btn btn-secondary" style="text-decoration: none; margin-right: var(--spacing-3);">Clear Filters</a>
+              <a href="/admin-export-trading-requests" class="btn btn-outline" style="text-decoration: none;">📥 Export CSV</a>
+            </div>
+          </form>
         </div>
       </div>
       
+      <!-- Results Card -->
       <div class="card">
         <div class="card-header">
-          <h3 class="card-title">Pending Requests (${pendingRequests.length}) - Sorted by ${getSortDisplayName(currentSortBy)} ${currentSortOrder === 'DESC' ? '↓' : '↑'}</h3>
+          <h3 class="card-title">Trading Requests (${allRequests.length}) - Sorted by ${getSortDisplayName(currentSortBy)} ${currentSortOrder === 'DESC' ? '↓' : '↑'}</h3>
         </div>
         <div class="card-body">
-          ${pendingRequests.length > 0 ? `
+          ${allRequests.length > 0 ? `
             <div class="table-container">
               <table class="table">
                 <thead>
@@ -251,49 +312,21 @@ class AdminController {
                     <th>Type</th>
                     <th>Shares</th>
                     <th>Total Value (USD)</th>
+                    <th>Status</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  ${pendingRows}
+                  ${tableRows}
                 </tbody>
               </table>
             </div>
-          ` : '<p>No pending requests</p>'}
-        </div>
-      </div>
-
-      ${escalatedRequests.length > 0 ? `
-        <div class="card" style="margin-top: var(--spacing-6);">
-          <div class="card-header">
-            <h3 class="card-title">⚠️ Escalated Requests (${escalatedRequests.length})</h3>
-          </div>
-          <div class="card-body">
-            <div class="table-container">
-              <table class="table">
-                <thead>
-                  <tr>
-                    <th>ID</th>
-                    <th>Date</th>
-                    <th>Employee</th>
-                    <th>Company</th>
-                    <th>Ticker</th>
-                    <th>Type</th>
-                    <th>Shares</th>
-                    <th>Total Value (USD)</th>
-                    <th>Escalation</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${escalatedRows}
-                </tbody>
-              </table>
+          ` : `
+            <div style="text-align: center; padding: var(--spacing-8); color: var(--gs-neutral-600);">
+              <p>No trading requests found${Object.keys(filters).length > 0 ? ' matching your filters' : ''}.</p>
             </div>
-          </div>
+          `}
         </div>
-      ` : ''}
-
-
     `;
 
     const html = renderAdminPage('Trading Requests', requestsContent);
@@ -493,28 +526,38 @@ class AdminController {
   exportTradingRequests = catchAsync(async (req, res) => {
     const { sort_by = 'id', sort_order = 'DESC' } = req.query;
     
-    // Get all trading requests with current sorting
-    const requests = await TradingRequest.getAll(sort_by, sort_order);
-    
-    const timestamp = formatHongKongTime(new Date(), true).replace(/[/:,\s]/g, '-');
-    const filename = `trading-requests-export-${timestamp}.csv`;
-
-    let csvContent = 'Request ID,Date Created,Employee Email,Stock Name,Ticker,Trading Type,Shares,Estimated Value,Status,Escalated,Escalation Reason,Processed Date\n';
-    
-    requests.forEach(request => {
-      const createdDate = formatHongKongTime(new Date(request.created_at));
-      const stockName = (request.stock_name || 'N/A').replace(/"/g, '""');
-      const estimatedValue = (request.total_value_usd || request.total_value || 0).toFixed(2);
-      const escalated = request.escalated ? 'Yes' : 'No';
-      const escalationReason = (request.escalation_reason || '').replace(/"/g, '""');
-      const processedDate = request.processed_at ? formatHongKongTime(new Date(request.processed_at)) : 'N/A';
+    try {
+      // Get all trading requests with current sorting
+      const requests = await TradingRequest.getAll(sort_by, sort_order);
       
-      csvContent += `"${request.id}","${createdDate}","${request.employee_email}","${stockName}","${request.ticker}","${request.trading_type.toUpperCase()}","${request.shares}","$${estimatedValue}","${request.status.toUpperCase()}","${escalated}","${escalationReason}","${processedDate}"\n`;
-    });
+      const now = new Date();
+      const timestamp = now.toISOString().slice(0, 19).replace(/:/g, '-');
+      const filename = `trading-requests-export-${timestamp}.csv`;
 
-    res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    res.send(csvContent);
+      let csvContent = 'Request ID,Date Created,Employee Email,Stock Name,Ticker,Trading Type,Shares,Estimated Value (USD),Status,Escalated,Escalation Reason,Processed Date\n';
+      
+      requests.forEach(request => {
+        const createdDate = new Date(request.created_at).toLocaleDateString('en-GB');
+        const stockName = (request.stock_name || 'N/A').replace(/"/g, '""');
+        const estimatedValue = (request.total_value_usd || request.total_value || 0);
+        const escalated = request.escalated ? 'Yes' : 'No';
+        const escalationReason = (request.escalation_reason || '').replace(/"/g, '""');
+        const processedDate = request.processed_at ? new Date(request.processed_at).toLocaleDateString('en-GB') : 'N/A';
+        
+        csvContent += `"${request.id}","${createdDate}","${request.employee_email}","${stockName}","${request.ticker}","${request.trading_type.toUpperCase()}","${request.shares}","${estimatedValue}","${request.status.toUpperCase()}","${escalated}","${escalationReason}","${processedDate}"\n`;
+      });
+
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.send(csvContent);
+      
+    } catch (error) {
+      console.error('Export error:', error);
+      res.status(500).json({
+        error: 'Failed to export trading requests',
+        details: error.message
+      });
+    }
   });
 
   /**

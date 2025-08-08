@@ -72,11 +72,6 @@ class EmployeeController {
         </div>
       </div>
 
-      <div style="margin-top: var(--spacing-6); text-align: center;">
-        <a href="/employee-history" class="btn btn-secondary" style="text-decoration: none; margin-right: var(--spacing-3);">
-          📋 View Request History
-        </a>
-      </div>
 
     `;
 
@@ -88,7 +83,7 @@ class EmployeeController {
    * Get employee history
    */
   getHistory = catchAsync(async (req, res) => {
-    const { message, start_date, end_date, ticker, trading_type, sort_by = 'id', sort_order = 'DESC' } = req.query;
+    const { message, start_date, end_date, ticker, trading_type, status, sort_by = 'id', sort_order = 'DESC' } = req.query;
     const employeeEmail = req.session.employee.email;
     
     let banner = '';
@@ -102,6 +97,7 @@ class EmployeeController {
     if (end_date) filters.end_date = end_date;
     if (ticker) filters.ticker = ticker.toUpperCase();
     if (trading_type) filters.trading_type = trading_type;
+    if (status) filters.status = status;
 
     const requests = await TradingRequestService.getEmployeeRequests(employeeEmail, filters, sort_by, sort_order);
 
@@ -150,11 +146,6 @@ class EmployeeController {
     const historyContent = `
       ${banner}
       
-      <!-- Sorting Controls -->
-      <div style="margin-bottom: var(--spacing-4); padding: var(--spacing-4); background: var(--gs-neutral-50); border-radius: var(--radius); border: 1px solid var(--gs-neutral-200);">
-        ${sortingControls}
-      </div>
-      
       <!-- Filters Card -->
       <div class="card" style="margin-bottom: var(--spacing-6);">
         <div class="card-header">
@@ -187,6 +178,16 @@ class EmployeeController {
                   <option value="sell" ${trading_type === 'sell' ? 'selected' : ''}>Sell</option>
                 </select>
               </div>
+              <div>
+                <label style="display: block; margin-bottom: var(--spacing-2); font-weight: 600;">Status:</label>
+                <select name="status" 
+                        style="width: 100%; padding: var(--spacing-2); border: 1px solid var(--gs-neutral-300); border-radius: var(--radius);">
+                  <option value="">All Statuses</option>
+                  <option value="approved" ${req.query.status === 'approved' ? 'selected' : ''}>Approved</option>
+                  <option value="rejected" ${req.query.status === 'rejected' ? 'selected' : ''}>Rejected</option>
+                  <option value="pending" ${req.query.status === 'pending' ? 'selected' : ''}>Pending</option>
+                </select>
+              </div>
             </div>
             <div style="margin-top: var(--spacing-4); text-align: center;">
               <button type="submit" class="btn btn-primary" style="margin-right: var(--spacing-3);">Apply Filters</button>
@@ -207,13 +208,33 @@ class EmployeeController {
               <table class="table">
                 <thead>
                   <tr>
-                    <th>ID</th>
-                    <th>Date</th>
+                    <th>
+                      <a href="/employee-history?${new URLSearchParams({...req.query, sort_by: 'id', sort_order: currentSortBy === 'id' && currentSortOrder === 'ASC' ? 'DESC' : 'ASC'}).toString()}" 
+                         style="text-decoration: none; color: inherit; display: flex; align-items: center; justify-content: space-between;">
+                        ID ${currentSortBy === 'id' ? (currentSortOrder === 'ASC' ? '↑' : '↓') : ''}
+                      </a>
+                    </th>
+                    <th>
+                      <a href="/employee-history?${new URLSearchParams({...req.query, sort_by: 'created_at', sort_order: currentSortBy === 'created_at' && currentSortOrder === 'ASC' ? 'DESC' : 'ASC'}).toString()}" 
+                         style="text-decoration: none; color: inherit; display: flex; align-items: center; justify-content: space-between;">
+                        Date ${currentSortBy === 'created_at' ? (currentSortOrder === 'ASC' ? '↑' : '↓') : ''}
+                      </a>
+                    </th>
                     <th>Company</th>
-                    <th>Ticker</th>
+                    <th>
+                      <a href="/employee-history?${new URLSearchParams({...req.query, sort_by: 'ticker', sort_order: currentSortBy === 'ticker' && currentSortOrder === 'ASC' ? 'DESC' : 'ASC'}).toString()}" 
+                         style="text-decoration: none; color: inherit; display: flex; align-items: center; justify-content: space-between;">
+                        Ticker ${currentSortBy === 'ticker' ? (currentSortOrder === 'ASC' ? '↑' : '↓') : ''}
+                      </a>
+                    </th>
                     <th>Type</th>
                     <th>Shares</th>
-                    <th>Total Value (USD)</th>
+                    <th>
+                      <a href="/employee-history?${new URLSearchParams({...req.query, sort_by: 'total_value_usd', sort_order: currentSortBy === 'total_value_usd' && currentSortOrder === 'ASC' ? 'DESC' : 'ASC'}).toString()}" 
+                         style="text-decoration: none; color: inherit; display: flex; align-items: center; justify-content: space-between;">
+                        Total Value (USD) ${currentSortBy === 'total_value_usd' ? (currentSortOrder === 'ASC' ? '↑' : '↓') : ''}
+                      </a>
+                    </th>
                     <th>Status</th>
                     <th>Actions</th>
                   </tr>

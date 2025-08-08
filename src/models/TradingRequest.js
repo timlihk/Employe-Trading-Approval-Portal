@@ -163,8 +163,20 @@ class TradingRequest extends BaseModel {
         paramIndex++;
       }
 
+      if (filters.status) {
+        sql += ` AND LOWER(status) = $${paramIndex}`;
+        params.push(filters.status.toLowerCase());
+        paramIndex++;
+      }
+
+      if (filters.escalated !== undefined) {
+        sql += ` AND escalated = $${paramIndex}`;
+        params.push(filters.escalated);
+        paramIndex++;
+      }
+
       // Add dynamic sorting
-      const validSortColumns = ['id', 'created_at', 'ticker', 'employee_email'];
+      const validSortColumns = ['id', 'created_at', 'ticker', 'employee_email', 'total_value_usd'];
       const validSortOrders = ['ASC', 'DESC'];
       
       const sortColumn = validSortColumns.includes(sortBy) ? sortBy : 'id';
