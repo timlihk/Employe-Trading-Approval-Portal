@@ -1,4 +1,5 @@
 const TradingRequestService = require('../services/TradingRequestService');
+const TradingRequest = require('../models/TradingRequest');
 const { catchAsync } = require('../middleware/errorHandler');
 const { renderEmployeePage, generateNotificationBanner, renderCard } = require('../utils/templates');
 
@@ -182,46 +183,47 @@ class TradingRequestController {
       return res.redirect('/?error=authentication_required');
     }
 
-    // Get the request details
-    const request = await TradingRequest.getById(requestId);
-    if (!request || request.employee_email !== req.session.employee.email) {
-      return res.redirect('/employee-history');
-    }
+    try {
+      // Get the request details
+      const request = await TradingRequest.getById(requestId);
+      if (!request || request.employee_email !== req.session.employee.email) {
+        return res.redirect('/employee-history?error=request_not_found');
+      }
 
-    let statusBanner = '';
-    let statusText = '';
-    let statusColor = '';
+      let statusBanner = '';
+      let statusText = '';
+      let statusColor = '';
     
-    if (status === 'approved') {
-      statusBanner = `
-        <div style="background: #d4edda; border: 1px solid #c3e6cb; padding: var(--spacing-4); border-radius: var(--radius); margin-bottom: var(--spacing-6); text-align: center;">
-          <h3 style="margin: 0; color: #155724;">✅ Request Automatically Approved</h3>
-          <p style="margin: var(--spacing-2) 0 0 0; color: #155724;">Your trading request has been automatically approved since ${request.ticker} is not on the restricted list.</p>
-        </div>`;
-      statusText = 'APPROVED';
-      statusColor = '#28a745';
-    } else if (status === 'rejected') {
-      statusBanner = `
-        <div style="background: #f8d7da; border: 1px solid #f5c6cb; padding: var(--spacing-4); border-radius: var(--radius); margin-bottom: var(--spacing-6); text-align: center;">
-          <h3 style="margin: 0; color: #721c24;">❌ Request Automatically Rejected</h3>
-          <p style="margin: var(--spacing-2) 0 0 0; color: #721c24;">Your trading request has been automatically rejected because ${request.ticker} is on the restricted trading list.</p>
-          <p style="margin: var(--spacing-2) 0 0 0; color: #721c24;"><strong>You can escalate this request with a business justification below.</strong></p>
-        </div>`;
-      statusText = 'REJECTED';
-      statusColor = '#dc3545';
-    } else {
-      statusBanner = `
-        <div style="background: #e7f3ff; border: 1px solid #b3d9ff; padding: var(--spacing-4); border-radius: var(--radius); margin-bottom: var(--spacing-6); text-align: center;">
-          <h3 style="margin: 0; color: var(--gs-dark-blue);">✅ Request Created Successfully</h3>
-          <p style="margin: var(--spacing-2) 0 0 0; color: var(--gs-neutral-700);">Your trading request has been submitted and is pending approval.</p>
-        </div>`;
-      statusText = 'PENDING APPROVAL';
-      statusColor = '#ffc107';
-    }
+        if (status === 'approved') {
+          statusBanner = `
+            <div style="background: #d4edda; border: 1px solid #c3e6cb; padding: var(--spacing-4); border-radius: var(--radius); margin-bottom: var(--spacing-6); text-align: center;">
+              <h3 style="margin: 0; color: #155724;">✅ Request Automatically Approved</h3>
+              <p style="margin: var(--spacing-2) 0 0 0; color: #155724;">Your trading request has been automatically approved since ${request.ticker} is not on the restricted list.</p>
+            </div>`;
+          statusText = 'APPROVED';
+          statusColor = '#28a745';
+      } else if (status === 'rejected') {
+        statusBanner = `
+          <div style="background: #f8d7da; border: 1px solid #f5c6cb; padding: var(--spacing-4); border-radius: var(--radius); margin-bottom: var(--spacing-6); text-align: center;">
+            <h3 style="margin: 0; color: #721c24;">❌ Request Automatically Rejected</h3>
+            <p style="margin: var(--spacing-2) 0 0 0; color: #721c24;">Your trading request has been automatically rejected because ${request.ticker} is on the restricted trading list.</p>
+            <p style="margin: var(--spacing-2) 0 0 0; color: #721c24;"><strong>You can escalate this request with a business justification below.</strong></p>
+          </div>`;
+        statusText = 'REJECTED';
+        statusColor = '#dc3545';
+      } else {
+        statusBanner = `
+          <div style="background: #e7f3ff; border: 1px solid #b3d9ff; padding: var(--spacing-4); border-radius: var(--radius); margin-bottom: var(--spacing-6); text-align: center;">
+            <h3 style="margin: 0; color: var(--gs-dark-blue);">✅ Request Created Successfully</h3>
+            <p style="margin: var(--spacing-2) 0 0 0; color: var(--gs-neutral-700);">Your trading request has been submitted and is pending approval.</p>
+          </div>`;
+        statusText = 'PENDING APPROVAL';
+        statusColor = '#ffc107';
+      }
 
-    const resultContent = `
-      <div style="max-width: 600px; margin: 0 auto;">
-        ${statusBanner}
+      const resultContent = `
+        <div style="max-width: 600px; margin: 0 auto;">
+          ${statusBanner}
 
         <div class="card">
           <div class="card-header">
@@ -296,11 +298,15 @@ class TradingRequestController {
             View Request History
           </a>
         </div>
-      </div>
-    `;
+        </div>
+      `;
 
-    const html = renderEmployeePage('Trading Request Result', resultContent, req.session.employee.name, req.session.employee.email);
-    res.send(html);
+        const html = renderEmployeePage('Trading Request Result', resultContent, req.session.employee.name, req.session.employee.email);
+        res.send(html);
+    } catch (error) {
+      console.error('Error in showTradeResult:', error);
+      return res.redirect(`/employee-history?error=${encodeURIComponent('Unable to load trade result')}`);
+    }
   });
 
   /**
