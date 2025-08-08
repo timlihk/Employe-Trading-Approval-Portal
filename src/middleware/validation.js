@@ -42,8 +42,9 @@ const validateTradingRequest = [
   body('ticker')
     .trim()
     .isLength({ min: 1, max: 15 })
-    .matches(/^[A-Z0-9.-]+$/)
-    .withMessage('Invalid ticker format'),
+    .matches(/^[A-Za-z0-9.-]+$/)
+    .withMessage('Invalid ticker format')
+    .customSanitizer(value => value.toUpperCase()),
   body('shares')
     .isInt({ min: 1, max: 1000000 })
     .withMessage('Shares must be between 1 and 1,000,000'),
@@ -58,8 +59,9 @@ const validateStockTicker = [
   body('ticker')
     .trim()
     .isLength({ min: 1, max: 15 })
-    .matches(/^[A-Z0-9.-]+$/)
-    .withMessage('Invalid ticker format'),
+    .matches(/^[A-Za-z0-9.-]+$/)
+    .withMessage('Invalid ticker format')
+    .customSanitizer(value => value.toUpperCase()),
   handleValidationErrors
 ];
 
