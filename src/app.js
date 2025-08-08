@@ -1,6 +1,5 @@
 require('dotenv').config();
 const express = require('express');
-const cors = require('cors');
 const helmet = require('helmet');
 const session = require('express-session');
 const path = require('path');
@@ -134,24 +133,70 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // Postgres-backed session store in production
+// Strategy: PostgreSQL sessions are the steady state for persistence across deployments
+// Fallback to memory store only as emergency measure (with loud warnings)
+// Use SESSION_STORE_NO_FALLBACK=true to fail-fast in strict production environments
 let sessionStore = undefined;
-if (process.env.NODE_ENV === 'production' && process.env.DATABASE_URL) {
-  try {
+
+async function initSessionStore() {
+  if (process.env.NODE_ENV === 'production' && process.env.DATABASE_URL) {
     const PgSession = pgSessionFactory(session);
-    sessionStore = new PgSession({
-      conObject: {
-        connectionString: process.env.DATABASE_URL,
-        ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
-      },
-      createTableIfMissing: true,
-      tableName: 'session'
-    });
-    logger.info('PostgreSQL session store configured');
-  } catch (error) {
-    logger.warn('Failed to configure PostgreSQL session store, falling back to memory store', { error: error.message });
-    sessionStore = undefined;
+    
+    // Retry logic with exponential backoff
+    const maxRetries = 3;
+    const retryDelays = [1000, 2000, 4000]; // 1s, 2s, 4s
+    
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        sessionStore = new PgSession({
+          pool: database.getPool(), // Use the real Pool instance
+          createTableIfMissing: true,
+          tableName: 'session',
+          pruneSessionInterval: 60 * 15, // Cleanup every 15 minutes
+          // TODO: Add index for efficient cleanup - CREATE INDEX idx_session_expire ON session(expire);
+        });
+        
+        logger.info('✅ PostgreSQL session store configured successfully', { attempt: attempt + 1 });
+        break; // Success, exit retry loop
+        
+      } catch (error) {
+        logger.warn(`Session store attempt ${attempt + 1}/${maxRetries} failed`, { 
+          error: error.message,
+          willRetry: attempt < maxRetries - 1 
+        });
+        
+        if (attempt < maxRetries - 1) {
+          // Wait before retry
+          await new Promise(resolve => setTimeout(resolve, retryDelays[attempt]));
+        } else {
+          // All retries failed
+          const disallowFallback = process.env.SESSION_STORE_NO_FALLBACK === 'true';
+          
+          if (disallowFallback) {
+            logger.error('❌ FATAL: PostgreSQL session store failed after retries and fallback is disabled', { error: error.message });
+            process.exit(1);
+          }
+          
+          // LOUD WARNING: This is temporary and should be investigated
+          logger.error('🚨 CRITICAL WARNING: PostgreSQL session store failed after retries, falling back to MEMORY STORE', {
+            error: error.message,
+            attempts: maxRetries,
+            impact: 'Sessions will not persist across deployments',
+            action: 'INVESTIGATE DATABASE CONNECTION IMMEDIATELY',
+            temporary: true
+          });
+          
+          sessionStore = undefined;
+        }
+      }
+    }
   }
 }
+
+// Initialize session store asynchronously
+initSessionStore().catch(error => {
+  logger.error('Session store initialization failed', { error: error.message });
+});
 
 app.use(session({
   secret: process.env.SESSION_SECRET,
