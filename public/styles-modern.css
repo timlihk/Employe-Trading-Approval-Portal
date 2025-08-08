@@ -2723,6 +2723,16 @@ textarea.form-control {
   gap: 24px;
 }
 
+/* Flexbox utilities */
+.flex-grow-1 {
+  flex-grow: 1;
+}
+
+/* Margin utilities */
+.mb-0 {
+  margin-bottom: 0 !important;
+}
+
 /* Mobile Responsive - Tesla-style */
 @media (max-width: 767px) {
   .container {

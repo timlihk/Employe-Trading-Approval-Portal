@@ -463,9 +463,9 @@ class AdminController {
         </div>
         <div class="card-body p-6">
           <form method="post" action="/admin-add-stock">\n            ${req.csrfInput()}
-            <div class="d-flex gap-4 align-items-end">
+            <div class="d-flex gap-4 align-items-center">
+              <label class="form-label mb-0">Stock Ticker *</label>
               <div class="flex-grow-1">
-                <label class="form-label">Stock Ticker *</label>
                 <input type="text" name="ticker" required placeholder="e.g., AAPL" 
                        class="form-control text-uppercase">
               </div>
