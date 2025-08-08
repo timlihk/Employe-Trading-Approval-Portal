@@ -185,11 +185,8 @@ class AdminController {
           <small class="text-warning">${request.escalation_reason || 'N/A'}</small>
         `;
       } else {
-        actionCell = `
-          <span class="badge ${request.status === 'approved' ? 'badge-success' : request.status === 'rejected' ? 'badge-danger' : 'badge-warning'}">
-            ${request.status.toUpperCase()}
-          </span>
-        `;
+        // No further actions available - show dash instead of duplicating status
+        actionCell = '<span class="text-muted">–</span>';
       }
 
       return `

@@ -162,12 +162,12 @@ class EmployeeController {
           </td>
           <td class="text-center">
             ${request.status === 'rejected' && request.rejection_reason ? 
-              `<span class="text-danger cursor-help font-xs" title="${request.rejection_reason}">View Reason</span>` :
+              `<span class="text-danger cursor-help text-sm" title="${request.rejection_reason}">View Reason</span>` :
               (request.status === 'pending' && !request.escalated ? 
                 `<a href="/escalate-form/${request.id}" class="btn btn-outline btn-sm text-decoration-none">Escalate</a>` :
                 (request.escalated ? 
-                  '<span class="text-warning font-xs">Escalated</span>' :
-                  '<span class="text-muted font-xs">-</span>')
+                  '<span class="text-warning text-sm">Escalated</span>' :
+                  '<span class="text-muted">–</span>')
               )
             }
           </td>
