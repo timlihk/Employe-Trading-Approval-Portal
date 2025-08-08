@@ -36,7 +36,15 @@ class EmployeeController {
                        placeholder="e.g., AAPL, MSFT, GOOGL" 
                        style="width: 100%; padding: var(--spacing-3); border: 1px solid var(--gs-neutral-300); border-radius: var(--radius); text-transform: uppercase;"
                        maxlength="15" pattern="[A-Za-z0-9.-]+">
-                <small style="color: var(--gs-neutral-600);">Enter the stock ticker symbol</small>
+                <div style="margin-top: var(--spacing-2);">
+                  <small style="color: var(--gs-neutral-600);">Enter a valid stock ticker symbol. Examples:</small>
+                  <div style="margin-top: var(--spacing-1); padding: var(--spacing-2); background: var(--gs-neutral-100); border-radius: var(--radius); font-size: 14px;">
+                    <strong>US Markets:</strong> AAPL, MSFT, GOOGL, TSLA, NVDA, AMZN<br>
+                    <strong>Hong Kong:</strong> 0700.HK (Tencent), 9988.HK (Alibaba), 2318.HK (Ping An)<br>
+                    <strong>UK:</strong> BARC.L (Barclays), LLOY.L (Lloyds), VOD.L (Vodafone)<br>
+                    <strong>Europe:</strong> ASML.AS (ASML), SAP.DE (SAP), NESN.SW (Nestle)
+                  </div>
+                </div>
               </div>
               
               <div>

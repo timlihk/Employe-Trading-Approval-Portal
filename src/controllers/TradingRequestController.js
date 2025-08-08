@@ -22,7 +22,8 @@ class TradingRequestController {
       // Just validate ticker and get info WITHOUT creating request yet
       const tickerValidation = await TradingRequestService.validateTicker(ticker);
       if (!tickerValidation.isValid) {
-        throw new Error(`Invalid ticker: ${ticker}. ${tickerValidation.error}`);
+        const errorMessage = `Invalid ticker symbol "${ticker.toUpperCase()}". ${tickerValidation.error}. Please check the ticker symbol and try again. Use formats like AAPL (US), 0700.HK (Hong Kong), BARC.L (UK), or SAP.DE (Europe).`;
+        throw new Error(errorMessage);
       }
 
       // Check if stock is restricted

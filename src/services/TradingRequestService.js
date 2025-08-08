@@ -46,7 +46,7 @@ class TradingRequestService {
       
       return {
         isValid: false,
-        error: 'Ticker not found or invalid'
+        error: 'Ticker not found in market data. Please verify the ticker symbol is correct and the stock is actively traded'
       };
     } catch (error) {
       logger.error('Ticker validation failed', {
@@ -57,13 +57,13 @@ class TradingRequestService {
       if (error.name === 'AbortError') {
         return {
           isValid: false,
-          error: 'Ticker validation timed out'
+          error: 'Ticker validation timed out. Please try again'
         };
       }
       
       return {
         isValid: false,
-        error: 'Unable to validate ticker'
+        error: 'Unable to validate ticker due to network issues. Please try again'
       };
     }
   }
