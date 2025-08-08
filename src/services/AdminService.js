@@ -4,26 +4,60 @@ const TradingRequest = require('../models/TradingRequest');
 const AuditLog = require('../models/AuditLog');
 const { AppError } = require('../middleware/errorHandler');
 const { logger } = require('../utils/logger');
+const bcrypt = require('bcryptjs');
 
 class AdminService {
   /**
-   * Authenticate admin user
+   * Authenticate admin user with bcrypt password hashing
    */
   async authenticateAdmin(username, password) {
     try {
       const expectedUsername = process.env.ADMIN_USERNAME || 'admin';
-      const expectedPassword = process.env.ADMIN_PASSWORD || 'password123';
+      
+      // Check username first
+      if (username !== expectedUsername) {
+        logger.warn('Admin authentication failed', { 
+          username, 
+          reason: 'Invalid username' 
+        });
+        return { authenticated: false };
+      }
 
-      if (username === expectedUsername && password === expectedPassword) {
+      // Check if we have bcrypt hash or fallback to plaintext (for migration)
+      const passwordHash = process.env.ADMIN_PASSWORD_HASH;
+      const plaintextPassword = process.env.ADMIN_PASSWORD;
+      
+      let isValidPassword = false;
+      
+      if (passwordHash) {
+        // Use bcrypt hash (preferred method)
+        isValidPassword = await bcrypt.compare(password, passwordHash);
+        if (isValidPassword) {
+          logger.info('Admin authentication successful (bcrypt)', { username });
+        }
+      } else if (plaintextPassword) {
+        // Fallback to plaintext comparison (deprecated, log warning)
+        isValidPassword = password === plaintextPassword;
+        if (isValidPassword) {
+          logger.warn('Admin authentication using plaintext password - UPGRADE TO BCRYPT HASH', { 
+            username,
+            security_warning: 'ADMIN_PASSWORD_HASH not set, using deprecated ADMIN_PASSWORD'
+          });
+        }
+      }
+
+      if (isValidPassword) {
         logger.info('Admin authentication successful', { username });
         return { username, authenticated: true };
       }
 
       logger.warn('Admin authentication failed', { 
         username, 
-        reason: 'Invalid credentials' 
+        reason: 'Invalid credentials',
+        method: passwordHash ? 'bcrypt' : 'plaintext_fallback'
       });
       return { authenticated: false };
+      
     } catch (error) {
       logger.error('Admin authentication error', {
         username,
@@ -31,6 +65,14 @@ class AdminService {
       });
       throw new AppError('Authentication service error', 500);
     }
+  }
+
+  /**
+   * Generate bcrypt hash for admin password (utility method)
+   */
+  async generatePasswordHash(password) {
+    const saltRounds = 12; // High security for admin accounts
+    return await bcrypt.hash(password, saltRounds);
   }
 
   /**

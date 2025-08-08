@@ -38,8 +38,11 @@ In your Railway project dashboard:
 NODE_ENV=production
 SESSION_SECRET=your-super-secure-random-key-at-least-32-chars
 ADMIN_USERNAME=admin
-ADMIN_PASSWORD=your-secure-admin-password-here
+ADMIN_PASSWORD_HASH=your-bcrypt-hash-here
 DATABASE_URL=postgresql://[auto-provided-by-railway]
+
+# Legacy (deprecated - use ADMIN_PASSWORD_HASH instead)
+# ADMIN_PASSWORD=your-secure-admin-password-here
 
 # Optional Application Settings  
 PORT=3000
@@ -78,6 +81,17 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 # Or use online generator (use a trusted one)
 # Or create your own: minimum 32 characters, mix of letters, numbers, symbols
 ```
+
+For `ADMIN_PASSWORD_HASH`, generate a bcrypt hash of your admin password:
+```bash
+# Using Node.js with bcryptjs (run this locally)
+node -e "const bcrypt = require('bcryptjs'); bcrypt.hash('your-admin-password', 12, (err, hash) => console.log('ADMIN_PASSWORD_HASH=' + hash));"
+
+# Or use the built-in utility
+node -e "const AdminService = require('./src/services/AdminService'); AdminService.generatePasswordHash('your-admin-password').then(hash => console.log('ADMIN_PASSWORD_HASH=' + hash));"
+```
+
+**⚠️ SECURITY**: Never commit the plaintext password. Only use the bcrypt hash in production.
 
 ### Step 4: Get Your App URL
 

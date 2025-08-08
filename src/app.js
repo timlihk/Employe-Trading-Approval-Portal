@@ -43,10 +43,41 @@ if (process.env.AZURE_CLIENT_ID && process.env.AZURE_CLIENT_SECRET && process.en
   logger.info('Microsoft 365 SSO disabled - using email-based authentication');
 }
 
-// Manual CSRF utilities (already defined below in earlier edit)
-function generateCsrfToken(req) { const token = (require('crypto').randomBytes(24)).toString('hex'); req.session.csrfToken = token; return token; }
-function verifyCsrfToken(req, res, next) { const sent = req.body && (req.body.csrf_token || req.body._csrf); const valid = sent && req.session && req.session.csrfToken && sent === req.session.csrfToken; if (!valid) { logSecurityEvent('CSRF_VALIDATION_FAILED', { url: req.originalUrl, method: req.method }, req); return res.status(403).send('Forbidden: invalid CSRF token'); } generateCsrfToken(req); next(); }
-function csrfInput(req) { const token = (req.session && req.session.csrfToken) || generateCsrfToken(req); return `<input type="hidden" name="csrf_token" value="${token}">`; }
+// Enhanced CSRF utilities with crypto-safe comparison
+const crypto = require('crypto');
+
+function generateCsrfToken(req) { 
+  const token = crypto.randomBytes(32).toString('hex'); // Increased entropy
+  req.session.csrfToken = token; 
+  return token; 
+}
+
+function verifyCsrfToken(req, res, next) { 
+  const sent = req.body && (req.body.csrf_token || req.body._csrf); 
+  const expected = req.session && req.session.csrfToken;
+  
+  // Use timing-safe comparison to prevent timing attacks
+  const valid = sent && expected && sent.length === expected.length && crypto.timingSafeEqual(Buffer.from(sent), Buffer.from(expected));
+  
+  if (!valid) { 
+    logSecurityEvent('CSRF_VALIDATION_FAILED', { 
+      url: req.originalUrl, 
+      method: req.method,
+      hasToken: !!sent,
+      hasSession: !!expected
+    }, req); 
+    return res.status(403).send('Forbidden: invalid CSRF token'); 
+  } 
+  
+  // Generate new token after successful validation (token rotation)
+  generateCsrfToken(req); 
+  next(); 
+}
+
+function csrfInput(req) { 
+  const token = (req.session && req.session.csrfToken) || generateCsrfToken(req); 
+  return `<input type="hidden" name="csrf_token" value="${token}">`; 
+}
 
 // Helper function to get the correct base URL
 function getBaseUrl(req) {
