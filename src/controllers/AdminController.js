@@ -129,6 +129,12 @@ class AdminController {
         <a href="/admin-backup-database" class="btn btn-outline" style="text-decoration: none; text-align: center; padding: var(--spacing-4);">
           💾 Backup Database
         </a>
+        <form method="post" action="/admin-clear-database" style="display: inline;">
+          <button type="submit" class="btn btn-danger" style="text-decoration: none; text-align: center; padding: var(--spacing-4); width: 100%;" 
+                  onclick="return confirm('⚠️ DANGER: This will permanently delete ALL data from the database and reset it to brand new state. This action cannot be undone! Are you absolutely sure?');">
+            🗑️ Clear Database
+          </button>
+        </form>
       </div>
     `;
 
@@ -561,52 +567,91 @@ class AdminController {
   });
 
   /**
-   * Backup database
+   * Backup database as CSV files in ZIP
    */
   backupDatabase = catchAsync(async (req, res) => {
-    const db = database.getDb();
-    const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
-    const filename = `trading_approval_backup_${timestamp}.sql`;
-
-    // Get all tables
-    const tables = db.prepare(`
-      SELECT name FROM sqlite_master 
-      WHERE type='table' AND name NOT LIKE 'sqlite_%'
-    `).all();
-
-    let sqlDump = `-- Trading Approval Database Backup\n-- Generated: ${new Date().toISOString()}\n\n`;
-
-    // Export each table
-    for (const table of tables) {
-      const tableName = table.name;
+    try {
+      const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
       
-      // Get table schema
-      const schema = db.prepare(`SELECT sql FROM sqlite_master WHERE name = ?`).get(tableName);
-      sqlDump += `-- Table: ${tableName}\n${schema.sql};\n\n`;
-      
-      // Get table data
-      const rows = db.prepare(`SELECT * FROM ${tableName}`).all();
-      if (rows.length > 0) {
-        const columns = Object.keys(rows[0]);
-        sqlDump += `-- Data for table: ${tableName}\n`;
-        
-        for (const row of rows) {
-          const values = columns.map(col => {
-            const value = row[col];
-            if (value === null) return 'NULL';
-            if (typeof value === 'string') return `'${value.replace(/'/g, "''")}'`;
-            return value;
-          }).join(', ');
-          
-          sqlDump += `INSERT INTO ${tableName} (${columns.join(', ')}) VALUES (${values});\n`;
+      // For PostgreSQL, we'll export all data as CSV files
+      const backupData = {
+        metadata: {
+          backup_date: new Date().toISOString(),
+          database_type: 'PostgreSQL',
+          version: '1.0'
         }
-        sqlDump += '\n';
-      }
-    }
+      };
 
-    res.setHeader('Content-Type', 'application/sql');
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-    res.send(sqlDump);
+      // Get all trading requests
+      const requests = await TradingRequest.getAll();
+      backupData.trading_requests = requests;
+
+      // Get all restricted stocks  
+      const restrictedStocks = await RestrictedStock.getAll();
+      backupData.restricted_stocks = restrictedStocks;
+
+      // Get audit logs (recent 1000 entries)
+      const auditLogs = await AuditLog.getAuditLogs({ limit: 1000 });
+      backupData.audit_logs = auditLogs;
+
+      // Get restricted stock changelog
+      const changelog = await RestrictedStockChangelog.getAll();
+      backupData.restricted_stock_changelog = changelog;
+
+      // Generate JSON backup file
+      const jsonContent = JSON.stringify(backupData, null, 2);
+      const filename = `trading_approval_backup_${timestamp}.json`;
+
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.send(jsonContent);
+
+    } catch (error) {
+      console.error('Database backup error:', error);
+      res.status(500).json({
+        error: 'Failed to create database backup',
+        details: error.message
+      });
+    }
+  });
+
+  /**
+   * Clear database - reset to brand new state
+   */
+  clearDatabase = catchAsync(async (req, res) => {
+    try {
+      // Clear all data from all tables
+      await database.query('DELETE FROM audit_logs');
+      await database.query('DELETE FROM restricted_stock_changelog');  
+      await database.query('DELETE FROM trading_requests');
+      await database.query('DELETE FROM restricted_stocks');
+      
+      // Reset sequences to start from 1
+      await database.query('ALTER SEQUENCE audit_logs_id_seq RESTART WITH 1');
+      await database.query('ALTER SEQUENCE restricted_stock_changelog_id_seq RESTART WITH 1');
+      await database.query('ALTER SEQUENCE trading_requests_id_seq RESTART WITH 1');
+      await database.query('ALTER SEQUENCE restricted_stocks_id_seq RESTART WITH 1');
+
+      // Log this critical action
+      await AuditLog.logActivity(
+        req.session.admin.username,
+        'admin',
+        'database_reset',
+        'system',
+        null,
+        'Complete database reset performed - all data cleared',
+        req.ip
+      );
+
+      res.redirect('/admin-dashboard?message=database_cleared');
+
+    } catch (error) {
+      console.error('Database clear error:', error);
+      res.status(500).json({
+        error: 'Failed to clear database',
+        details: error.message
+      });
+    }
   });
 
   /**

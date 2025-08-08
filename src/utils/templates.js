@@ -93,6 +93,9 @@ function generateNotificationBanner(query) {
       case 'admin_logged_out':
         message = 'You have been logged out successfully';
         break;
+      case 'database_cleared':
+        message = 'Database has been reset to brand new state - all data cleared';
+        break;
       default:
         message = decodeURIComponent(query.message);
     }
@@ -104,6 +107,9 @@ function generateNotificationBanner(query) {
     switch (query.error) {
       case 'authentication_required':
         message = 'Authentication required. Please log in.';
+        break;
+      case 'invalid_credentials':
+        message = 'Invalid username or password. Please try again.';
         break;
       case 'invalid_ticker':
         message = 'Invalid ticker format or ticker not found';

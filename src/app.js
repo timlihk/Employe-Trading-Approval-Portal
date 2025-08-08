@@ -355,14 +355,7 @@ if (cca) {
 
 // Admin login page
 app.get('/admin-login', (req, res) => {
-  const { error } = req.query;
-  let banner = '';
-  
-  if (error === 'invalid_credentials') {
-    banner = generateNotificationBanner('Invalid username or password', 'error');
-  } else if (error === 'authentication_required') {
-    banner = generateNotificationBanner('Admin access required', 'error');
-  }
+  const banner = generateNotificationBanner(req.query);
 
   const adminLoginContent = `
     ${banner}
@@ -430,6 +423,7 @@ app.post('/admin-approve-request', requireAdmin, adminActionLimiter, AdminContro
 app.post('/admin-reject-request', requireAdmin, adminActionLimiter, AdminController.rejectRequest);
 app.get('/admin-export-trading-requests', requireAdmin, AdminController.exportTradingRequests);
 app.get('/admin-backup-database', requireAdmin, AdminController.backupDatabase);
+app.post('/admin-clear-database', requireAdmin, AdminController.clearDatabase);
 app.get('/admin-audit-log', requireAdmin, AdminController.getAuditLog);
 
 // ===========================================
