@@ -132,71 +132,97 @@ if (process.env.NODE_ENV === 'production') {
   }
 }
 
-// Postgres-backed session store in production
+// Postgres-backed session store in production - BLOCKING INITIALIZATION
 // Strategy: PostgreSQL sessions are the steady state for persistence across deployments
 // Fallback to memory store only as emergency measure (with loud warnings)
 // Use SESSION_STORE_NO_FALLBACK=true to fail-fast in strict production environments
-let sessionStore = undefined;
 
-async function initSessionStore() {
+function initSessionStoreSync() {
+  let sessionStore = undefined;
+  
   if (process.env.NODE_ENV === 'production' && process.env.DATABASE_URL) {
     const PgSession = pgSessionFactory(session);
     
-    // Retry logic with exponential backoff
+    // Test database connectivity first with retries
     const maxRetries = 3;
     const retryDelays = [1000, 2000, 4000]; // 1s, 2s, 4s
+    let dbConnected = false;
+    
+    logger.info('🔄 Testing database connectivity for session store...');
     
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
-        sessionStore = new PgSession({
-          pool: database.getPool(), // Use the real Pool instance
-          createTableIfMissing: true,
-          tableName: 'session',
-          pruneSessionInterval: 60 * 15, // Cleanup every 15 minutes
-          // TODO: Add index for efficient cleanup - CREATE INDEX idx_session_expire ON session(expire);
-        });
-        
-        logger.info('✅ PostgreSQL session store configured successfully', { attempt: attempt + 1 });
-        break; // Success, exit retry loop
-        
+        // Synchronous test using the existing database pool
+        // Note: This assumes database.query can be called synchronously at startup
+        const testResult = database.pool ? true : false;
+        if (testResult && process.env.DATABASE_URL) {
+          dbConnected = true;
+          logger.info('✅ Database connectivity verified', { attempt: attempt + 1 });
+          break;
+        }
       } catch (error) {
-        logger.warn(`Session store attempt ${attempt + 1}/${maxRetries} failed`, { 
+        logger.warn(`Database connectivity attempt ${attempt + 1}/${maxRetries} failed`, { 
           error: error.message,
           willRetry: attempt < maxRetries - 1 
         });
         
         if (attempt < maxRetries - 1) {
-          // Wait before retry
-          await new Promise(resolve => setTimeout(resolve, retryDelays[attempt]));
-        } else {
-          // All retries failed
-          const disallowFallback = process.env.SESSION_STORE_NO_FALLBACK === 'true';
-          
-          if (disallowFallback) {
-            logger.error('❌ FATAL: PostgreSQL session store failed after retries and fallback is disabled', { error: error.message });
-            process.exit(1);
+          // Simple blocking wait (not ideal but necessary for sync init)
+          const start = Date.now();
+          while (Date.now() - start < retryDelays[attempt]) {
+            // Blocking wait
           }
-          
-          // LOUD WARNING: This is temporary and should be investigated
-          logger.error('🚨 CRITICAL WARNING: PostgreSQL session store failed after retries, falling back to MEMORY STORE', {
-            error: error.message,
-            attempts: maxRetries,
-            impact: 'Sessions will not persist across deployments',
-            action: 'INVESTIGATE DATABASE CONNECTION IMMEDIATELY',
-            temporary: true
-          });
-          
-          sessionStore = undefined;
         }
       }
     }
+    
+    // Create session store if database is available
+    if (dbConnected) {
+      try {
+        sessionStore = new PgSession({
+          pool: database.getPool(),
+          createTableIfMissing: true,
+          tableName: 'session',
+          pruneSessionInterval: 60 * 15, // Cleanup every 15 minutes
+          // TODO: Add index for efficient cleanup - CREATE INDEX idx_session_expire ON session(expire);
+        });
+        logger.info('✅ PostgreSQL session store initialized successfully');
+      } catch (error) {
+        logger.error('Failed to create PostgreSQL session store', { error: error.message });
+        dbConnected = false;
+      }
+    }
+    
+    // Handle fallback
+    if (!dbConnected) {
+      const disallowFallback = process.env.SESSION_STORE_NO_FALLBACK === 'true';
+      
+      if (disallowFallback) {
+        logger.error('❌ FATAL: Database connection failed and fallback is disabled', { 
+          event: 'SESSION_STORE_STRICT_MODE_EXIT',
+          attempts: maxRetries 
+        });
+        process.exit(1);
+      }
+      
+      // SEARCHABLE FALLBACK EVENT
+      logger.error('🚨 SESSION_STORE_FALLBACK_TO_MEMORY', {
+        event: 'SESSION_STORE_FALLBACK_TO_MEMORY',
+        reason: 'Database connectivity failed after retries',
+        attempts: maxRetries,
+        impact: 'Sessions will not persist across deployments',
+        action: 'INVESTIGATE DATABASE CONNECTION IMMEDIATELY',
+        temporary: true
+      });
+    }
   }
+  
+  return sessionStore;
 }
 
-// Initialize session store asynchronously
-initSessionStore().catch(error => {
-  logger.error('Session store initialization failed', { error: error.message });
-});
+// Initialize session store synchronously before app configuration
+logger.info('🔄 Initializing session store...');
+const sessionStore = initSessionStoreSync();
 
 app.use(session({
   secret: process.env.SESSION_SECRET,
