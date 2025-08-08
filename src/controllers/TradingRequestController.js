@@ -59,13 +59,13 @@ class TradingRequestController {
       // Render preview page with compliance declaration
       const previewContent = `
         <div class="max-w-lg mx-auto">
-          <h2 class="text-center mb-6 text-2xl" style="color: var(--gs-dark-blue);">Review Trading Request</h2>
+          <h2 class="text-center mb-6 text-2xl heading">Review Trading Request</h2>
           
           ${expectedOutcome}
 
-          <div class="card hover-shadow">
+          <div class="card">
             <div class="card-header">
-              <h3 class="card-title m-0">Trading Request Details</h3>
+              <h3 class="card-title heading">Trading Request Details</h3>
             </div>
             <div class="card-body p-6">
               <div class="grid gap-4">
@@ -107,11 +107,11 @@ class TradingRequestController {
             </div>
           </div>
 
-          <div class="card hover-shadow mt-6">
-            <div class="card-header" style="background: var(--gs-danger); color: white;">
-              <h3 class="card-title m-0" style="color: white;">⚖️ Compliance Declaration</h3>
+          <div class="card mt-6">
+            <div class="card-header">
+              <h3 class="card-title heading">⚖️ Compliance Declaration</h3>
             </div>
-            <div class="card-body p-6" style="background: #fef5f5;">
+            <div class="card-body p-6">
               <form method="post" action="/submit-trade">
                 ${req.csrfInput()}
                 <input type="hidden" name="ticker" value="${ticker}">
@@ -137,10 +137,10 @@ class TradingRequestController {
 
                 <div class="text-center">
                   <div class="btn-group btn-group-mobile">
-                    <a href="/employee-dashboard" class="btn btn-secondary text-decoration-none p-3 w-full-mobile focus-ring">
+                    <a href="/employee-dashboard" class="btn btn-secondary text-decoration-none w-full-mobile">
                       Cancel
                     </a>
-                    <button type="submit" class="btn btn-primary p-3 w-full-mobile focus-ring hover-lift">
+                    <button type="submit" class="btn btn-primary w-full-mobile">
                       Submit Trading Request
                     </button>
                   </div>
@@ -254,9 +254,9 @@ class TradingRequestController {
         <div class="max-w-xl mx-auto">
           ${statusBanner}
 
-        <div class="card hover-shadow">
+        <div class="card">
           <div class="card-header">
-            <h3 class="card-title m-0">Trading Request Details</h3>
+            <h3 class="card-title heading">Trading Request Details</h3>
           </div>
           <div class="card-body p-6">
             <div style="display: grid; gap: var(--spacing-4);">
@@ -294,9 +294,9 @@ class TradingRequestController {
         </div>
 
         ${request.status === 'rejected' ? `
-        <div class="card hover-shadow mt-6">
+        <div class="card mt-6">
           <div class="card-header">
-            <h3 class="card-title m-0">🚀 Request Escalation</h3>
+            <h3 class="card-title heading">🚀 Request Escalation</h3>
           </div>
           <div class="card-body p-6">
             <p style="margin-bottom: var(--spacing-4); color: var(--gs-neutral-700);">

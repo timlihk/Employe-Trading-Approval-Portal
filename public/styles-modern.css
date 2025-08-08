@@ -2236,6 +2236,634 @@ button[style*="background: var(--gs-primary-blue)"]:hover {
 .text-uppercase { text-transform: uppercase; }
 .font-weight-600 { font-weight: 600; }
 .bg-light { background: var(--gs-neutral-100); }
+
+/* =============================================
+   TESLA-STYLE VISUAL SYSTEM
+   ============================================= */
+
+/* Core Typography - Clean & Confident */
+.heading { 
+  text-transform: uppercase; 
+  letter-spacing: 0.04em;
+  font-weight: 500;
+}
+.text-3xl { font-size: 36px; line-height: 1.25; font-weight: 300; }
+.text-2xl { font-size: 28px; line-height: 1.3; font-weight: 300; }
+.text-xl  { font-size: 22px; line-height: 1.4; font-weight: 400; }
+.text-lg  { font-size: 18px; line-height: 1.5; font-weight: 400; }
+.text-base{ font-size: 16px; line-height: 1.6; font-weight: 400; }
+.text-sm  { font-size: 14px; line-height: 1.5; font-weight: 400; }
+.text-xs  { font-size: 12px; line-height: 1.4; font-weight: 400; }
+
+/* Container Rhythm */
+.section { padding: 48px 0; }
+.section-lg { padding: 72px 0; }
+.container { max-width: 1200px; padding: 0 24px; margin: 0 auto; }
+
+/* Header/Nav - Tesla-style fixed header */
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  backdrop-filter: saturate(180%) blur(10px);
+  -webkit-backdrop-filter: saturate(180%) blur(10px);
+  background: rgba(255, 255, 255, 0.94);
+  border-bottom: 1px solid #e5e5e5;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+}
+
+.nav {
+  display: flex;
+  gap: 32px;
+  align-items: center;
+  margin-left: auto;
+}
+
+.nav-link {
+  color: #222;
+  text-decoration: none;
+  padding: 8px 0;
+  font-weight: 500;
+  font-size: 14px;
+  border-bottom: 2px solid transparent;
+  transition: border-color 0.2s ease;
+}
+
+.nav-link:hover,
+.nav-link.active {
+  border-bottom-color: #222;
+}
+
+/* Cards → Tesla-style Panels (Flat, Minimal) */
+.card {
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 4px;
+  box-shadow: none;
+  overflow: hidden;
+}
+
+.card-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #e5e5e5;
+  background: #fafafa;
+}
+
+.card-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 500;
+  color: #111;
+}
+
+.card-body {
+  padding: 24px;
+  background: #fff;
+}
+
+.card-body.p-0 {
+  padding: 0;
+}
+
+.card-body.p-6 {
+  padding: 32px;
+}
+
+/* Buttons - Tesla-style (Flat, Bold) */
+.btn {
+  height: 48px;
+  padding: 0 24px;
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 14px;
+  text-transform: none;
+  letter-spacing: 0.02em;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.btn-primary {
+  background: #111;
+  color: #fff;
+  border: 2px solid #111;
+}
+
+.btn-primary:hover {
+  background: #222;
+  border-color: #222;
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: #fff;
+  color: #111;
+  border: 2px solid #e5e5e5;
+}
+
+.btn-secondary:hover {
+  background: #f5f5f5;
+  transform: translateY(-1px);
+}
+
+.btn-outline {
+  background: transparent;
+  color: #111;
+  border: 2px solid #111;
+}
+
+.btn-outline:hover {
+  background: #111;
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.btn-danger {
+  background: #b00020;
+  color: #fff;
+  border: 2px solid #b00020;
+}
+
+.btn-danger:hover {
+  background: #8b0016;
+  border-color: #8b0016;
+  transform: translateY(-1px);
+}
+
+.btn-success {
+  background: #0a7f42;
+  color: #fff;
+  border: 2px solid #0a7f42;
+}
+
+.btn-success:hover {
+  background: #086335;
+  border-color: #086335;
+  transform: translateY(-1px);
+}
+
+.btn-sm {
+  height: 40px;
+  padding: 0 16px;
+  font-size: 13px;
+}
+
+.btn:disabled,
+.btn[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+/* Forms - Tesla-style (Clean, Tall) */
+.form-label {
+  font-weight: 500;
+  color: #222;
+  margin-bottom: 6px;
+  font-size: 14px;
+  display: block;
+}
+
+.form-control,
+.form-control-sm {
+  height: 48px;
+  padding: 0 16px;
+  border: 2px solid #e5e5e5;
+  border-radius: 4px;
+  background: #fff;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+.form-control-sm {
+  height: 40px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+
+.form-control:hover {
+  border-color: #ccc;
+}
+
+.form-control:focus,
+.form-control-sm:focus {
+  border-color: #111;
+  outline: none;
+  box-shadow: none;
+  background: #fff;
+}
+
+select.form-control,
+select.form-control-sm {
+  cursor: pointer;
+}
+
+textarea.form-control {
+  min-height: 120px;
+  padding: 12px 16px;
+  resize: vertical;
+}
+
+/* Tables - Tesla-style (Clean, Minimal) */
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid #e5e5e5;
+  border-radius: 4px;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+}
+
+.table thead th {
+  font-weight: 500;
+  font-size: 13px;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: #fafafa;
+  border-bottom: 2px solid #e5e5e5;
+  padding: 16px 12px;
+  text-align: left;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.table tbody td {
+  border-bottom: 1px solid #f0f0f0;
+  padding: 16px 12px;
+  font-size: 14px;
+  color: #333;
+}
+
+.table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.table-hover tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.table-hover tbody tr:hover {
+  background: #fafafa;
+}
+
+.table-zebra tbody tr:nth-child(even) {
+  background: #fcfcfc;
+}
+
+.table-sticky thead th {
+  position: sticky;
+  top: 0;
+  background: #fff;
+  z-index: 10;
+  box-shadow: 0 1px 0 #e5e5e5;
+}
+
+.text-right {
+  text-align: right !important;
+}
+
+.text-center {
+  text-align: center !important;
+}
+
+/* Tesla-style Sortable Headers */
+.th-sortable {
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+  padding-right: 24px !important;
+  transition: background-color 0.15s ease;
+}
+
+.th-sortable:hover {
+  background: #f0f0f0;
+}
+
+.th-sortable::after {
+  content: '';
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  opacity: 0.3;
+}
+
+.th-sortable[aria-sort="none"]::after,
+.th-sortable:not([aria-sort])::after {
+  border-top: 4px solid #999;
+  border-bottom: 4px solid #999;
+  height: 2px;
+}
+
+.th-sortable[aria-sort="ascending"]::after {
+  border-bottom: 5px solid #111;
+  opacity: 1;
+}
+
+.th-sortable[aria-sort="descending"]::after {
+  border-top: 5px solid #111;
+  opacity: 1;
+}
+
+/* Badges - Tesla-style (Minimal, Monochrome) */
+.badge {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  line-height: 1.2;
+  border: 1px solid transparent;
+}
+
+.badge-success {
+  background: #e8f5e9;
+  color: #0a7f42;
+  border-color: #c8e6c9;
+}
+
+.badge-danger {
+  background: #ffebee;
+  color: #b00020;
+  border-color: #ffcdd2;
+}
+
+.badge-warning {
+  background: #fff3e0;
+  color: #e65100;
+  border-color: #ffe0b2;
+}
+
+.badge-info {
+  background: #e3f2fd;
+  color: #0066cc;
+  border-color: #bbdefb;
+}
+
+.badge-secondary {
+  background: #f5f5f5;
+  color: #666;
+  border-color: #e0e0e0;
+}
+
+/* Alerts - Tesla-style (Flat, Minimal) */
+.alert {
+  border: 1px solid #e5e5e5;
+  background: #fafafa;
+  color: #222;
+  padding: 16px 20px;
+  border-left: 4px solid #111;
+  border-radius: 4px;
+  margin-bottom: 24px;
+  font-size: 14px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.alert::before {
+  content: none; /* Remove old accent */
+}
+
+.alert-success {
+  border-left-color: #0a7f42;
+  background: #f1f8f4;
+}
+
+.alert-error {
+  border-left-color: #b00020;
+  background: #fef5f7;
+}
+
+.alert-warning {
+  border-left-color: #e65100;
+  background: #fff9f2;
+}
+
+.alert-info {
+  border-left-color: #0066cc;
+  background: #f5f9ff;
+}
+
+/* Pagination - Tesla-style (Simple, Clean) */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+  margin-top: 32px;
+  margin-bottom: 32px;
+}
+
+.pagination .btn {
+  min-width: 40px;
+  height: 40px;
+  padding: 0 12px;
+  border-radius: 4px;
+  font-size: 13px;
+}
+
+.pagination .btn[aria-current="page"] {
+  background: #111;
+  color: #fff;
+  border-color: #111;
+  font-weight: 600;
+}
+
+.pagination .text-muted {
+  margin: 0 12px;
+  font-size: 13px;
+  color: #666;
+}
+
+/* Status Dots - Tesla-style (Subtle) */
+.status-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+/* Grid System Enhancements */
+.grid {
+  display: grid;
+}
+
+.grid-auto {
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+}
+
+.gap-4 {
+  gap: 16px;
+}
+
+.gap-6 {
+  gap: 24px;
+}
+
+/* Mobile Responsive - Tesla-style */
+@media (max-width: 767px) {
+  .container {
+    padding: 0 16px;
+  }
+  
+  .section {
+    padding: 32px 0;
+  }
+  
+  .card-header {
+    padding: 16px;
+  }
+  
+  .card-body {
+    padding: 16px;
+  }
+  
+  .card-body.p-6 {
+    padding: 20px;
+  }
+  
+  .table thead th {
+    padding: 12px 8px;
+    font-size: 12px;
+  }
+  
+  .table tbody td {
+    padding: 12px 8px;
+    font-size: 13px;
+  }
+  
+  .btn {
+    height: 44px;
+    font-size: 14px;
+  }
+  
+  .btn-sm {
+    height: 36px;
+    font-size: 12px;
+  }
+  
+  .grid-mobile-stack {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .w-full-mobile {
+    width: 100% !important;
+  }
+  
+  .btn-group-mobile {
+    flex-direction: column;
+    width: 100%;
+    gap: 8px;
+  }
+  
+  .btn-group-mobile .btn {
+    width: 100%;
+  }
+  
+  .text-center-mobile {
+    text-align: center !important;
+  }
+  
+  .table-responsive {
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    margin: 0 -16px;
+  }
+}
+
+/* Utility Overrides for Tesla Style */
+.hover-shadow:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+}
+
+.border-subtle {
+  border-color: #e5e5e5 !important;
+}
+
+.text-muted {
+  color: #666 !important;
+}
+
+.bg-muted {
+  background: #f5f5f5 !important;
+}
+
+.rounded {
+  border-radius: 4px !important;
+}
+
+.rounded-md {
+  border-radius: 6px !important;
+}
+
+.rounded-lg {
+  border-radius: 8px !important;
+}
+
+/* Remove old conflicting styles */
+.shadow {
+  box-shadow: none;
+}
+
+.shadow-md {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.shadow-lg {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+/* Link styles - Tesla-like */
+.link {
+  color: #111;
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s ease;
+}
+
+.link:hover {
+  border-bottom-color: #111;
+}
+
+.text-decoration-none {
+  text-decoration: none !important;
+}
+
+/* Focus states - Clean */
+.focus-ring:focus-visible,
+.btn:focus-visible,
+.form-control:focus-visible {
+  outline: 2px solid #111;
+  outline-offset: 2px;
+}
 .bg-muted { background: var(--gs-neutral-200); }
 .bg-warning { background: var(--warning-light); }
 .border { border: 1px solid var(--gs-neutral-300); }

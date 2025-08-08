@@ -34,11 +34,11 @@ function renderBasePage(title, subtitle, content, navigation = '') {
 
 function renderAdminPage(title, content) {
   const navigation = `
-        <nav class="d-flex gap-4 p-4 bg-muted rounded mb-6">
-            <a href="/admin-dashboard" class="btn ${title === 'Admin Dashboard' ? 'btn-primary' : 'btn-secondary'} text-decoration-none">Dashboard</a>
-            <a href="/admin-restricted-stocks" class="btn ${title === 'Restricted Stocks Management' ? 'btn-primary' : 'btn-secondary'} text-decoration-none">Restricted Stocks</a>
-            <a href="/admin-requests" class="btn ${title === 'Trading Requests' ? 'btn-primary' : 'btn-secondary'} text-decoration-none">Trading Requests</a>
-            <a href="/admin-logout" class="btn btn-secondary text-decoration-none">Logout</a>
+        <nav class="nav mb-6">
+            <a href="/admin-dashboard" class="nav-link ${title === 'Admin Dashboard' ? 'active' : ''}">Dashboard</a>
+            <a href="/admin-restricted-stocks" class="nav-link ${title === 'Restricted Stocks Management' ? 'active' : ''}">Restricted Stocks</a>
+            <a href="/admin-requests" class="nav-link ${title === 'Trading Requests' ? 'active' : ''}">Trading Requests</a>
+            <a href="/admin-logout" class="nav-link">Logout</a>
         </nav>`;
   
   return renderBasePage(title, 'Administrator Dashboard', content, navigation);
@@ -46,10 +46,10 @@ function renderAdminPage(title, content) {
 
 function renderEmployeePage(title, content, employeeName = '', employeeEmail = '') {
   const navigation = `
-        <nav class="d-flex gap-4 p-4 bg-muted rounded mb-6">
-            <a href="/employee-dashboard" class="btn ${title === 'Employee Dashboard' ? 'btn-primary' : 'btn-secondary'} text-decoration-none">Dashboard</a>
-            <a href="/employee-history" class="btn ${title === 'Trading History' ? 'btn-primary' : 'btn-secondary'} text-decoration-none">My History</a>
-            <a href="/employee-logout" class="btn btn-secondary text-decoration-none">Logout</a>
+        <nav class="nav mb-6">
+            <a href="/employee-dashboard" class="nav-link ${title === 'Employee Dashboard' ? 'active' : ''}">Dashboard</a>
+            <a href="/employee-history" class="nav-link ${title === 'Trading History' || title === 'Request History' ? 'active' : ''}">My History</a>
+            <a href="/employee-logout" class="nav-link">Logout</a>
         </nav>`;
   
   const subtitle = employeeName ? `Welcome, ${employeeName}` : 'Pre-Trading Approval & Risk Management System';

@@ -194,7 +194,7 @@ class AdminController {
           <td class="text-center font-weight-600">${request.ticker}</td>
           <td class="text-center">${request.trading_type.toUpperCase()}</td>
           <td class="text-center">${parseInt(request.shares).toLocaleString()}</td>
-          <td class="text-center">
+          <td class="text-right">
             $${parseFloat(request.total_value_usd || request.total_value || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}
           </td>
           <td class="text-center">

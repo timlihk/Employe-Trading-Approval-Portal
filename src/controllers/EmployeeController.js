@@ -150,8 +150,8 @@ class EmployeeController {
           <td>${request.stock_name || 'N/A'}</td>
           <td class="text-center font-weight-600">${request.ticker}</td>
           <td class="text-center">${request.trading_type.toUpperCase()}</td>
-          <td class="text-center">${parseInt(request.shares).toLocaleString()}</td>
-          <td class="text-center">
+          <td class="text-right">${parseInt(request.shares).toLocaleString()}</td>
+          <td class="text-right">
             $${parseFloat(request.total_value_usd || request.total_value || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}
           </td>
           <td class="text-center">
@@ -186,7 +186,7 @@ class EmployeeController {
       <!-- Filters Card -->
       <div class="card mb-6">
         <div class="card-header">
-          <h3 class="card-title">Filter Requests</h3>
+          <h3 class="card-title heading">Filter Requests</h3>
         </div>
         <div class="card-body p-6">
           <form method="get" action="/employee-history">
@@ -235,10 +235,10 @@ class EmployeeController {
       </div>
 
       <!-- Results Card -->
-      <div class="card hover-shadow">
+      <div class="card">
         <div class="card-header">
-          <h3 class="card-title m-0">Trading Request History</h3>
-          <p class="mt-2 m-0 text-muted text-sm">${pagination ? `${pagination.total} total, showing ${requests.length}` : `${requests.length} requests`} - Page ${pagination?.page || 1}/${pagination?.pages || 1}</p>
+          <h3 class="card-title heading text-xl">Trading Request History</h3>
+          <p class="mt-2 m-0 text-muted text-sm">${pagination ? `${pagination.total} total, showing ${requests.length}` : `${requests.length} requests`} · Page ${pagination?.page || 1} of ${pagination?.pages || 1}</p>
         </div>
         <div class="card-body p-0">
           ${requests.length > 0 ? `
@@ -286,20 +286,20 @@ class EmployeeController {
             <div class="pagination">
               ${pagination.page > 1 ? `
                 <a href="/employee-history?${new URLSearchParams({...req.query, page: pagination.page - 1}).toString()}" 
-                   class="btn btn-secondary focus-ring" aria-label="Go to previous page">← Previous</a>
-              ` : '<span class="btn btn-secondary" disabled aria-label="Previous page (disabled)">← Previous</span>'}
+                   class="btn btn-secondary btn-sm" aria-label="Go to previous page">←</a>
+              ` : '<button class="btn btn-secondary btn-sm" disabled aria-label="Previous page (disabled)">←</button>'}
               
-              <span class="btn btn-primary" aria-current="page">
+              <span class="btn btn-primary btn-sm" aria-current="page">
                 ${pagination.page}
               </span>
               
               ${pagination.page < pagination.pages ? `
                 <a href="/employee-history?${new URLSearchParams({...req.query, page: pagination.page + 1}).toString()}" 
-                   class="btn btn-secondary focus-ring" aria-label="Go to next page">Next →</a>
-              ` : '<span class="btn btn-secondary" disabled aria-label="Next page (disabled)">Next →</span>'}
+                   class="btn btn-secondary btn-sm" aria-label="Go to next page">→</a>
+              ` : '<button class="btn btn-secondary btn-sm" disabled aria-label="Next page (disabled)">→</button>'}
               
-              <span class="text-muted text-sm px-3">
-                Page ${pagination.page} of ${pagination.pages} (${pagination.total} total)
+              <span class="text-muted text-sm">
+                ${pagination.total} results
               </span>
             </div>
             ` : ''}
