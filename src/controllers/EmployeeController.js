@@ -30,12 +30,12 @@ class EmployeeController {
       ${banner}
       <div class="card">
         <div class="card-header">
-          <h3 class="card-title">Submit Trading Request</h3>
+          <h3 class="card-title heading">Submit Trading Request</h3>
         </div>
-        <div class="card-body">
+        <div class="card-body p-6">
           <form method="post" action="/preview-trade" id="tradingForm">
             ${req.csrfInput()}
-            <div class="grid gap-4">
+            <div class="grid grid-auto gap-4 grid-mobile-stack">
               <div>
                 <label class="form-label">Stock Ticker *</label>
                 <input type="text" name="ticker" value="${prefilledTicker}" required 
@@ -78,7 +78,7 @@ class EmployeeController {
             </div>
             
             <div class="mt-6 text-center">
-              <button type="submit" class="btn btn-primary py-2 px-3">
+              <button type="submit" class="btn btn-primary w-full-mobile">
                 Preview Trading Request
               </button>
             </div>

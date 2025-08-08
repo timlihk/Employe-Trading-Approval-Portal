@@ -86,25 +86,32 @@ class AdminController {
     const dashboardContent = `
       ${banner}
       
-      <div class="grid-auto gap-4">
-        <a href="/admin-requests" class="btn btn-primary text-decoration-none text-center p-4">
-          📋 Review All Requests
-        </a>
-        <a href="/admin-requests?escalated=true" class="btn btn-warning text-decoration-none text-center p-4">
-          ⚠️ Review Escalated Requests
-        </a>
-        <a href="/admin-restricted-stocks" class="btn btn-secondary text-decoration-none text-center p-4">
-          🚫 Manage Restricted Stocks
-        </a>
-        <a href="/admin-audit-log" class="btn btn-outline text-decoration-none text-center p-4">
-          📊 View Audit Log
-        </a>
-        <a href="/admin-backup-database" class="btn btn-outline text-decoration-none text-center p-4">
-          💾 Backup Database
-        </a>
-        <a href="/admin-clear-database-confirm" class="btn btn-danger text-decoration-none text-center p-4">
-          🗑️ Clear Database
-        </a>
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title heading">Quick Actions</h3>
+        </div>
+        <div class="card-body p-6">
+          <div class="grid grid-auto gap-4 grid-mobile-stack">
+            <a href="/admin-requests" class="btn btn-primary text-decoration-none text-center">
+              📋 Review All Requests
+            </a>
+            <a href="/admin-requests?escalated=true" class="btn btn-warning text-decoration-none text-center">
+              ⚠️ Review Escalated Requests
+            </a>
+            <a href="/admin-restricted-stocks" class="btn btn-secondary text-decoration-none text-center">
+              🚫 Manage Restricted Stocks
+            </a>
+            <a href="/admin-audit-log" class="btn btn-outline text-decoration-none text-center">
+              📊 View Audit Log
+            </a>
+            <a href="/admin-backup-database" class="btn btn-outline text-decoration-none text-center">
+              💾 Backup Database
+            </a>
+            <a href="/admin-clear-database-confirm" class="btn btn-danger text-decoration-none text-center">
+              🗑️ Clear Database
+            </a>
+          </div>
+        </div>
       </div>
     `;
 
@@ -455,15 +462,15 @@ class AdminController {
       ${banner}
       <div class="card">
         <div class="card-header">
-          <h3 class="card-title">Add Restricted Stock</h3>
+          <h3 class="card-title heading">Add Restricted Stock</h3>
         </div>
-        <div class="card-body">
+        <div class="card-body p-6">
           <form method="post" action="/admin-add-stock">\n            ${req.csrfInput()}
-            <div style="display: flex; gap: var(--spacing-3); align-items: end;">
-              <div style="flex: 1;">
-                <label style="display: block; margin-bottom: var(--spacing-2); font-weight: 600;">Stock Ticker:</label>
+            <div class="d-flex gap-4 align-items-end">
+              <div class="flex-grow-1">
+                <label class="form-label">Stock Ticker *</label>
                 <input type="text" name="ticker" required placeholder="e.g., AAPL" 
-                       style="width: 100%; padding: var(--spacing-3); border: 1px solid var(--gs-neutral-300); border-radius: var(--radius); text-transform: uppercase;">
+                       class="form-control text-uppercase">
               </div>
               <button type="submit" class="btn btn-primary">Add Stock</button>
             </div>
@@ -471,14 +478,15 @@ class AdminController {
         </div>
       </div>
 
-      <div class="card" style="margin-top: var(--spacing-6);">
+      <div class="card mt-6">
         <div class="card-header">
-          <h3 class="card-title">Current Restricted Stocks (${restrictedStocks.length})</h3>
+          <h3 class="card-title heading text-xl">Current Restricted Stocks</h3>
+          <p class="mt-2 m-0 text-muted text-sm">${restrictedStocks.length} stocks restricted</p>
         </div>
-        <div class="card-body">
+        <div class="card-body p-0">
           ${restrictedStocks.length > 0 ? `
-            <div class="table-container">
-              <table class="table">
+            <div class="table-responsive">
+              <table class="table table-zebra table-hover table-sticky">
                 <thead>
                   <tr>
                     <th>Ticker</th>
@@ -496,14 +504,15 @@ class AdminController {
         </div>
       </div>
 
-      <div class="card" style="margin-top: var(--spacing-6);">
+      <div class="card mt-6">
         <div class="card-header">
-          <h3 class="card-title">Recent Changes</h3>
+          <h3 class="card-title heading text-xl">Recent Changes</h3>
+          <p class="mt-2 m-0 text-muted text-sm">Last 20 modifications</p>
         </div>
-        <div class="card-body">
+        <div class="card-body p-0">
           ${changelog.length > 0 ? `
-            <div class="table-container">
-              <table class="table">
+            <div class="table-responsive">
+              <table class="table table-zebra table-hover table-sticky">
                 <thead>
                   <tr>
                     <th>Date/Time</th>
@@ -825,42 +834,40 @@ csvContent += `"${sanitizeCsv(createdDate)}","${sanitizeCsv(createdTime)}","${sa
     const auditContent = `
       <div class="card">
         <div class="card-header">
-          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap;">
-            <h3 class="card-title">🔍 Audit Log</h3>
-            ${sortingControls}
-          </div>
+          <h3 class="card-title heading">Filter Audit Logs</h3>
         </div>
-        <div class="card-body">
-          <!-- Filter Form -->
-          <form method="get" action="/admin-audit-log" style="margin-bottom: var(--spacing-4); padding: var(--spacing-4); background: var(--gs-neutral-100); border-radius: var(--radius);">
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--spacing-3);">
+        <div class="card-body p-6">
+          <form method="get" action="/admin-audit-log">
+            <div class="grid grid-auto gap-4 grid-mobile-stack">
               <div>
-                <label style="display: block; margin-bottom: var(--spacing-1); font-weight: 600;">User Email:</label>
+                <label class="form-label">User Email:</label>
                 <input type="text" name="user_email" value="${user_email || ''}" 
-                       placeholder="Filter by email" style="width: 100%; padding: var(--spacing-2); border: 1px solid var(--gs-neutral-300); border-radius: var(--radius);">
+                       placeholder="Filter by email" class="form-control-sm">
               </div>
               <div>
-                <label style="display: block; margin-bottom: var(--spacing-1); font-weight: 600;">User Type:</label>
-                <select name="user_type" style="width: 100%; padding: var(--spacing-2); border: 1px solid var(--gs-neutral-300); border-radius: var(--radius);">
+                <label class="form-label">User Type:</label>
+                <select name="user_type" class="form-control-sm">
                   <option value="">All Types</option>
                   <option value="admin" ${user_type === 'admin' ? 'selected' : ''}>Admin</option>
                   <option value="employee" ${user_type === 'employee' ? 'selected' : ''}>Employee</option>
                 </select>
               </div>
               <div>
-                <label style="display: block; margin-bottom: var(--spacing-1); font-weight: 600;">Start Date:</label>
+                <label class="form-label">Start Date:</label>
                 <input type="date" name="start_date" value="${start_date || ''}" 
-                       style="width: 100%; padding: var(--spacing-2); border: 1px solid var(--gs-neutral-300); border-radius: var(--radius);">
+                       class="form-control-sm">
               </div>
               <div>
-                <label style="display: block; margin-bottom: var(--spacing-1); font-weight: 600;">End Date:</label>
+                <label class="form-label">End Date:</label>
                 <input type="date" name="end_date" value="${end_date || ''}" 
-                       style="width: 100%; padding: var(--spacing-2); border: 1px solid var(--gs-neutral-300); border-radius: var(--radius);">
+                       class="form-control-sm">
               </div>
-              <div style="display: flex; align-items: end; gap: var(--spacing-2);">
-                <button type="submit" class="btn btn-primary">Filter</button>
-                <a href="/admin-audit-log" class="btn btn-secondary">Clear</a>
-                <a href="/admin-export-audit-log" class="btn btn-outline">📥 Export CSV</a>
+            </div>
+            <div class="mt-6 text-center">
+              <div class="btn-group btn-group-mobile">
+                <button type="submit" class="btn btn-primary w-full-mobile">Apply Filters</button>
+                <a href="/admin-audit-log" class="btn btn-secondary text-decoration-none w-full-mobile">Clear Filters</a>
+                <a href="/admin-export-audit-log" class="btn btn-outline text-decoration-none w-full-mobile hover-lift">📥 Export CSV</a>
               </div>
             </div>
           </form>
