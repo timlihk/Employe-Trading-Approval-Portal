@@ -95,19 +95,19 @@ class AdminController {
             <a href="/admin-requests" class="btn btn-primary text-decoration-none text-center">
               📋 Review All Requests
             </a>
-            <a href="/admin-requests?escalated=true" class="btn btn-warning text-decoration-none text-center">
+            <a href="/admin-requests?escalated=true" class="btn btn-primary text-decoration-none text-center">
               ⚠️ Review Escalated Requests
             </a>
-            <a href="/admin-restricted-stocks" class="btn btn-secondary text-decoration-none text-center">
+            <a href="/admin-restricted-stocks" class="btn btn-primary text-decoration-none text-center">
               🚫 Manage Restricted Stocks
             </a>
-            <a href="/admin-audit-log" class="btn btn-outline text-decoration-none text-center">
+            <a href="/admin-audit-log" class="btn btn-primary text-decoration-none text-center">
               📊 View Audit Log
             </a>
-            <a href="/admin-backup-database" class="btn btn-outline text-decoration-none text-center">
+            <a href="/admin-backup-database" class="btn btn-primary text-decoration-none text-center">
               💾 Backup Database
             </a>
-            <a href="/admin-clear-database-confirm" class="btn btn-danger text-decoration-none text-center">
+            <a href="/admin-clear-database-confirm" class="btn btn-primary text-decoration-none text-center">
               🗑️ Clear Database
             </a>
           </div>
