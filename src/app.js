@@ -64,6 +64,33 @@ function createMetrics() {
 }
 const metrics = createMetrics();
 
+// Middleware functions
+function requireAdmin(req, res, next) {
+  if (!req.session.admin || !req.session.admin.username) {
+    logSecurityEvent('UNAUTHORIZED_ADMIN_ACCESS', {
+      url: req.originalUrl,
+      method: req.method
+    }, req);
+    
+    if (req.accepts('json') && !req.accepts('html')) {
+      return res.status(401).json({ error: 'Admin authentication required' });
+    }
+    return res.redirect('/admin-login?error=authentication_required');
+  }
+  next();
+}
+
+function requireEmployee(req, res, next) {
+  if (!req.session.employee || !req.session.employee.email) {
+    logSecurityEvent('UNAUTHORIZED_EMPLOYEE_ACCESS', {
+      url: req.originalUrl,
+      method: req.method
+    }, req);
+    return res.redirect('/?error=authentication_required');
+  }
+  next();
+}
+
 const app = express();
 app.set('trust proxy', 1);
 
