@@ -137,7 +137,8 @@ class AdminController {
     if (escalated === 'false') filters.escalated = false;
 
     // Get all requests based on filters
-    const allRequests = await TradingRequest.getFilteredHistory(filters, sort_by, sort_order);
+    const result = await TradingRequest.getFilteredHistory(filters, sort_by, sort_order);
+    const allRequests = result.data || result; // Handle both paginated and non-paginated responses
 
     // Build table rows for all requests
     const tableRows = allRequests.map(request => {
