@@ -118,8 +118,8 @@ class EmployeeController {
     if (status) filters.status = status;
 
     const result = await TradingRequestService.getEmployeeRequests(employeeEmail, filters, sort_by, sort_order);
-    const requests = result.data;
-    const pagination = result.pagination;
+    const requests = result?.data || [];
+    const pagination = result?.pagination;
 
     // Generate table rows
     const tableRows = requests.map(request => {
@@ -315,7 +315,8 @@ class EmployeeController {
     const employeeEmail = req.session.employee.email;
 
     // Get the specific request to validate ownership
-    const requests = await TradingRequestService.getEmployeeRequests(employeeEmail, {});
+    const result = await TradingRequestService.getEmployeeRequests(employeeEmail, {});
+    const requests = result?.data || [];
     const request = requests.find(r => r.id === requestId);
 
     if (!request) {
@@ -400,7 +401,7 @@ class EmployeeController {
       if (trading_type) filters.trading_type = trading_type;
 
       const result = await TradingRequestService.getEmployeeRequests(employeeEmail, filters, sort_by, sort_order);
-      const requests = result.data;
+      const requests = result?.data || [];
 
       // Debug logging
       console.log('Export debug info:', {
