@@ -868,9 +868,17 @@ csvContent += `"${sanitizeCsv(createdDate)}","${sanitizeCsv(createdTime)}","${sa
               </div>
             </div>
           </form>
+        </div>
+      </div>
 
+      <div class="card mt-6">
+        <div class="card-header">
+          <h3 class="card-title heading text-xl">Audit Log Results</h3>
+          <p class="mt-2 m-0 text-muted text-sm">${auditLogs.length} entries found</p>
+        </div>
+        <div class="card-body p-0">
           <div class="table-responsive">
-            <table class="table">
+            <table class="table table-zebra table-hover table-sticky">
               <thead>
                 <tr>
                   <th style="text-align: center;">Date & Time</th>
@@ -888,10 +896,11 @@ csvContent += `"${sanitizeCsv(createdDate)}","${sanitizeCsv(createdTime)}","${sa
               </tbody>
             </table>
           </div>
-
-          <p style="color: var(--gs-neutral-600); font-size: var(--font-size-sm); margin-top: var(--spacing-4);">
-            Showing latest 100 entries. Use filters to narrow down results.
-          </p>
+          <div class="card-body">
+            <p class="text-muted text-sm m-0">
+              Showing latest 100 entries. Use filters to narrow down results.
+            </p>
+          </div>
         </div>
       </div>
 
