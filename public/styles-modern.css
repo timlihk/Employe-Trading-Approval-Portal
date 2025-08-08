@@ -1890,6 +1890,34 @@ button[style*="background: var(--gs-primary-blue)"]:hover {
 .badge-info { background: var(--info); }
 .badge-secondary { background: var(--gs-neutral-500); }
 
+/* Alert utilities */
+.alert {
+  border: 1px solid;
+  border-radius: var(--radius);
+  padding: var(--spacing-4);
+  margin-bottom: var(--spacing-6);
+}
+.alert-success {
+  background: var(--success-light);
+  border-color: var(--success);
+  color: var(--success-dark);
+}
+.alert-error {
+  background: var(--danger-light);
+  border-color: var(--danger);
+  color: var(--danger-dark);
+}
+.alert-info {
+  background: var(--info-light);
+  border-color: var(--info);
+  color: var(--info-dark);
+}
+.alert-warning {
+  background: var(--warning-light);
+  border-color: var(--warning);
+  color: var(--warning-dark);
+}
+
 /* Status-specific colors */
 .text-success { color: var(--success) !important; }
 .text-danger { color: var(--danger) !important; }
@@ -1963,4 +1991,19 @@ button[style*="background: var(--gs-primary-blue)"]:hover {
   margin: var(--spacing-4) 0;
   border-radius: var(--radius);
   border: 1px solid var(--gs-neutral-300);
+}
+
+.table-zebra tr:nth-child(even) {
+  background-color: var(--gs-neutral-100);
+}
+
+/* Layout utilities */
+.max-w-xl { max-width: 36rem; }
+.shadow { box-shadow: var(--shadow); }
+.d-inline-block { display: inline-block; }
+
+/* Button spacing for action cells */
+.btn-group .btn + .btn,
+.btn-group .btn + a {
+  margin-left: var(--spacing-2);
 }

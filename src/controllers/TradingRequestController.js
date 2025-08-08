@@ -135,11 +135,11 @@ class TradingRequestController {
                   </label>
                 </div>
 
-                <div style="text-align: center; display: flex; gap: var(--spacing-3); justify-content: center;">
-                  <a href="/employee-dashboard" class="btn btn-secondary" style="text-decoration: none; padding: var(--spacing-3) var(--spacing-6);">
+                <div class="text-center d-flex gap-3 justify-center">
+                  <a href="/employee-dashboard" class="btn btn-secondary text-decoration-none p-3">
                     Cancel
                   </a>
-                  <button type="submit" class="btn btn-primary" style="padding: var(--spacing-3) var(--spacing-6);">
+                  <button type="submit" class="btn btn-primary p-3">
                     Submit Trading Request
                   </button>
                 </div>
@@ -225,24 +225,24 @@ class TradingRequestController {
     
         if (status === 'approved') {
           statusBanner = `
-            <div style="background: #d4edda; border: 1px solid #c3e6cb; padding: var(--spacing-4); border-radius: var(--radius); margin-bottom: var(--spacing-6); text-align: center;">
-              <h3 style="margin: 0; color: #155724;">✅ Request Approved</h3>
+            <div class="alert alert-success text-center">
+              <h3 class="m-0">✅ Request Approved</h3>
             </div>`;
           statusText = 'APPROVED';
           statusColor = '#28a745';
       } else if (status === 'rejected') {
         statusBanner = `
-          <div style="background: #f8d7da; border: 1px solid #f5c6cb; padding: var(--spacing-4); border-radius: var(--radius); margin-bottom: var(--spacing-6); text-align: center;">
-            <h3 style="margin: 0; color: #721c24;">❌ Request Rejected</h3>
-            <p style="margin: var(--spacing-2) 0 0 0; color: #721c24;"><strong>You can escalate this request with a business justification below.</strong></p>
+          <div class="alert alert-error text-center">
+            <h3 class="m-0">❌ Request Rejected</h3>
+            <p class="mt-2 m-0"><strong>You can escalate this request with a business justification below.</strong></p>
           </div>`;
         statusText = 'REJECTED';
         statusColor = '#dc3545';
       } else {
         statusBanner = `
-          <div style="background: #e7f3ff; border: 1px solid #b3d9ff; padding: var(--spacing-4); border-radius: var(--radius); margin-bottom: var(--spacing-6); text-align: center;">
-            <h3 style="margin: 0; color: var(--gs-dark-blue);">✅ Request Created Successfully</h3>
-            <p style="margin: var(--spacing-2) 0 0 0; color: var(--gs-neutral-700);">Your trading request has been submitted and is pending approval.</p>
+          <div class="alert alert-info text-center">
+            <h3 class="m-0">✅ Request Created Successfully</h3>
+            <p class="mt-2 m-0 text-muted">Your trading request has been submitted and is pending approval.</p>
           </div>`;
         statusText = 'PENDING APPROVAL';
         statusColor = '#ffc107';
@@ -318,11 +318,11 @@ class TradingRequestController {
           </div>
         </div>` : ''}
 
-        <div style="margin-top: var(--spacing-6); text-align: center;">
-          <a href="/employee-dashboard" class="btn btn-primary" style="padding: 15px 30px; font-size: 16px; text-decoration: none; margin-right: 20px;">
+        <div class="mt-6 text-center">
+          <a href="/employee-dashboard" class="btn btn-primary text-decoration-none mr-3 p-3">
             ← Back to Dashboard
           </a>
-          <a href="/employee-history" class="btn btn-secondary" style="padding: 15px 30px; font-size: 16px; text-decoration: none;">
+          <a href="/employee-history" class="btn btn-secondary text-decoration-none p-3">
             View Request History
           </a>
         </div>
