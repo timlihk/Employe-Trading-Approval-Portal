@@ -298,20 +298,22 @@ class TradingRequestController {
           <div class="card-header">
             <h3 class="card-title heading">🚀 Request Escalation</h3>
           </div>
-          <div class="card-body p-6">
-            <p style="margin-bottom: var(--spacing-4); color: var(--gs-neutral-700);">
-              If you have a valid business reason for this trade, you can escalate this request for admin review.
-            </p>
+          <div class="card-body p-0">
+            <div class="p-6 pb-0">
+              <p style="margin-bottom: var(--spacing-4); color: var(--gs-neutral-700);">
+                If you have a valid business reason for this trade, you can escalate this request for admin review.
+              </p>
+            </div>
             <form method="post" action="/submit-escalation">
               ${req.csrfInput()}
               <input type="hidden" name="requestId" value="${request.id}">
-              <div style="margin-bottom: var(--spacing-4);">
+              <div style="padding: 0 var(--spacing-6) var(--spacing-4) var(--spacing-6);">
                 <textarea name="escalation_reason" required rows="4" 
                          placeholder="Please provide a detailed business justification for this trade..." 
-                         style="width: 100%; padding: var(--spacing-3); border: 1px solid var(--gs-neutral-300); border-radius: var(--radius); font-family: inherit; resize: vertical;"></textarea>
+                         class="form-control resize-vertical"></textarea>
               </div>
-              <div style="text-align: center;">
-                <button type="submit" class="btn btn-primary" style="padding: var(--spacing-3) var(--spacing-6);">
+              <div class="p-6 pt-0 text-center">
+                <button type="submit" class="btn btn-primary">
                   Submit Escalation Request
                 </button>
               </div>
