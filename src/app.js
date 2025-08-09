@@ -464,12 +464,7 @@ app.get('/', (req, res) => {
   const landingContent = `
     ${banner}
     <div class="text-center max-w-lg mx-auto">
-      <h2 class="mb-6 text-2xl heading">Employee Trading Request Portal</h2>
-      
       <div class="card">
-        <div class="card-header">
-          <h3 class="card-title heading">Sign In</h3>
-        </div>
         <div class="card-body p-6">
           ${cca ? `
             <a href="/api/auth/microsoft/login" class="btn btn-primary w-full text-decoration-none">
