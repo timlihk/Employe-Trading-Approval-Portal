@@ -276,8 +276,12 @@ class AdminService {
         throw new AppError('Only pending requests can be rejected', 400);
       }
 
+      // For escalated requests, use default reason if none provided
+      const finalReason = rejectionReason || 
+        (request.escalated ? 'Administrative decision - Request rejected after review' : null);
+      
       // Update status with reason
-      await TradingRequest.updateStatus(requestId, 'rejected', rejectionReason);
+      await TradingRequest.updateStatus(requestId, 'rejected', finalReason);
 
       // Log the action
       await AuditLog.logActivity(
@@ -286,7 +290,7 @@ class AdminService {
         'reject_trading_request',
         'trading_request',
         requestId,
-        `Rejected ${request.trading_type} request for ${request.shares} shares of ${request.ticker} by ${request.employee_email}. Reason: ${rejectionReason}`,
+        `Rejected ${request.trading_type} request for ${request.shares} shares of ${request.ticker} by ${request.employee_email}.${finalReason ? ` Reason: ${finalReason}` : ''}`,
         ipAddress
       );
 
@@ -295,7 +299,7 @@ class AdminService {
         admin: adminEmail,
         employee: request.employee_email,
         ticker: request.ticker,
-        reason: rejectionReason
+        reason: finalReason
       });
 
       return true;

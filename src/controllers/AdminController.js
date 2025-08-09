@@ -376,9 +376,9 @@ class AdminController {
             <form method="post" action="/admin-reject-request">\n            ${req.csrfInput()}
               <input type="hidden" name="requestId" value="${requestId}">
               <div class="mb-4">
-                <label class="form-label">Rejection Reason:</label>
-                <textarea name="rejection_reason" required rows="4" 
-                         placeholder="Please provide a detailed reason for rejection..." 
+                <label class="form-label">Rejection Reason (Optional for escalated requests):</label>
+                <textarea name="rejection_reason" ${request.escalated ? '' : 'required'} rows="4" 
+                         placeholder="${request.escalated ? '(Optional) Provide a reason for rejection...' : 'Please provide a detailed reason for rejection...'}" 
                          class="form-control resize-vertical"></textarea>
               </div>
               <div class="text-center d-flex gap-3 justify-center">
@@ -672,52 +672,51 @@ csvContent += `"${sanitizeCsv(request.id)}","${sanitizeCsv(createdDate)}","${san
    * Show database clear confirmation page
    */
   getClearDatabaseConfirm = catchAsync(async (req, res) => {
-    const confirmContent = `
-      <div style="max-width: 600px; margin: 0 auto;">
-        <div class="card" style="border: 2px solid #dc3545;">
-          <div class="card-header" style="background: #dc3545; color: white;">
-            <h3 class="card-title" style="color: white; margin: 0;">⚠️ DANGER - Confirm Database Reset</h3>
-          </div>
-          <div class="card-body" style="background: #f8f9fa;">
-            <div style="background: #fff3cd; border: 1px solid #ffeeba; padding: var(--spacing-4); border-radius: var(--radius); margin-bottom: var(--spacing-4);">
-              <h4 style="color: #856404; margin: 0 0 var(--spacing-3) 0;">⚠️ WARNING: This action cannot be undone!</h4>
-              <p style="color: #856404; margin: 0; line-height: 1.6;">
-                You are about to <strong>permanently delete ALL data</strong> from the database and reset it to brand new state.
-              </p>
-            </div>
-            
-            <div style="margin: var(--spacing-4) 0;">
-              <h5 style="color: #dc3545; margin-bottom: var(--spacing-3);">This will delete:</h5>
-              <ul style="color: #dc3545; margin: 0; padding-left: var(--spacing-5);">
-                <li>All trading requests (approved, rejected, pending)</li>
-                <li>All restricted stocks and changelog</li>
-                <li>All audit logs and activity history</li>
-                <li>All employee trading history</li>
-              </ul>
-            </div>
-            
-            <div style="background: #f8d7da; border: 1px solid #f5c6cb; padding: var(--spacing-4); border-radius: var(--radius); margin: var(--spacing-4) 0;">
-              <p style="color: #721c24; margin: 0; font-weight: 600; text-align: center;">
-                ⚠️ FINAL WARNING: This action is IRREVERSIBLE ⚠️
-              </p>
-            </div>
-            
-            <div style="display: flex; gap: var(--spacing-4); justify-content: center; margin-top: var(--spacing-6);">
-              <a href="/admin-dashboard" class="btn btn-secondary" style="text-decoration: none; padding: var(--spacing-3) var(--spacing-6);">
-                ← Cancel (Go Back)
-              </a>
-              <form method="post" action="/admin-clear-database" style="display: inline;">\n                ${req.csrfInput()}
-                <button type="submit" class="btn btn-danger" style="padding: var(--spacing-3) var(--spacing-6);">
-                  🗑️ YES, PERMANENTLY DELETE ALL DATA
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>
+    const { renderCard } = require('../utils/templates');
+    
+    const warningContent = `
+      <div class="alert alert-warning mb-4">
+        <h4 class="alert-heading mb-3">⚠️ WARNING: This action cannot be undone!</h4>
+        <p class="mb-0">
+          You are about to <strong>permanently delete ALL data</strong> from the database and reset it to brand new state.
+        </p>
+      </div>
+      
+      <div class="mb-4">
+        <h5 class="text-danger mb-3">This will delete:</h5>
+        <ul class="text-danger">
+          <li>All trading requests (approved, rejected, pending)</li>
+          <li>All restricted stocks and changelog</li>
+          <li>All audit logs and activity history</li>
+          <li>All employee trading history</li>
+        </ul>
+      </div>
+      
+      <div class="alert alert-danger mb-4">
+        <p class="mb-0 text-center font-weight-bold">
+          ⚠️ FINAL WARNING: This action is IRREVERSIBLE ⚠️
+        </p>
+      </div>
+      
+      <div class="text-center d-flex gap-3 justify-center">
+        <a href="/admin-dashboard" class="btn btn-secondary text-decoration-none">
+          ← Cancel (Go Back)
+        </a>
+        <form method="post" action="/admin-clear-database" style="display: inline;">\n          ${req.csrfInput()}
+          <button type="submit" class="btn btn-danger">
+            🗑️ YES, PERMANENTLY DELETE ALL DATA
+          </button>
+        </form>
       </div>
     `;
+    
+    const confirmContent = renderCard(
+      '⚠️ DANGER - Confirm Database Reset',
+      warningContent,
+      'Please read carefully before proceeding'
+    );
 
-    const html = renderAdminPage('Confirm Database Reset', confirmContent);
+    const html = renderAdminPage('Confirm Database Reset', `<div class="container">${confirmContent}</div>`);
     res.send(html);
   });
 
