@@ -306,7 +306,6 @@ class TradingRequestController {
               ${req.csrfInput()}
               <input type="hidden" name="requestId" value="${request.id}">
               <div style="margin-bottom: var(--spacing-4);">
-                <label style="display: block; margin-bottom: var(--spacing-2); font-weight: 600;">Business Justification:</label>
                 <textarea name="escalation_reason" required rows="4" 
                          placeholder="Please provide a detailed business justification for this trade..." 
                          style="width: 100%; padding: var(--spacing-3); border: 1px solid var(--gs-neutral-300); border-radius: var(--radius); font-family: inherit; resize: vertical;"></textarea>
