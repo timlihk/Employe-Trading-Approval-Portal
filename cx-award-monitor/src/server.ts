@@ -108,9 +108,16 @@ app.get('/', (_req, res) => {
           </div>
           <div class="col-12" style="margin-top:8px">
             <button id="addBtn">Add watch</button>
+            <button id="testBtn" style="margin-left:8px;background:#6b7280">Test search</button>
             <span class="muted" id="msg" style="margin-left:10px"></span>
           </div>
         </div>
+      </div>
+
+      <div class="card" id="testCard" style="display:none">
+        <div class="row"><div class="col-12"><h3 style="margin:6px 0">Test search results</h3></div></div>
+        <div id="testMeta" class="muted" style="margin:0 0 8px 0"></div>
+        <div id="testResults"></div>
       </div>
 
       <div class="card">
@@ -181,8 +188,76 @@ app.get('/', (_req, res) => {
           await load();
         }
 
+        function cabinRank(c){ return { Y:0, W:1, C:2, F:3 }[c] ?? 0 }
+        function hasCabin(avail, min){
+          const thr = cabinRank(min);
+          const pairs = [ ['Y', avail.economy], ['W', avail.premium], ['C', avail.business], ['F', avail.first] ];
+          return pairs.some(([c,n]) => cabinRank(c) >= thr && n > 0);
+        }
+
+        function renderResults(data, filters){
+          const box = $('testResults');
+          const card = $('testCard');
+          const meta = $('testMeta');
+          if (!data || data.error) {
+            card.style.display = 'block';
+            meta.textContent = data?.error ? ('Error: ' + data.error) : 'No data';
+            box.innerHTML = '';
+            return;
+          }
+          const flights = (data.flights || []).filter(f => (!filters.nonstop || f.direct) && (!filters.minCabin || hasCabin(f.availability, filters.minCabin)));
+          meta.textContent = `Showing ${flights.length} flights for ${data.from} → ${data.to} on ${data.date}`;
+          if (flights.length === 0) {
+            card.style.display = 'block';
+            box.innerHTML = '<div class="muted">No flights matched your filters.</div>';
+            return;
+          }
+          const rows = flights.map(f => `
+            <div class="card" style="padding:12px;margin:8px 0">
+              <div style="display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap">
+                <div><b>${f.flightNumbers.join(' + ')}</b> ${f.direct ? '· Non-stop' : (f.stopCity ? '· via ' + f.stopCity : '')}</div>
+                <div class="muted">${f.origin} → ${f.destination}</div>
+              </div>
+              <div class="muted" style="margin-top:4px">Dep: ${new Date(f.departureUtc).toLocaleString()} · Arr: ${new Date(f.arrivalUtc).toLocaleString()} · ${f.durationMinutes} mins</div>
+              <div style="margin-top:6px">
+                <span style="display:inline-block;background:#832c40;color:#fff;border-radius:6px;padding:2px 8px;margin-right:6px">F ${f.availability.first}</span>
+                <span style="display:inline-block;background:#002e6c;color:#fff;border-radius:6px;padding:2px 8px;margin-right:6px">C ${f.availability.business}</span>
+                <span style="display:inline-block;background:#487c93;color:#fff;border-radius:6px;padding:2px 8px;margin-right:6px">W ${f.availability.premium}</span>
+                <span style="display:inline-block;background:#016564;color:#fff;border-radius:6px;padding:2px 8px;margin-right:6px">Y ${f.availability.economy}</span>
+              </div>
+            </div>
+          `).join('');
+          card.style.display = 'block';
+          box.innerHTML = rows;
+        }
+
+        async function testSearch(){
+          const from = $('from').value.trim().toUpperCase();
+          const to = $('to').value.trim().toUpperCase();
+          const date = $('startDate').value || new Date().toISOString().slice(0,10);
+          const adults = Number($('adults').value || 1);
+          const children = Number($('children').value || 0);
+          if (!from || !to || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+            renderResults({ error: 'Please fill From, To, and Start date' }, {});
+            return;
+          }
+          $('msg').textContent = 'Searching...';
+          try {
+            const res = await fetch(`/api/search?from=${encodeURIComponent(from)}&to=${encodeURIComponent(to)}&date=${encodeURIComponent(date)}&adults=${adults}&children=${children}`);
+            const data = await res.json();
+            $('msg').textContent = '';
+            const nonstopOnly = $('nonstop').value === '1';
+            const minCabinVal = $('minCabin').value;
+            renderResults(data, { nonstop: nonstopOnly, minCabin: minCabinVal || null });
+          } catch (e) {
+            $('msg').textContent = '';
+            renderResults({ error: 'Search failed' }, {});
+          }
+        }
+
         document.addEventListener('click', async (e) => {
           if (e.target && e.target.matches('#addBtn')) { add(); }
+          if (e.target && e.target.matches('#testBtn')) { testSearch(); }
           if (e.target && e.target.matches('button[data-id]')) {
             const id = e.target.getAttribute('data-id');
             await fetch('/api/watch/' + id, { method: 'DELETE' });
