@@ -1,6 +1,6 @@
 import { chromium } from 'playwright';
 import { config } from './config.js';
-const STORAGE_STATE = './.pw-state.json';
+const USER_DATA_DIR = './pw-data';
 const ENTRY_LANG = 'en';
 const ENTRY_COUNTRY = 'HK';
 function ymd(date) {
@@ -104,13 +104,12 @@ export class CathayClient {
     constructor() {
         this.context = null;
     }
-    async ensureContext() {
+    async ensureContext(forceHeadful) {
         if (this.context)
             return this.context;
-        const browser = await chromium.launchPersistentContext('.', {
-            headless: !config.playwright.headful,
+        const browser = await chromium.launchPersistentContext(USER_DATA_DIR, {
+            headless: forceHeadful ? false : !config.playwright.headful,
             channel: config.playwright.channel,
-            // storageState is not supported in launchPersistentContext options
             viewport: { width: 1280, height: 900 },
             userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36',
         });
@@ -121,9 +120,19 @@ export class CathayClient {
         const ctx = await this.ensureContext();
         const page = await ctx.newPage();
         await page.goto(`https://www.cathaypacific.com/cx/${ENTRY_LANG}_${ENTRY_COUNTRY}/book-a-trip/redeem-flights/redeem-flight-awards.html`, { waitUntil: 'domcontentloaded' });
-        await page.waitForTimeout(2000);
+        await page.waitForTimeout(1500);
         await page.close();
-        await ctx.storageState({ path: STORAGE_STATE });
+    }
+    async openLoginWindow() {
+        if (this.context) {
+            await this.context.close().catch(() => { });
+            this.context = null;
+        }
+        const ctx = await this.ensureContext(true);
+        const page = await ctx.newPage();
+        const loginUrl = `https://www.cathaypacific.com/content/cx/${ENTRY_LANG}_${ENTRY_COUNTRY}/sign-in.html`;
+        await page.goto(loginUrl, { waitUntil: 'domcontentloaded' });
+        // Keep window open for user to authenticate; cookies persist in USER_DATA_DIR
     }
     async searchSingleDay(params) {
         const ctx = await this.ensureContext();
@@ -150,7 +159,6 @@ export class CathayClient {
             return result;
         }
         result.flights = parseFlights(json);
-        await ctx.storageState({ path: STORAGE_STATE });
         await page.close();
         return result;
     }

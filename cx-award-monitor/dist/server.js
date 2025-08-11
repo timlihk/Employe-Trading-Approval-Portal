@@ -108,6 +108,16 @@ app.get('/', (_req, res) => {
         </div>
       </div>
 
+      <div class="card">
+        <div class="row"><div class="col-12"><h3 style="margin:6px 0">Session</h3></div></div>
+        <div class="row">
+          <div class="col-12">
+            <button id="loginBtn" style="background:#2563eb">Open Cathay login window</button>
+            <span class="muted" style="margin-left:8px">Sign in once; cookies persist in <code>pw-data</code> so your Diamond benefits apply.</span>
+          </div>
+        </div>
+      </div>
+
       <div class="card" id="testCard" style="display:none">
         <div class="row"><div class="col-12"><h3 style="margin:6px 0">Test search results</h3></div></div>
         <div id="testMeta" class="muted" style="margin:0 0 8px 0"></div>
@@ -349,6 +359,11 @@ app.get('/', (_req, res) => {
         document.addEventListener('click', async (e) => {
           if (e.target && e.target.matches('#addBtn')) { add(); }
           if (e.target && e.target.matches('#testBtn')) { testSearch(); }
+          if (e.target && e.target.matches('#loginBtn')) {
+            $('msg').textContent = 'Opening login window...';
+            await fetch('/api/open-login', { method: 'POST' });
+            $('msg').textContent = '';
+          }
           if (e.target && e.target.matches('button[data-id]')) {
             const id = e.target.getAttribute('data-id');
             await fetch('/api/watch/' + id, { method: 'DELETE' });
@@ -364,6 +379,15 @@ app.get('/', (_req, res) => {
 ;
 app.get('/api/watch', (_req, res) => {
     res.json(listWatches());
+});
+app.post('/api/open-login', async (_req, res) => {
+    try {
+        await client.openLoginWindow();
+        res.json({ ok: true });
+    }
+    catch (e) {
+        res.status(500).json({ error: e?.message || 'failed to open login window' });
+    }
 });
 app.post('/api/watch', (req, res) => {
     const parsed = watchSchema.safeParse(req.body);
