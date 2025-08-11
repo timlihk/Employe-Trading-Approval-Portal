@@ -28,22 +28,172 @@ app.get('/healthz', (_req, res) => res.json({ ok: true }));
 
 app.get('/', (_req, res) => {
   res.type('html').send(`
-  <html><head><title>CX Award Monitor</title><style>body{font-family:system-ui,Segoe UI,Arial;margin:40px;max-width:760px}</style></head><body>
-  <h2>CX Award Monitor</h2>
-  <p>Add a watch via API:</p>
-  <pre>POST /api/watch
-{
-  "from":"HKG","to":"LHR",
-  "startDate":"2025-09-01","endDate":"2025-09-10",
-  "numAdults":2,"numChildren":0,
-  "email":"you@example.com",
-  "nonstopOnly":true,
-  "minCabin":"C"
-}
-  </pre>
-  <p>List: GET /api/watch</p>
-  <p>Delete: DELETE /api/watch/:id</p>
-  </body></html>`);
+  <html>
+    <head>
+      <meta charset="utf-8" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <title>CX Award Monitor</title>
+      <style>
+        :root{--fg:#1c1c1c;--bg:#fafafa;--pri:#1e7b85;--mut:#888}
+        *{box-sizing:border-box}
+        body{font-family:system-ui,Segoe UI,Arial;margin:24px;max-width:920px;color:var(--fg);background:var(--bg)}
+        h1{margin:0 0 16px}
+        .card{background:#fff;border:1px solid #ddd;border-radius:10px;box-shadow:0 1px 4px rgba(0,0,0,.05);padding:16px;margin:12px 0}
+        label{display:block;font-size:12px;color:#444;margin:6px 0 2px}
+        input,select{width:100%;height:38px;border:1px solid #ccc;border-radius:8px;padding:6px 10px;font-size:14px}
+        .row{display:grid;grid-template-columns:repeat(12,1fr);gap:10px}
+        .col-3{grid-column:span 3}
+        .col-4{grid-column:span 4}
+        .col-6{grid-column:span 6}
+        .col-12{grid-column:span 12}
+        @media (max-width:720px){.col-3,.col-4,.col-6{grid-column:span 12}}
+        button{appearance:none;border:0;border-radius:8px;background:var(--pri);color:#fff;padding:10px 14px;font-weight:600;cursor:pointer}
+        table{width:100%;border-collapse:collapse;font-size:14px}
+        th,td{padding:8px;border-bottom:1px solid #eee;text-align:left}
+        th{font-weight:700}
+        .muted{color:var(--mut)}
+        .actions button{background:#e24c4c}
+        .note{font-size:13px;color:#555}
+      </style>
+    </head>
+    <body>
+      <h1>CX Award Monitor</h1>
+
+      <div class="card">
+        <div class="row">
+          <div class="col-3">
+            <label>From (IATA)</label>
+            <input id="from" maxlength="3" placeholder="HKG" />
+          </div>
+          <div class="col-3">
+            <label>To (IATA)</label>
+            <input id="to" maxlength="3" placeholder="LHR" />
+          </div>
+          <div class="col-3">
+            <label>Start date</label>
+            <input id="startDate" type="date" />
+          </div>
+          <div class="col-3">
+            <label>End date</label>
+            <input id="endDate" type="date" />
+          </div>
+          <div class="col-3">
+            <label>Adults</label>
+            <input id="adults" type="number" min="1" max="4" value="1" />
+          </div>
+          <div class="col-3">
+            <label>Children</label>
+            <input id="children" type="number" min="0" max="4" value="0" />
+          </div>
+          <div class="col-6">
+            <label>Email to notify</label>
+            <input id="email" type="email" placeholder="you@example.com" />
+          </div>
+          <div class="col-3">
+            <label>Non-stop only</label>
+            <select id="nonstop">
+              <option value="0">No</option>
+              <option value="1">Yes</option>
+            </select>
+          </div>
+          <div class="col-3">
+            <label>Min cabin</label>
+            <select id="minCabin">
+              <option value="">Any</option>
+              <option value="Y">Economy</option>
+              <option value="W">Premium</option>
+              <option value="C">Business</option>
+              <option value="F">First</option>
+            </select>
+          </div>
+          <div class="col-12" style="margin-top:8px">
+            <button id="addBtn">Add watch</button>
+            <span class="muted" id="msg" style="margin-left:10px"></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="row"><div class="col-12"><h3 style="margin:6px 0">My watches</h3></div></div>
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Route</th>
+              <th>Dates</th>
+              <th>Pax</th>
+              <th>Non-stop</th>
+              <th>Min cabin</th>
+              <th>Email</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+        <div class="note">Jobs run on a schedule (default hourly). You can also test a single day via <code>/api/search</code>.</div>
+      </div>
+
+      <script>
+        const $ = (id) => document.getElementById(id);
+        function fmt(d){return new Date(d).toLocaleDateString()}
+        async function load() {
+          const res = await fetch('/api/watch');
+          const data = await res.json();
+          const tb = $('tbody');
+          tb.innerHTML = '';
+          for (const w of data) {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td>${w.id}</td>
+              <td><b>${w.from}</b> → <b>${w.to}</b></td>
+              <td>${w.startDate} → ${w.endDate}</td>
+              <td>${w.numAdults}A ${w.numChildren}C</td>
+              <td>${w.nonstopOnly ? 'Yes' : 'No'}</td>
+              <td>${w.minCabin || '-'}</td>
+              <td>${w.email}</td>
+              <td class="actions"><button data-id="${w.id}">Delete</button></td>
+            `;
+            tb.appendChild(tr);
+          }
+        }
+
+        async function add() {
+          const from = $('from').value.trim().toUpperCase();
+          const to = $('to').value.trim().toUpperCase();
+          const startDate = $('startDate').value;
+          const endDate = $('endDate').value;
+          const numAdults = Number($('adults').value || 1);
+          const numChildren = Number($('children').value || 0);
+          const email = $('email').value.trim();
+          const nonstopOnly = $('nonstop').value === '1';
+          const minCabinVal = $('minCabin').value;
+          const payload = { from, to, startDate, endDate, numAdults, numChildren, email, nonstopOnly };
+          if (minCabinVal) payload.minCabin = minCabinVal;
+
+          $('msg').textContent = 'Adding...';
+          const res = await fetch('/api/watch', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+          if (!res.ok) {
+            const e = await res.json().catch(()=>({error:'Failed'}));
+            $('msg').textContent = 'Error: ' + (e.error?.message || JSON.stringify(e.error) || 'Failed');
+            return;
+          }
+          $('msg').textContent = 'Added';
+          await load();
+        }
+
+        document.addEventListener('click', async (e) => {
+          if (e.target && e.target.matches('#addBtn')) { add(); }
+          if (e.target && e.target.matches('button[data-id]')) {
+            const id = e.target.getAttribute('data-id');
+            await fetch('/api/watch/' + id, { method: 'DELETE' });
+            await load();
+          }
+        });
+
+        load();
+      </script>
+    </body>
+  </html>`);
 });
 
 app.get('/api/watch', (_req, res) => {
