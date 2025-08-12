@@ -349,11 +349,11 @@ app.get('/test-employee-login', async (req, res) => {
   try {
     // Set up a test employee session
     req.session.employee = {
-      email: 'test.user@inspirationcap.com',
+      email: 'test.user@company.com',
       name: 'Test User'
     };
     req.session.employeeAuthenticated = true;
-    req.session.employeeEmail = 'test.user@inspirationcap.com';
+    req.session.employeeEmail = 'test.user@company.com';
     req.session.employeeName = 'Test User';
     
     // Ensure TSLA is in restricted list for testing
