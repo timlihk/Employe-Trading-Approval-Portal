@@ -1,83 +1,81 @@
-# Trading Compliance Portal
+# Employee Trading Approval Portal
 
-A comprehensive employee pre-trading approval system with Microsoft 365 integration, built for compliance and audit requirements. Features enterprise-grade architecture with proper separation of concerns, comprehensive security, and scalable design patterns.
+A comprehensive enterprise-grade employee pre-trading approval system with Microsoft 365 integration, built for compliance and audit requirements. Features modern UI design, bond trading support, and complete audit trails for regulatory compliance.
 
-## Features
+## 🌟 Key Features
 
-### 🚀 **Core Functionality**
-- **Employee Portal**: Trading request submission with real-time ticker validation and approval tracking
-- **Admin Dashboard**: Complete trading request management with advanced filtering and bulk operations
-- **Two-Step Trading Workflow**: Preview → Compliance Declaration → Submit → Result confirmation
-- **Automatic Processing**: Real-time approval/rejection based on restricted stock list with escalation workflow
+### 🚀 **Core Trading Functionality**
+- **Employee Portal**: Intuitive trading request submission with real-time validation
+- **Bond & Equity Support**: Complete ISIN validation for bonds and ticker validation for equities  
+- **Two-Step Workflow**: Preview → Compliance Declaration → Submit → Result confirmation
+- **Automatic Processing**: Real-time approval/rejection based on restricted instruments list
 - **Currency Conversion**: Automatic USD conversion for foreign stocks with real-time exchange rates
-- **Pure HTML Forms**: No JavaScript dependency - works with all browsers and security policies
+- **Escalation System**: Business justification workflow for declined trades with admin priority review
 
-### 📊 **Advanced Reporting & Analytics**
-- **Dynamic Sorting**: All tables support sorting by Request ID, Date, Ticker, Employee, and Value
-- **Advanced Filtering**: Comprehensive filtering with date ranges, ticker search, trading type, and status
-- **Status Management**: Pending, Approved, Rejected status tracking with escalation capabilities
-- **CSV Export**: Full data export functionality for trading requests and audit logs
-- **Timezone Support**: Hong Kong timezone (UTC+8) for accurate date filtering and display
+### 🔐 **Authentication & Security**
+- **Microsoft 365 SSO**: Seamless single sign-on integration (optional)
+- **Conditional Authentication**: Automatically switches between SSO and demo mode
+- **Enterprise Security**: Rate limiting, CSRF protection, secure sessions, helmet security headers
+- **Audit Trail**: Complete activity logging with IP addresses, session IDs, and user actions
+- **Input Validation**: Comprehensive sanitization and validation for all user inputs
 
-### 🛡️ **Security & Compliance**
-- **Restricted Stock Management**: Dynamic restricted stock list with full audit trail and changelog
-- **Escalation Workflow**: Business justification system for declined trades with admin priority review
-- **Comprehensive Audit Logging**: Complete activity tracking with IP addresses, session IDs, and user actions
-- **Database Management**: Backup and reset functionality with confirmation workflows
-- **Advanced Security**: Rate limiting, input validation, Content Security Policy, and secure session management
+### 📊 **Advanced Management & Reporting**
+- **Dynamic Sorting**: All tables support clickable column headers with visual sort indicators
+- **Restricted Instruments Management**: Add/remove stocks and bonds with complete changelog
+- **Advanced Filtering**: Date ranges, ticker search, trading type, status, and instrument type filters
+- **CSV Export**: Full data export for trading requests, audit logs, and personal history
+- **Database Backup**: Complete database export with metadata and statistics
+- **Admin Dashboard**: Centralized management with quick actions and escalated request review
 
-### 🔗 **Integration & Authentication**
-- **Microsoft 365 SSO**: Optional single sign-on authentication (can be disabled)
-- **Real-time Validation**: External API integration for ticker validation and currency conversion
-- **Professional UI**: Goldman Sachs-inspired design system with responsive layout
+### 🎨 **Modern User Interface**
+- **Clean Design**: Simplified forms without asterisks and unnecessary text
+- **Responsive Layout**: Works seamlessly on desktop and mobile devices
+- **Accessibility**: Pure HTML forms compatible with all browsers and assistive technologies
+- **Visual Indicators**: Status badges, sort arrows, and clear action buttons
+- **Professional Styling**: Goldman Sachs-inspired design system
 
-## Architecture Overview
+## 🏗️ Architecture Overview
 
-The application follows enterprise-grade architectural patterns:
+### **Layered Architecture**
+```
+┌─────────────────┐
+│   Controllers   │ ← HTTP request handling
+├─────────────────┤
+│    Services     │ ← Business logic layer  
+├─────────────────┤
+│     Models      │ ← Data access layer
+├─────────────────┤
+│   Middleware    │ ← Security & validation
+└─────────────────┘
+```
 
-### 🏗️ **Layered Architecture**
-- **Controllers**: Handle HTTP requests/responses (`AdminController`, `EmployeeController`, `TradingRequestController`)
-- **Services**: Business logic layer (`AdminService`, `TradingRequestService`)
-- **Models**: Data access layer with BaseModel pattern (`TradingRequest`, `RestrictedStock`, `AuditLog`)
-- **Middleware**: Security, validation, error handling, and logging
-
-### 🔒 **Security Features**
-- **Input Validation**: Comprehensive validation middleware with sanitization
-- **Rate Limiting**: Configurable rate limits for authentication and admin actions
-- **Error Handling**: Centralized error handling with development/production modes
-- **Audit Logging**: Complete activity tracking with request correlation IDs
-- **Session Security**: Secure session configuration with proper CSRF protection
-
-### 📊 **Monitoring & Logging**
-- **Winston Logging**: Structured logging with request correlation
-- **Health Checks**: Built-in health monitoring for Railway deployment
-- **Security Events**: Dedicated security event logging for compliance
-
-## Technology Stack
-
+### **Technology Stack**
 - **Backend**: Node.js with Express.js framework
-- **Database**: PostgreSQL (Railway production) with timezone-aware queries
-- **Authentication**: Microsoft 365 OAuth 2.0 (optional) with admin credential fallback
-- **Frontend**: Pure HTML forms with server-side rendering (no JavaScript)
-- **Architecture**: MVC pattern with service layer and comprehensive middleware
-- **Security**: Helmet, Content Security Policy, rate limiting, input validation, comprehensive audit logging
-- **External APIs**: Currency conversion and ticker validation services
-- **Deployment**: Railway-optimized with health checks and environment detection
+- **Database**: PostgreSQL with timezone-aware queries
+- **Authentication**: Microsoft 365 OAuth 2.0 + admin credentials
+- **Frontend**: Server-side rendering with pure HTML forms
+- **Security**: Helmet, CSP, rate limiting, audit logging
+- **Deployment**: Railway-optimized with auto-scaling
 
-## Deployment Instructions
+### **Security Features**
+- **Content Security Policy**: Blocks all JavaScript execution for maximum security
+- **Rate Limiting**: Configurable limits for authentication and admin actions
+- **Session Security**: Secure cookie configuration with HTTPOnly flags
+- **Input Protection**: SQL injection and XSS prevention
+- **Audit Logging**: Complete activity tracking for compliance
 
-### Prerequisites
-- Railway account
-- Microsoft 365 app registration (optional)
-- Basic knowledge of environment variables
+## 🚀 Quick Deployment
 
-### Step 1: Deploy to Railway
-1. Connect your GitHub repository to Railway
-2. Railway will automatically detect the Node.js application
-3. The app will deploy using the provided `railway.json` and `nixpacks.toml`
+### **Deploy to Railway**
 
-### Step 2: Configure Environment Variables
-In Railway dashboard, add these **required** environment variables:
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/your-template)
+
+1. **Connect Repository**: Link your GitHub repository to Railway
+2. **Auto-Deploy**: Railway detects Node.js and deploys automatically
+3. **Configure Environment**: Set required environment variables (see below)
+4. **Access Application**: Use provided Railway URL
+
+### **Required Environment Variables**
 
 ```bash
 # Core Application (Required)
@@ -87,137 +85,174 @@ ADMIN_USERNAME=admin
 ADMIN_PASSWORD=your-secure-admin-password
 DATABASE_URL=postgresql://[auto-provided-by-railway]
 
-# Optional Application Settings
+# Application Settings
 PORT=3000
 LOG_LEVEL=info
 FRONTEND_URL=https://your-app.railway.app
 ```
 
-### Step 3: Optional Microsoft 365 Setup
-If you want SSO integration:
+### **Microsoft 365 Integration (Optional)**
+
+To enable Microsoft 365 single sign-on:
+
 ```bash
+# Azure AD App Registration
 AZURE_CLIENT_ID=your-client-id
-AZURE_CLIENT_SECRET=your-client-secret
+AZURE_CLIENT_SECRET=your-client-secret  
 AZURE_TENANT_ID=your-tenant-id
 REDIRECT_URI=https://your-app.railway.app/api/auth/microsoft/callback
 POST_LOGOUT_REDIRECT_URI=https://your-app.railway.app
 ```
 
-### Step 4: Access the Application
-- Navigate to your Railway-provided URL
-- Login with admin credentials (set via environment variables)
-- Start managing trading requests and restricted stocks
+**Microsoft 365 Setup Steps:**
+1. Go to Azure Active Directory > App registrations
+2. Create new registration with redirect URI: `https://your-app.railway.app/api/auth/microsoft/callback`
+3. Generate client secret in Certificates & secrets
+4. Add environment variables to Railway
+5. Application automatically detects and enables SSO
 
-## Security Configuration
+## 📈 New Features & Recent Updates
 
-⚠️ **CRITICAL SECURITY**: Configure these environment variables before deployment:
-- **SESSION_SECRET**: Generate a secure 32+ character random string
-- **ADMIN_USERNAME**: Set a secure admin username 
-- **ADMIN_PASSWORD**: Set a strong admin password
+### **🆕 Latest Enhancements (2024)**
 
-## Database
+#### **Bond Trading Support**
+- **ISIN Validation**: 12-character international bond identifier support
+- **Automatic Detection**: System recognizes ISINs vs. stock tickers
+- **Bond Information**: Company name resolution for bond issuers
+- **Instrument Type Tracking**: Separate handling for bonds vs. equities
 
-The application uses PostgreSQL in all environments:
-- **Railway Deployment**: Uses PostgreSQL with `DATABASE_URL`
-- **Local Development**: Configure `DATABASE_URL` to a local or hosted PostgreSQL instance
-- **Auto-initialization**: Creates all necessary tables on first run
-- **Audit Trail**: Complete activity logging for compliance requirements
+#### **Enhanced Table Sorting**
+- **Clickable Headers**: Click any column header to sort
+- **Visual Indicators**: Shows current sort direction with ↑/↓ arrows
+- **Multiple Tables**: Sorting available on all data tables
+- **State Persistence**: Sort preferences maintained across navigation
 
-## API Endpoints
+#### **Improved User Experience**
+- **Clean Forms**: Removed asterisks and unnecessary tip text
+- **Better Spacing**: Improved button layouts and form spacing
+- **Simplified Interface**: Streamlined forms for faster completion
+- **Error Handling**: Better error messages for duplicate entries
 
-### Health & Monitoring
-- `GET /health` - Application health check for Railway monitoring
-- `GET /db-status` - Database status and connection info (admin only)
+#### **Advanced Database Management**
+- **Complete Backups**: Full database export with metadata and statistics
+- **Session Tracking**: Active session data included in backups
+- **Audit Logging**: Enhanced logging for all backup operations
+- **Recovery Support**: Comprehensive data for disaster recovery
 
-### Authentication
-- `GET /` - Landing page with Microsoft 365 SSO login
+### **🔧 Technical Improvements**
+
+#### **Microsoft 365 Integration**
+- **Conditional UI**: Shows SSO login when configured, demo mode otherwise
+- **OAuth Flow**: Complete authentication with login, callback, and logout
+- **Session Management**: Proper user session handling and cleanup
+- **Error Handling**: Graceful handling of SSO errors and state mismatches
+
+#### **Security Enhancements**
+- **CSRF Protection**: Token-based protection for all forms
+- **Rate Limiting**: Increased limits for Railway deployment (1000 req/15min)
+- **Input Sanitization**: Enhanced validation for bond ISINs and tickers
+- **Audit Trail**: Complete logging of admin and user activities
+
+#### **Database Optimizations**
+- **Instrument Type Support**: Proper handling of bonds vs. equities
+- **Index Creation**: Performance indexes for common queries
+- **Data Integrity**: Constraints and validation at database level
+- **Timezone Handling**: Hong Kong timezone support (UTC+8)
+
+## 📊 API Endpoints & Features
+
+### **Authentication Endpoints**
+- `GET /` - Landing page with conditional Microsoft 365 login
+- `GET /api/auth/microsoft/login` - Start Microsoft 365 OAuth flow
+- `GET /api/auth/microsoft/callback` - Handle OAuth callback
+- `GET /api/auth/microsoft/logout` - Sign out and session cleanup
 - `POST /admin-authenticate` - Admin credential authentication
-- `GET /api/auth/microsoft/*` - Microsoft 365 OAuth flow (if enabled)
-- `GET /admin-login` - Admin login form
+- `GET /employee-dummy-login` - Demo login (when SSO not configured)
 
-### Admin Management
-- `GET /admin-dashboard` - Admin dashboard with action buttons and escalated requests review
-- `GET /admin-requests` - Trading requests management with advanced filtering and sorting
-- `GET /admin-restricted-stocks` - Restricted stocks management with changelog
-- `GET /admin-audit-log` - Complete audit log with export functionality
-- `GET /admin-export-trading-requests` - CSV export of all trading requests
-- `GET /admin-export-audit-log` - CSV export of complete audit log
-- `GET /admin-backup-database` - Full database backup as JSON
-- `GET /admin-clear-database-confirm` - Database reset confirmation with warnings
-- `POST /admin-clear-database` - Complete database reset functionality
+### **Admin Management**
+- `GET /admin-dashboard` - Dashboard with quick actions
+- `GET /admin-requests` - Trading requests with sorting and filtering
+- `GET /admin-restricted-stocks` - Instrument management with sorting
+- `GET /admin-audit-log` - Complete audit trail with export
+- `GET /admin-backup-database` - Complete database backup download
+- `POST /admin-add-stock` - Add restricted instrument (stock or bond)
+- `POST /admin-remove-stock` - Remove from restricted list
 
-### Employee Portal
-- `GET /employee-dashboard` - Employee trading request submission form
-- `GET /employee-history` - Personal trading history with advanced filtering and sorting
-- `GET /employee-export-history` - Personal CSV export with applied filters
-- `GET /escalate-form/:id` - Request escalation form with business justification
+### **Employee Portal**
+- `GET /employee-dashboard` - Clean trading request form
+- `GET /employee-history` - Personal history with sorting and filtering
+- `GET /employee-export-history` - Personal CSV export
+- `GET /escalate-form/:id` - Request escalation with business justification
 
-### Trading Request Workflow
-- `POST /preview-trade` - Preview trading request with compliance declaration
-- `POST /submit-trade` - Submit trading request after compliance confirmation
-- `GET /trade-result/:requestId` - Display approval/rejection result
-- `POST /submit-escalation` - Submit escalation with business justification
+### **Trading Workflow**
+- `POST /preview-trade` - Preview with compliance declaration
+- `POST /submit-trade` - Final submission after confirmation
+- `GET /trade-result/:id` - Approval/rejection result page
+- `POST /submit-escalation` - Escalate declined request
 
-## Reporting & Data Management
+## 🔍 Advanced Features
 
-### 📊 **Dynamic Sorting**
-All reporting tables support flexible sorting options:
+### **Dynamic Sorting System**
+```javascript
+// All tables support sorting by:
+- Ticker/ISIN (alphabetical)
+- Company Name (alphabetical)  
+- Date Added/Created (chronological)
+- Request ID (numerical)
+- Total Value (monetary)
 
-**Sort Fields:**
-- **Request ID** - Sort by unique request identifier (most recent first)
-- **Date** - Sort by creation timestamp (chronological order)  
-- **Ticker** - Sort alphabetically by stock symbol
-- **Employee** - Sort by employee email (admin tables only)
-
-**Sort Directions:**
-- **↓ Descending** - Newest/highest first (default)
-- **↑ Ascending** - Oldest/lowest first
-
-**Usage:**
-```
-URL: /admin-requests?sort_by=created_at&sort_order=ASC
-URL: /employee-history?sort_by=ticker&sort_order=DESC&ticker=AAPL
+// Visual indicators show current sort:
+↑ Ascending order
+↓ Descending order
 ```
 
-### 🔍 **Advanced Filtering**
-Employee history supports comprehensive filtering:
-- **Date Range** - Filter by start and end dates
-- **Ticker Search** - Find specific stock symbols
-- **Trading Type** - Filter by buy/sell transactions
-- **Combined Filters** - Multiple filters work together
+### **Comprehensive Filtering**
+```javascript
+// Available filters:
+- Date ranges (start/end dates)
+- Ticker/ISIN search
+- Trading type (buy/sell)
+- Status (pending/approved/rejected)
+- Instrument type (equity/bond)
+- Employee email (admin only)
+- Escalation status
+```
 
-### 📥 **CSV Export Features**
-- **Trading Requests Export** - Complete trading request data with USD values and status
-- **Audit Log Export** - Full audit trail with timestamps, IP addresses, and session IDs  
-- **Maintains Sorting** - Exports respect current sort order
-- **Preserves Filters** - Employee exports include applied filters
-- **Timestamped Files** - Automatic filename generation with timestamps
-- **Complete Data** - All relevant fields included in exports
-- **Hong Kong Timezone** - All dates and times displayed in HK timezone (UTC+8)
+### **Export Capabilities**
+- **CSV Format**: All exports in standard CSV with proper escaping
+- **Timestamped Files**: Automatic filename generation with timestamps
+- **Filter Preservation**: Exports respect applied filters and sorting
+- **Complete Data**: All relevant fields included
+- **Hong Kong Timezone**: All dates in HK timezone (UTC+8)
 
-### 📋 **Real-time Table Updates**
-- **Instant Sorting** - Tables update immediately when changing sort options
-- **Visual Indicators** - Headers show current sort field and direction
-- **Preserved State** - Sorting maintained across page navigation
-- **Filter Integration** - Sorting works seamlessly with filtering
+### **Security Features**
+- **Input Validation**: Comprehensive validation for all user inputs
+- **SQL Injection Prevention**: Parameterized queries throughout
+- **XSS Protection**: HTML escaping and Content Security Policy
+- **Session Security**: Secure session configuration with rotation
+- **Rate Limiting**: Configurable limits for different endpoints
+- **Audit Logging**: Complete activity tracking for compliance
 
-## Development Setup
+## 🛠️ Development Setup
+
+### **Local Development**
 
 ```bash
 # Clone repository
-git clone <your-repo>
+git clone https://github.com/timlihk/Employe-Trading-Approval-Portal.git
 cd trading_approval
 
 # Install dependencies
 npm install
 
-# Set up environment variables (create .env file)
+# Configure environment (.env file)
 NODE_ENV=development
-SESSION_SECRET=dev_secret_key_change_in_production
+SESSION_SECRET=dev_secret_change_in_production
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD=password123
+DATABASE_URL=postgresql://localhost:5432/trading_approval
 
-# Optional: Microsoft 365 integration (can be disabled)
+# Optional: Microsoft 365 integration
 AZURE_CLIENT_ID=your_client_id
 AZURE_CLIENT_SECRET=your_client_secret
 AZURE_TENANT_ID=your_tenant_id
@@ -226,83 +261,152 @@ AZURE_TENANT_ID=your_tenant_id
 npm start
 ```
 
-## Security Features
+### **Database Setup**
+```bash
+# PostgreSQL required (local or hosted)
+# Application automatically creates tables on startup
+# No manual database setup needed
+```
 
-### 🔒 **Authentication & Authorization**
-- Secure session-based authentication with configurable expiration
-- Role-based access control (employee vs admin)
-- Microsoft 365 OAuth 2.0 integration (optional - can be disabled)
-- Admin credential fallback for environments without SSO
-- Automatic session invalidation and cleanup
-- Email-based employee authentication removed for security
+### **Testing**
+```bash
+# Run application locally
+npm start
 
-### 🛡️ **Input Protection**
-- Pure HTML forms with no JavaScript dependencies
-- Comprehensive input validation with express-validator
-- SQL injection prevention with parameterized queries
-- XSS protection with proper HTML escaping and Content Security Policy
-- Rate limiting to prevent brute force attacks
-- Ticker input sanitization and case normalization
+# Test endpoints
+curl http://localhost:3000/health
 
-### 📋 **Audit & Compliance**
-- Complete audit logging of all user actions with timestamps and IP addresses
-- Security event logging with correlation IDs and session tracking
-- Request/response logging with IP tracking and user agent information
-- Structured logging with Winston for analysis and export capabilities
-- Database backup and restore functionality with admin confirmation
-- Comprehensive activity tracking for compliance requirements
+# Access admin interface
+# Default: admin/password123
+```
 
-### 🌐 **Network Security**
-- Helmet.js security headers with strict CSP
-- Content Security Policy configured for no JavaScript execution
-- Secure cookie configuration with HTTPOnly flags
-- Rate limiting for authentication and admin actions
-- Proper HTTPS handling for Railway deployment
+## 📱 User Guide
 
-## Monitoring & Troubleshooting
+### **For Employees**
+1. **Login**: Use Microsoft 365 or demo login
+2. **Submit Request**: Fill out clean, simple form
+3. **Preview**: Review details and declare compliance
+4. **Track Status**: Monitor approval/rejection in history
+5. **Escalate**: Provide business justification if needed
 
-### Log Files
-- `logs/combined.log` - All application logs
-- `logs/error.log` - Error-level logs only
-- Console output includes request correlation IDs
+### **For Administrators**
+1. **Manage Requests**: Review, approve, or reject submissions
+2. **Restricted Instruments**: Add/remove stocks and bonds with sorting
+3. **Audit Trail**: View complete activity logs
+4. **Data Export**: Download CSV reports and database backups
+5. **Escalated Requests**: Review business justifications for priority handling
 
-### Health Monitoring
-- Railway automatically monitors `/health` endpoint
-- Database connectivity checks
-- Application uptime tracking
+## 🔧 Configuration Options
 
-## Architecture Benefits
+### **Authentication Modes**
+```javascript
+// Microsoft 365 SSO (when configured)
+- Automatic detection based on environment variables
+- Seamless login with company credentials
+- Proper logout with session cleanup
 
-✅ **Maintainability**: Clear separation of concerns with layered architecture  
-✅ **Scalability**: Service layer enables easy feature additions  
-✅ **Security**: Multiple layers of protection and comprehensive audit trails  
-✅ **Testability**: Isolated business logic in services for unit testing  
-✅ **Debugging**: Structured logging with correlation IDs  
-✅ **Performance**: Optimized database queries and caching-ready architecture  
-✅ **Accessibility**: Pure HTML forms work with all browsers and assistive technologies  
-✅ **Compliance**: Complete audit trails and data export for regulatory requirements  
+// Demo Mode (fallback)
+- Simple email-based authentication
+- Suitable for testing and development
+- Clearly labeled as demo mode
+```
 
-## Recent Updates & Improvements
+### **Rate Limiting**
+```javascript
+// Configurable limits in middleware/security.js
+- General: 1000 requests per 15 minutes
+- Authentication: 5 attempts per 15 minutes  
+- Admin actions: 10 actions per minute
+```
 
-### 🚀 **Version 2.0 Features**
-- **No JavaScript Architecture**: Complete removal of client-side JavaScript for maximum security and compatibility
-- **Enhanced Compliance Workflow**: Two-step trading process with mandatory compliance declaration
-- **Currency Conversion**: Automatic USD conversion for foreign stocks with real-time exchange rates
-- **Advanced Admin Tools**: Database reset with confirmation, audit log export, escalated request management
-- **Timezone Support**: Hong Kong timezone (UTC+8) handling for accurate date filtering and display
-- **Improved Security**: Content Security Policy blocking all scripts, comprehensive input validation
+### **Database Configuration**
+```javascript
+// PostgreSQL settings
+- Auto-table creation on startup
+- Timezone-aware queries (Hong Kong UTC+8)
+- Performance indexes for common queries
+- Complete audit trail storage
+```
 
-### 🔧 **Recent Technical Improvements**
-- **Status Management**: Fixed status tracking to properly show approved/rejected requests
-- **Database Optimization**: PostgreSQL timezone-aware queries for accurate date filtering  
-- **Export Enhancements**: Added audit log CSV export with complete activity tracking
-- **UI Simplification**: Removed complex JavaScript interactions in favor of server-side processing
-- **Admin Dashboard**: Streamlined interface with direct action buttons and escalated request review
-- **Error Handling**: Comprehensive error pages and user-friendly messages
+## 🚨 Security Best Practices
 
-## Support & Contributing
+### **Deployment Security**
+- ✅ Use strong SESSION_SECRET (32+ characters)
+- ✅ Set secure ADMIN_USERNAME and ADMIN_PASSWORD
+- ✅ Enable HTTPS (automatic on Railway)
+- ✅ Configure Microsoft 365 with proper redirect URIs
+- ✅ Regularly backup database using built-in tools
+- ✅ Monitor audit logs for suspicious activity
 
-- **Issues**: Check Railway logs and application logs for debugging
+### **Access Control**
+- ✅ Role-based access (employee vs admin)
+- ✅ Session-based authentication with automatic expiration
+- ✅ CSRF protection on all forms
+- ✅ Input validation and sanitization
+- ✅ SQL injection prevention with parameterized queries
+
+## 📋 Compliance Features
+
+### **Audit Requirements**
+- **Complete Logging**: All user actions logged with timestamps
+- **IP Tracking**: User IP addresses recorded for all activities
+- **Session Correlation**: Request correlation IDs for debugging
+- **Data Export**: CSV exports for regulatory reporting
+- **Backup System**: Complete database backups for disaster recovery
+
+### **Data Retention**
+- **Permanent Storage**: All trading requests and audit logs retained
+- **Changelog Tracking**: Complete history of restricted stock changes
+- **Escalation Records**: Business justifications and admin decisions
+- **Database Backups**: Regular backups with metadata and statistics
+
+## 🎯 Roadmap & Future Enhancements
+
+### **Planned Features**
+- [ ] Multi-language support (English/Chinese)
+- [ ] Mobile app with React Native
+- [ ] Advanced analytics dashboard
+- [ ] Integration with trading platforms
+- [ ] Real-time notifications
+- [ ] Document attachment support
+
+### **Technical Improvements**
+- [ ] GraphQL API for better performance
+- [ ] Redis caching layer
+- [ ] Microservices architecture
+- [ ] Automated testing suite
+- [ ] Docker containerization
+- [ ] Kubernetes deployment
+
+## 📞 Support & Contributing
+
+### **Getting Help**
+- **Documentation**: Comprehensive README and inline comments
+- **Railway Logs**: Check deployment logs for issues
+- **Health Checks**: Use `/health` endpoint for monitoring
+- **Audit Logs**: Review `/admin-audit-log` for debugging
+
+### **Contributing**
 - **Architecture**: Follow established patterns in controllers/services/models
-- **Security**: All changes must maintain audit logging and input validation
-- **Testing**: Test locally before deployment, verify all routes work properly
+- **Security**: Maintain audit logging and input validation
+- **Testing**: Test locally before deployment
+- **Documentation**: Update README for significant changes
+
+### **Reporting Issues**
+1. Check Railway deployment logs
+2. Review application audit logs
+3. Verify environment variable configuration
+4. Test with minimal reproduction case
+5. Include relevant log entries in bug reports
+
+---
+
+## 📄 License & Credits
+
+This Employee Trading Approval Portal is built with enterprise-grade security and compliance in mind. The application follows industry best practices for financial technology applications and provides complete audit trails for regulatory compliance.
+
+**Built with**: Node.js, Express.js, PostgreSQL, Microsoft 365 integration, and Railway deployment optimization.
+
+---
+
+*Last Updated: December 2024 - Version 2.1 with Bond Trading Support and Enhanced UI*
