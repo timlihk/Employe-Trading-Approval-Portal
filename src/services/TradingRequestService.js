@@ -2,6 +2,7 @@ const TradingRequest = require('../models/TradingRequest');
 const RestrictedStock = require('../models/RestrictedStock');
 const AuditLog = require('../models/AuditLog');
 const CurrencyService = require('./CurrencyService');
+const ISINService = require('./ISINService');
 const { AppError } = require('../middleware/errorHandler');
 const { logger } = require('../utils/logger');
 const { SimpleCache } = require('../utils/simpleCache');
@@ -116,6 +117,64 @@ class TradingRequestService {
   }
 
   /**
+   * Validate ticker or ISIN and determine instrument type
+   */
+  async validateTickerOrISIN(tickerOrISIN) {
+    try {
+      const cleanInput = tickerOrISIN.trim().toUpperCase();
+      
+      // Check if it's an ISIN first
+      if (ISINService.detectISIN(cleanInput)) {
+        const isinResult = await ISINService.validateISIN(cleanInput);
+        
+        if (isinResult.valid) {
+          return {
+            isValid: true,
+            instrument_type: 'bond',
+            ticker: cleanInput,
+            name: isinResult.name || `Bond ${cleanInput}`,
+            currency: isinResult.currency || 'USD',
+            issuer: isinResult.issuer,
+            exchange: isinResult.exchange || null,
+            isin: cleanInput
+          };
+        } else {
+          return {
+            isValid: false,
+            error: isinResult.error || 'Invalid ISIN format',
+            instrument_type: 'bond'
+          };
+        }
+      }
+      
+      // If not an ISIN, validate as stock ticker
+      const tickerResult = await this.validateTicker(cleanInput);
+      
+      if (tickerResult.isValid) {
+        return {
+          ...tickerResult,
+          instrument_type: 'equity',
+          ticker: cleanInput
+        };
+      }
+      
+      return {
+        isValid: false,
+        error: tickerResult.error || 'Invalid ticker',
+        instrument_type: 'equity'
+      };
+      
+    } catch (error) {
+      logger.error('Error validating ticker or ISIN:', error);
+      return {
+        isValid: false,
+        error: 'Unable to validate ticker/ISIN at this time',
+        instrument_type: 'equity'
+      };
+    }
+  }
+
+  /**
    * Get cache and circuit breaker stats for monitoring
    */
   getTickerValidationStats() {
@@ -147,21 +206,24 @@ class TradingRequestService {
     const { ticker, shares, trading_type } = requestData;
     
     try {
-      // Validate ticker
-      const tickerValidation = await this.validateTicker(ticker.toUpperCase());
-      if (!tickerValidation.isValid) {
-        throw new AppError(`Invalid ticker: ${ticker}. ${tickerValidation.error}`, 400);
+      // Validate ticker or ISIN
+      const validation = await this.validateTickerOrISIN(ticker.toUpperCase());
+      if (!validation.isValid) {
+        const instrumentType = validation.instrument_type === 'bond' ? 'ISIN' : 'ticker';
+        throw new AppError(`Invalid ${instrumentType}: ${ticker}. ${validation.error}`, 400);
       }
 
-      // Check if stock is restricted
+      // Check if instrument is restricted
       const isRestricted = await this.checkRestrictedStatus(ticker.toUpperCase());
 
       // Calculate estimated values
-      const sharePrice = tickerValidation.regularMarketPrice || 0;
+      const sharePrice = validation.regularMarketPrice || validation.price || 100; // Default for bonds
       const estimatedValue = sharePrice * parseInt(shares);
       
       // Convert to USD if needed
-      const currency = tickerValidation.currency || 'USD';
+      const currency = validation.currency || 'USD';
+      const instrumentType = validation.instrument_type || 'equity';
+      const instrumentName = validation.longName || validation.name || `${instrumentType} ${ticker.toUpperCase()}`;
       let sharePriceUSD = sharePrice;
       let totalValueUSD = estimatedValue;
       let exchangeRate = 1;
@@ -186,18 +248,19 @@ class TradingRequestService {
       let rejectionReason = null;
       
       if (isRestricted) {
-        // Automatically reject restricted stocks
+        // Automatically reject restricted instruments
         initialStatus = 'rejected';
-        rejectionReason = `${ticker.toUpperCase()} is on the restricted trading list. This request has been automatically rejected. You may escalate with a business justification if needed.`;
+        const instType = instrumentType === 'bond' ? 'bond' : 'stock';
+        rejectionReason = `${ticker.toUpperCase()} is on the restricted trading list. This ${instType} request has been automatically rejected. You may escalate with a business justification if needed.`;
       } else {
-        // Automatically approve non-restricted stocks
+        // Automatically approve non-restricted instruments
         initialStatus = 'approved';
       }
       
       // Create trading request with automatic status
       const tradingRequestData = {
         employee_email: employeeEmail.toLowerCase(),
-        stock_name: tickerValidation.longName,
+        stock_name: instrumentName,
         ticker: ticker.toUpperCase(),
         shares: parseInt(shares),
         share_price: sharePrice,
@@ -207,6 +270,7 @@ class TradingRequestService {
         total_value_usd: totalValueUSD,
         exchange_rate: exchangeRate,
         trading_type: trading_type.toLowerCase(),
+        instrument_type: instrumentType,
         estimated_value: totalValueUSD, // Use USD value for estimated_value
         status: initialStatus,
         rejection_reason: rejectionReason,
@@ -217,9 +281,11 @@ class TradingRequestService {
 
       // Log the creation with appropriate action
       const logAction = isRestricted ? 'create_rejected_trading_request' : 'create_approved_trading_request';
+      const unitType = instrumentType === 'bond' ? 'units' : 'shares';
+      const instType = instrumentType === 'bond' ? 'bond' : 'stock';
       const logDetails = isRestricted 
-        ? `Created ${trading_type} request for ${shares} shares of ${ticker.toUpperCase()} - AUTOMATICALLY REJECTED (restricted stock)`
-        : `Created ${trading_type} request for ${shares} shares of ${ticker.toUpperCase()} - AUTOMATICALLY APPROVED`;
+        ? `Created ${trading_type} request for ${shares} ${unitType} of ${ticker.toUpperCase()} - AUTOMATICALLY REJECTED (restricted ${instType})`
+        : `Created ${trading_type} request for ${shares} ${unitType} of ${ticker.toUpperCase()} - AUTOMATICALLY APPROVED`;
         
       await AuditLog.logActivity(
         employeeEmail,
@@ -247,9 +313,10 @@ class TradingRequestService {
 
       return {
         request,
-        tickerInfo: tickerValidation,
+        tickerInfo: validation,
         isRestricted,
-        autoProcessed: true
+        autoProcessed: true,
+        instrumentType
       };
       
     } catch (error) {

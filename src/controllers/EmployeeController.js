@@ -37,24 +37,28 @@ class EmployeeController {
             ${req.csrfInput()}
             <div class="grid grid-auto gap-4 grid-mobile-stack">
               <div>
-                <label class="form-label">Stock Ticker *</label>
+                <label class="form-label">Stock Ticker or Bond ISIN *</label>
                 <input type="text" name="ticker" value="${prefilledTicker}" required 
-                       placeholder="e.g., AAPL, MSFT, GOOGL" 
+                       placeholder="e.g., AAPL, MSFT or US1234567890" 
                        class="form-control text-uppercase"
-                       maxlength="15" pattern="[A-Za-z0-9.-]+">
+                       maxlength="20" pattern="[A-Za-z0-9.-]+">
                 <div class="mt-2">
-                  <small class="form-text">Enter a valid stock ticker symbol. Examples:</small>
+                  <small class="form-text">Enter a valid stock ticker symbol or bond ISIN. Examples:</small>
                   <div class="mt-1 p-2 bg-muted border-radius font-sm">
-                    <strong>US Markets:</strong> AAPL, MSFT, GOOGL, TSLA, NVDA, AMZN<br>
+                    <strong>US Stocks:</strong> AAPL, MSFT, GOOGL, TSLA, NVDA, AMZN<br>
+                    <strong>Bond ISINs:</strong> US1234567890, GB0987654321, DE0123456789<br>
                     <strong>Hong Kong:</strong> 0700.HK (Tencent), 9988.HK (Alibaba), 2318.HK (Ping An)<br>
                     <strong>UK:</strong> BARC.L (Barclays), LLOY.L (Lloyds), VOD.L (Vodafone)<br>
                     <strong>Europe:</strong> ASML.AS (ASML), SAP.DE (SAP), NESN.SW (Nestle)
+                  </div>
+                  <div class="mt-2">
+                    <small class="text-info">💡 <strong>Tip:</strong> For bonds, enter the 12-character ISIN code (e.g., US1234567890). The system will automatically detect and validate ISINs.</small>
                   </div>
                 </div>
               </div>
               
               <div>
-                <label class="form-label">Number of Shares *</label>
+                <label class="form-label">Number of Shares/Units *</label>
                 <input type="number" name="shares" value="${prefilledShares}" required min="1" max="1000000"
                        class="form-control">
                 <small class="form-text">Enter the number of shares (1 - 1,000,000)</small>
@@ -97,7 +101,7 @@ class EmployeeController {
    * Get employee history
    */
   getHistory = catchAsync(async (req, res) => {
-    const { message, error, start_date, end_date, ticker, trading_type, status, sort_by = 'id', sort_order = 'DESC', page = 1, limit = 25 } = req.query;
+    const { message, error, start_date, end_date, ticker, trading_type, status, instrument_type, sort_by = 'id', sort_order = 'DESC', page = 1, limit = 25 } = req.query;
     
     // Check if user is properly authenticated
     if (!req.session.employee || !req.session.employee.email) {
@@ -127,6 +131,7 @@ class EmployeeController {
     if (ticker) filters.ticker = ticker.toUpperCase();
     if (trading_type) filters.trading_type = trading_type;
     if (status) filters.status = status;
+    if (instrument_type) filters.instrument_type = instrument_type;
 
     const result = await TradingRequestService.getEmployeeRequests(employeeEmail, filters, sort_by, sort_order);
     
@@ -149,6 +154,11 @@ class EmployeeController {
           <td class="text-center">${date}</td>
           <td>${request.stock_name || 'N/A'}</td>
           <td class="text-center font-weight-600">${request.ticker}</td>
+          <td class="text-center">
+            <span class="badge ${request.instrument_type === 'bond' ? 'badge-info' : 'badge-secondary'}">
+              ${request.instrument_type === 'bond' ? 'Bond' : 'Equity'}
+            </span>
+          </td>
           <td class="text-center">${request.trading_type.toUpperCase()}</td>
           <td class="text-right">${parseInt(request.shares).toLocaleString()}</td>
           <td class="text-right">
@@ -223,6 +233,14 @@ class EmployeeController {
                   <option value="pending" ${req.query.status === 'pending' ? 'selected' : ''}>Pending</option>
                 </select>
               </div>
+              <div>
+                <label class="form-label">Instrument:</label>
+                <select name="instrument_type" class="form-control-sm">
+                  <option value="">All Instruments</option>
+                  <option value="equity" ${req.query.instrument_type === 'equity' ? 'selected' : ''}>Equity (Stocks)</option>
+                  <option value="bond" ${req.query.instrument_type === 'bond' ? 'selected' : ''}>Bond (ISIN)</option>
+                </select>
+              </div>
             </div>
             <div class="mt-6 text-center">
               <div class="btn-group btn-group-mobile">
@@ -262,9 +280,10 @@ class EmployeeController {
                     <th class="th-sortable" ${currentSortBy === 'ticker' ? `aria-sort="${currentSortOrder === 'ASC' ? 'ascending' : 'descending'}"` : ''}>
                       <a href="/employee-history?${new URLSearchParams({...req.query, sort_by: 'ticker', sort_order: currentSortBy === 'ticker' && currentSortOrder === 'ASC' ? 'DESC' : 'ASC'}).toString()}" 
                          class="link focus-ring">
-                        Ticker<span class="sr-only"> - Click to sort</span>
+                        Ticker/ISIN<span class="sr-only"> - Click to sort</span>
                       </a>
                     </th>
+                    <th>Instrument</th>
                     <th>Type</th>
                     <th>Shares</th>
                     <th class="th-sortable" ${currentSortBy === 'total_value_usd' ? `aria-sort="${currentSortOrder === 'ASC' ? 'ascending' : 'descending'}"` : ''}>
@@ -376,9 +395,9 @@ class EmployeeController {
           <div class="bg-muted p-4 border-radius mb-6">
             <h4 class="m-0 mb-3">Request Details:</h4>
             <div class="grid gap-2">
-              <div><strong>Stock:</strong> ${request.stock_name} (${request.ticker})</div>
+              <div><strong>${request.instrument_type === 'bond' ? 'Bond' : 'Stock'}:</strong> ${request.stock_name} (${request.ticker})</div>
               <div><strong>Type:</strong> ${request.trading_type.toUpperCase()}</div>
-              <div><strong>Shares:</strong> ${parseInt(request.shares).toLocaleString()}</div>
+              <div><strong>${request.instrument_type === 'bond' ? 'Units' : 'Shares'}:</strong> ${parseInt(request.shares).toLocaleString()}</div>
               <div><strong>Estimated Value:</strong> $${parseFloat(request.total_value_usd || request.total_value || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</div>
               <div><strong>Submitted:</strong> ${formatHongKongTime(new Date(request.created_at))}</div>
             </div>
@@ -425,7 +444,7 @@ class EmployeeController {
       return res.redirect('/?error=authentication_required');
     }
 
-    const { start_date, end_date, ticker, trading_type, sort_by = 'id', sort_order = 'DESC' } = req.query;
+    const { start_date, end_date, ticker, trading_type, instrument_type, sort_by = 'id', sort_order = 'DESC' } = req.query;
     const employeeEmail = req.session.employee.email;
     
     try {
@@ -435,6 +454,7 @@ class EmployeeController {
       if (end_date) filters.end_date = end_date;
       if (ticker) filters.ticker = ticker.toUpperCase();
       if (trading_type) filters.trading_type = trading_type;
+      if (instrument_type) filters.instrument_type = instrument_type;
 
       const result = await TradingRequestService.getEmployeeRequests(employeeEmail, filters, sort_by, sort_order);
       
@@ -469,6 +489,7 @@ class EmployeeController {
     }
     if (ticker) filterSuffix += `-${ticker}`;
     if (trading_type) filterSuffix += `-${trading_type}`;
+    if (instrument_type) filterSuffix += `-${instrument_type}`;
 
     let timestamp;
     try {

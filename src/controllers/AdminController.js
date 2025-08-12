@@ -123,7 +123,7 @@ class AdminController {
    * Get admin requests page
    */
   getRequests = catchAsync(async (req, res) => {
-    const { message, employee_email, start_date, end_date, ticker, trading_type, status, escalated, sort_by = 'id', sort_order = 'DESC', page = 1, limit = 25 } = req.query;
+    const { message, employee_email, start_date, end_date, ticker, trading_type, status, escalated, instrument_type, sort_by = 'id', sort_order = 'DESC', page = 1, limit = 25 } = req.query;
     let banner = '';
     
     if (message === 'request_approved') {
@@ -147,6 +147,7 @@ class AdminController {
     if (ticker) filters.ticker = ticker.toUpperCase();
     if (trading_type) filters.trading_type = trading_type;
     if (status) filters.status = status;
+    if (instrument_type) filters.instrument_type = instrument_type;
     if (escalated === 'true') filters.escalated = true;
     if (escalated === 'false') filters.escalated = false;
 
@@ -196,6 +197,11 @@ class AdminController {
           <td>${request.employee_email}</td>
           <td>${request.stock_name || 'N/A'}</td>
           <td class="text-center font-weight-600">${request.ticker}</td>
+          <td class="text-center">
+            <span class="badge ${request.instrument_type === 'bond' ? 'badge-info' : 'badge-secondary'}">
+              ${request.instrument_type === 'bond' ? 'Bond' : 'Equity'}
+            </span>
+          </td>
           <td class="text-center">${request.trading_type.toUpperCase()}</td>
           <td class="text-center">${parseInt(request.shares).toLocaleString()}</td>
           <td class="text-right">
@@ -246,9 +252,17 @@ class AdminController {
                        class="form-control-sm">
               </div>
               <div>
-                <label class="form-label">Ticker:</label>
-                <input type="text" name="ticker" value="${ticker || ''}" placeholder="e.g., AAPL" 
+                <label class="form-label">Ticker/ISIN:</label>
+                <input type="text" name="ticker" value="${ticker || ''}" placeholder="e.g., AAPL or US1234567890" 
                        class="form-control-sm text-uppercase">
+              </div>
+              <div>
+                <label class="form-label">Instrument:</label>
+                <select name="instrument_type" class="form-control-sm">
+                  <option value="">All Instruments</option>
+                  <option value="equity" ${instrument_type === 'equity' ? 'selected' : ''}>Equity (Stocks)</option>
+                  <option value="bond" ${instrument_type === 'bond' ? 'selected' : ''}>Bond (ISIN)</option>
+                </select>
               </div>
               <div>
                 <label class="form-label">Type:</label>
@@ -303,7 +317,8 @@ class AdminController {
                     <th>Date</th>
                     <th>Employee</th>
                     <th>Company</th>
-                    <th>Ticker</th>
+                    <th>Ticker/ISIN</th>
+                    <th>Instrument</th>
                     <th>Type</th>
                     <th>Shares</th>
                     <th>Total Value (USD)</th>

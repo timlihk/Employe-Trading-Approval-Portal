@@ -19,6 +19,7 @@ class TradingRequest extends BaseModel {
         exchange_rate,
         trading_type,
         estimated_value, // For server-side simple requests
+        instrument_type = 'equity', // Default to equity if not specified
       } = requestData;
       
       // Handle both old complex format and new simple format
@@ -29,16 +30,16 @@ class TradingRequest extends BaseModel {
         INSERT INTO trading_requests (
           employee_email, stock_name, ticker, shares, 
           share_price, total_value, currency, share_price_usd, 
-          total_value_usd, exchange_rate, trading_type, status, 
+          total_value_usd, exchange_rate, trading_type, instrument_type, status, 
           rejection_reason, processed_at, created_at
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, CURRENT_TIMESTAMP)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, CURRENT_TIMESTAMP)
       `;
       
       const params = [
         employee_email.toLowerCase(), stock_name, ticker, shares, 
         finalSharePrice, finalTotalValue, currency, share_price_usd || finalSharePrice,
-        total_value_usd || finalTotalValue, exchange_rate || 1, trading_type, 
+        total_value_usd || finalTotalValue, exchange_rate || 1, trading_type, instrument_type,
         requestData.status || 'pending',
         requestData.rejection_reason || null,
         requestData.processed_at || new Date().toISOString()
@@ -172,6 +173,12 @@ class TradingRequest extends BaseModel {
       if (filters.escalated !== undefined) {
         sql += ` AND escalated = $${paramIndex}`;
         params.push(filters.escalated);
+        paramIndex++;
+      }
+
+      if (filters.instrument_type) {
+        sql += ` AND LOWER(instrument_type) = $${paramIndex}`;
+        params.push(filters.instrument_type.toLowerCase());
         paramIndex++;
       }
 

@@ -99,7 +99,35 @@ class Database {
       await this.pool.query('DROP TABLE IF EXISTS compliance_settings');
       console.log('🗑️  Removed unused compliance_settings table');
 
-      console.log('✅ PostgreSQL database initialized successfully');
+      // Add instrument_type column for bond support
+      await this.pool.query(`
+        ALTER TABLE trading_requests 
+        ADD COLUMN IF NOT EXISTS instrument_type VARCHAR(10) NOT NULL DEFAULT 'equity' 
+        CHECK(instrument_type IN ('equity', 'bond'))
+      `);
+      
+      await this.pool.query(`
+        ALTER TABLE restricted_stocks 
+        ADD COLUMN IF NOT EXISTS instrument_type VARCHAR(10) NOT NULL DEFAULT 'equity' 
+        CHECK(instrument_type IN ('equity', 'bond'))
+      `);
+      
+      await this.pool.query(`
+        ALTER TABLE restricted_stock_changelog 
+        ADD COLUMN IF NOT EXISTS instrument_type VARCHAR(10) NOT NULL DEFAULT 'equity' 
+        CHECK(instrument_type IN ('equity', 'bond'))
+      `);
+
+      // Update existing records to be equity
+      await this.pool.query("UPDATE trading_requests SET instrument_type = 'equity' WHERE instrument_type IS NULL OR instrument_type = ''");
+      await this.pool.query("UPDATE restricted_stocks SET instrument_type = 'equity' WHERE instrument_type IS NULL OR instrument_type = ''");
+      await this.pool.query("UPDATE restricted_stock_changelog SET instrument_type = 'equity' WHERE instrument_type IS NULL OR instrument_type = ''");
+
+      // Create indexes for performance
+      await this.pool.query('CREATE INDEX IF NOT EXISTS idx_trading_requests_instrument_type ON trading_requests(instrument_type)');
+      await this.pool.query('CREATE INDEX IF NOT EXISTS idx_restricted_stocks_instrument_type ON restricted_stocks(instrument_type)');
+
+      console.log('✅ PostgreSQL database initialized successfully with bond support');
     } catch (error) {
       console.error('❌ Error initializing PostgreSQL database:', error);
       console.error('This might be a temporary issue during Railway deployment');

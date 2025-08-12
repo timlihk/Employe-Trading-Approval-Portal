@@ -19,39 +19,46 @@ class TradingRequestController {
     const employeeEmail = req.session.employee.email;
 
     try {
-      // Just validate ticker and get info WITHOUT creating request yet
-      const tickerValidation = await TradingRequestService.validateTicker(ticker);
-      if (!tickerValidation.isValid) {
-        const errorMessage = `Invalid ticker symbol "${ticker.toUpperCase()}". ${tickerValidation.error}. Please check the ticker symbol and try again. Use formats like AAPL (US), 0700.HK (Hong Kong), BARC.L (UK), or SAP.DE (Europe).`;
+      // Validate ticker or ISIN and get info WITHOUT creating request yet
+      const validation = await TradingRequestService.validateTickerOrISIN(ticker);
+      if (!validation.isValid) {
+        const instrumentType = validation.instrument_type === 'bond' ? 'ISIN' : 'ticker symbol';
+        const examples = validation.instrument_type === 'bond' 
+          ? 'Use 12-character ISIN format like US1234567890 or GB0987654321'
+          : 'Use formats like AAPL (US), 0700.HK (Hong Kong), BARC.L (UK), or SAP.DE (Europe)';
+        const errorMessage = `Invalid ${instrumentType} "${ticker.toUpperCase()}". ${validation.error}. Please check the ${instrumentType} and try again. ${examples}.`;
         throw new Error(errorMessage);
       }
 
-      // Check if stock is restricted
+      // Check if instrument is restricted (works for both stocks and bonds)
       const isRestricted = await TradingRequestService.checkRestrictedStatus(ticker.toUpperCase());
 
       // Calculate values for display
-      const sharePrice = tickerValidation.regularMarketPrice || 0;
+      const sharePrice = validation.regularMarketPrice || validation.price || 100; // Default price for bonds if not available
       const estimatedValue = sharePrice * parseInt(shares);
-      const stockCurrency = tickerValidation.currency || 'USD';
+      const instrumentCurrency = validation.currency || 'USD';
+      const instrumentType = validation.instrument_type;
+      const instrumentName = validation.longName || validation.name || `${instrumentType.charAt(0).toUpperCase() + instrumentType.slice(1)} ${ticker.toUpperCase()}`;
       
       // Convert to USD for display
       let sharePriceUSD = sharePrice;
       let estimatedValueUSD = estimatedValue;
       let exchangeRate = 1;
       
-      if (stockCurrency !== 'USD') {
-        const conversion = await CurrencyService.convertToUSD(sharePrice, stockCurrency);
+      if (instrumentCurrency !== 'USD') {
+        const conversion = await CurrencyService.convertToUSD(sharePrice, instrumentCurrency);
         sharePriceUSD = conversion.usdAmount;
         estimatedValueUSD = sharePriceUSD * parseInt(shares);
         exchangeRate = conversion.exchangeRate;
       }
 
-      // Only show warning for restricted stocks, no message for non-restricted
+      // Only show warning for restricted instruments, no message for non-restricted
       let expectedOutcome = '';
       if (isRestricted) {
+        const instrumentTypeDisplay = instrumentType === 'bond' ? 'Bond' : 'Stock';
         expectedOutcome = `
           <div class="bg-warning border rounded p-4 mb-4">
-            <h4 class="m-0 text-warning">⚠️ Restricted Stock Warning</h4>
+            <h4 class="m-0 text-warning">⚠️ Restricted ${instrumentTypeDisplay} Warning</h4>
             <p class="mt-2 m-0 text-warning">${ticker.toUpperCase()} is on the restricted trading list. This request will be <strong>automatically rejected</strong> upon submission, but you will have the option to escalate with a business justification.</p>
           </div>`;
       }
@@ -70,32 +77,37 @@ class TradingRequestController {
             <div class="card-body p-6">
               <div class="grid gap-4">
                 <div class="d-flex justify-content-between p-3 bg-muted rounded">
-                  <span class="font-weight-600">Stock:</span>
-                  <span>${tickerValidation.longName} (<strong>${ticker.toUpperCase()}</strong>)</span>
+                  <span class="font-weight-600">${instrumentType === 'bond' ? 'Bond:' : 'Stock:'}</span>
+                  <span>${instrumentName} (<strong>${ticker.toUpperCase()}</strong>)</span>
                 </div>
+                ${instrumentType === 'bond' ? `
+                <div class="d-flex justify-content-between p-3 bg-muted rounded">
+                  <span class="font-weight-600">Instrument Type:</span>
+                  <span class="badge badge-info">Bond (ISIN)</span>
+                </div>` : ''}
                 <div class="d-flex justify-content-between p-3 bg-muted rounded">
                   <span class="font-weight-600">Action:</span>
                   <span class="text-uppercase font-weight-600 ${trading_type === 'buy' ? 'text-success' : 'text-danger'}">${trading_type}</span>
                 </div>
                 <div class="d-flex justify-content-between p-3 bg-muted rounded">
-                  <span class="font-weight-600">Shares:</span>
+                  <span class="font-weight-600">${instrumentType === 'bond' ? 'Units:' : 'Shares:'}</span>
                   <span class="font-weight-600">${parseInt(shares).toLocaleString()}</span>
                 </div>
                 <div class="d-flex justify-content-between p-3 bg-muted rounded">
-                  <span class="font-weight-600">Current Price:</span>
+                  <span class="font-weight-600">${instrumentType === 'bond' ? 'Unit Price:' : 'Current Price:'}</span>
                   <span>
-                    ${stockCurrency === 'USD' 
+                    ${instrumentCurrency === 'USD' 
                       ? `$${sharePrice.toFixed(2)} USD`
-                      : `${sharePrice.toFixed(2)} ${stockCurrency} (~$${sharePriceUSD.toFixed(2)} USD)`
+                      : `${sharePrice.toFixed(2)} ${instrumentCurrency} (~$${sharePriceUSD.toFixed(2)} USD)`
                     }
                   </span>
                 </div>
                 <div class="d-flex justify-content-between p-3 bg-muted rounded">
                   <span class="font-weight-600">Estimated Total:</span>
                   <span class="font-weight-600">
-                    ${stockCurrency === 'USD' 
+                    ${instrumentCurrency === 'USD' 
                       ? `$${estimatedValue.toLocaleString('en-US', {minimumFractionDigits: 2})} USD`
-                      : `${estimatedValue.toLocaleString('en-US', {minimumFractionDigits: 2})} ${stockCurrency} (~$${estimatedValueUSD.toLocaleString('en-US', {minimumFractionDigits: 2})} USD)`
+                      : `${estimatedValue.toLocaleString('en-US', {minimumFractionDigits: 2})} ${instrumentCurrency} (~$${estimatedValueUSD.toLocaleString('en-US', {minimumFractionDigits: 2})} USD)`
                     }
                   </span>
                 </div>${stockCurrency !== 'USD' ? `

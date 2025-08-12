@@ -247,29 +247,32 @@ nav, .nav {
 /* Primary Button */
 .btn-primary {
   background: var(--primary);
-  color: var(--white);
+  color: var(--white) !important;
   border: none;
 }
 
 .btn-primary:hover:not(:disabled) {
   background: var(--primary-hover);
+  color: var(--white) !important;
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
 }
 
 .btn-primary:active {
   transform: translateY(0);
+  color: var(--white) !important;
 }
 
 /* Secondary Button */
 .btn-secondary {
   background: var(--gray-100);
-  color: var(--secondary);
+  color: var(--secondary) !important;
   border: 1px solid var(--gray-200);
 }
 
 .btn-secondary:hover:not(:disabled) {
   background: var(--white);
+  color: var(--secondary) !important;
   border-color: var(--gray-300);
   transform: translateY(-1px);
   box-shadow: var(--shadow);
@@ -278,12 +281,13 @@ nav, .nav {
 /* Success Button */
 .btn-success {
   background: var(--success);
-  color: var(--white);
+  color: var(--white) !important;
   border: none;
 }
 
 .btn-success:hover:not(:disabled) {
   background: var(--success-dark);
+  color: var(--white) !important;
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
 }
@@ -291,12 +295,13 @@ nav, .nav {
 /* Danger Button */
 .btn-danger {
   background: var(--danger);
-  color: var(--white);
+  color: var(--white) !important;
   border: none;
 }
 
 .btn-danger:hover:not(:disabled) {
   background: var(--danger-dark);
+  color: var(--white) !important;
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
 }
@@ -511,11 +516,13 @@ select.form-control.compact {
 .trading-type-btn.buy.active {
   border-color: var(--success);
   background: var(--success);
+  color: var(--white) !important;
 }
 
 .trading-type-btn.sell.active {
   border-color: var(--danger);
   background: var(--danger);
+  color: var(--white) !important;
 }
 
 /* Remove old form-row - replaced by form-group.inline */
@@ -1907,13 +1914,13 @@ button[style*="background: var(--gs-primary-blue)"]:hover {
 /* Common button outline variant */
 .btn-outline {
   background: transparent;
-  color: var(--primary);
+  color: var(--primary) !important;
   border: 2px solid var(--primary);
 }
 
 .btn-outline:hover:not(:disabled) {
   background: var(--primary);
-  color: var(--white);
+  color: var(--white) !important;
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
 }
@@ -1921,12 +1928,13 @@ button[style*="background: var(--gs-primary-blue)"]:hover {
 /* Warning button variant */
 .btn-warning {
   background: var(--warning);
-  color: var(--secondary);
+  color: var(--secondary) !important;
   border: none;
 }
 
 .btn-warning:hover:not(:disabled) {
   background: var(--warning-dark);
+  color: var(--secondary) !important;
   transform: translateY(-1px);
   box-shadow: var(--shadow-md);
 }
@@ -2398,83 +2406,7 @@ button[style*="background: var(--gs-primary-blue)"]:hover {
   padding: 32px;
 }
 
-/* Buttons - Tesla-style (Flat, Bold) */
-.btn {
-  height: 48px;
-  padding: 0 24px;
-  border-radius: 4px;
-  font-weight: 500;
-  font-size: 14px;
-  text-transform: none;
-  letter-spacing: 0.02em;
-  border: none;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-
-.btn-primary {
-  background: var(--gs-primary-blue);
-  color: #fff;
-  border: 2px solid var(--gs-primary-blue);
-}
-
-.btn-primary:hover {
-  background: var(--gs-dark-blue);
-  border-color: var(--gs-dark-blue);
-  transform: translateY(-1px);
-}
-
-.btn-secondary {
-  background: #fff;
-  color: #111;
-  border: 2px solid #e5e5e5;
-}
-
-.btn-secondary:hover {
-  background: #f5f5f5;
-  transform: translateY(-1px);
-}
-
-.btn-outline {
-  background: transparent;
-  color: #111;
-  border: 2px solid #111;
-}
-
-.btn-outline:hover {
-  background: #111;
-  color: #fff;
-  transform: translateY(-1px);
-}
-
-.btn-danger {
-  background: #b00020;
-  color: #fff;
-  border: 2px solid #b00020;
-}
-
-.btn-danger:hover {
-  background: #8b0016;
-  border-color: #8b0016;
-  transform: translateY(-1px);
-}
-
-.btn-success {
-  background: #0a7f42;
-  color: #fff;
-  border: 2px solid #0a7f42;
-}
-
-.btn-success:hover {
-  background: #086335;
-  border-color: #086335;
-  transform: translateY(-1px);
-}
-
+/* Tesla-style button sizing overrides */
 .btn-sm {
   height: 40px;
   padding: 0 16px;
