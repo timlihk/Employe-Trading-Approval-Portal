@@ -434,6 +434,39 @@ class AdminController {
     const restrictedStocks = await RestrictedStock.findAll();
     const changelog = await RestrictedStockChangelog.getRecentChanges(20);
 
+    // Fix company names for bonds that show "Added via Admin Panel"
+    const ISINService = require('../services/ISINService');
+    for (const stock of restrictedStocks) {
+      if (stock.company_name === 'Added via Admin Panel' && ISINService.detectISIN(stock.ticker)) {
+        try {
+          const isinResult = await ISINService.validateISIN(stock.ticker);
+          if (isinResult.valid && isinResult.issuer) {
+            stock.company_name = isinResult.issuer;
+          } else if (isinResult.valid && isinResult.name) {
+            stock.company_name = isinResult.name;
+          }
+        } catch (error) {
+          // Keep original name if ISIN lookup fails
+        }
+      }
+    }
+
+    // Fix company names in changelog too
+    for (const change of changelog) {
+      if (change.company_name === 'Added via Admin Panel' && ISINService.detectISIN(change.ticker)) {
+        try {
+          const isinResult = await ISINService.validateISIN(change.ticker);
+          if (isinResult.valid && isinResult.issuer) {
+            change.company_name = isinResult.issuer;
+          } else if (isinResult.valid && isinResult.name) {
+            change.company_name = isinResult.name;
+          }
+        } catch (error) {
+          // Keep original name if ISIN lookup fails
+        }
+      }
+    }
+
     // Build table rows
     const stockRows = restrictedStocks.map(stock => `
       <tr>
@@ -479,12 +512,12 @@ class AdminController {
         <div class="card-body p-6">
           <form method="post" action="/admin-add-stock">\n            ${req.csrfInput()}
             <div class="d-flex gap-4 align-items-center">
-              <label class="form-label mb-0">Stock Ticker *</label>
+              <label class="form-label mb-0">Stock Ticker / Bond ISIN *</label>
               <div class="flex-grow-1">
-                <input type="text" name="ticker" required placeholder="e.g., AAPL" 
+                <input type="text" name="ticker" required placeholder="e.g., AAPL, US037833AT77" 
                        class="form-control text-uppercase">
               </div>
-              <button type="submit" class="btn btn-primary">Add Stock</button>
+              <button type="submit" class="btn btn-primary">Add</button>
             </div>
           </form>
         </div>
@@ -492,8 +525,8 @@ class AdminController {
 
       <div class="card mt-6">
         <div class="card-header">
-          <h3 class="card-title heading text-xl">Current Restricted Stocks</h3>
-          <p class="mt-2 m-0 text-muted text-sm">${restrictedStocks.length} stocks restricted</p>
+          <h3 class="card-title heading text-xl">Restricted Instruments List</h3>
+          <p class="mt-2 m-0 text-muted text-sm">${restrictedStocks.length} instruments restricted</p>
         </div>
         <div class="card-body p-0">
           ${restrictedStocks.length > 0 ? `
