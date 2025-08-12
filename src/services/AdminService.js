@@ -88,10 +88,12 @@ class AdminService {
 
       // Try to get company name from external API
       let companyName = 'Added via Admin Panel';
+      
+      // Check if it's an ISIN (bond) first - define outside try block
+      const ISINServiceClass = require('./ISINService');
+      const isinService = ISINServiceClass.instance;
+      
       try {
-        // Check if it's an ISIN (bond) first
-        const ISINServiceClass = require('./ISINService');
-        const isinService = ISINServiceClass.instance;
         
         if (ISINServiceClass.detectISIN(ticker)) {
           logger.info('Detected ISIN, fetching bond information', { ticker });

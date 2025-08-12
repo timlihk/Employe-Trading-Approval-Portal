@@ -472,12 +472,9 @@ app.get('/', (req, res) => {
   const loginButton = cca ? `
     <div class="card">
       <div class="card-body p-6">
-        <a href="/api/auth/microsoft/login" class="btn btn-primary w-full text-decoration-none mb-4">
+        <a href="/api/auth/microsoft/login" class="btn btn-primary w-full text-decoration-none">
           🔑 Sign in with Microsoft 365
         </a>
-        <p class="text-muted text-sm">
-          Sign in with your company Microsoft 365 account
-        </p>
       </div>
     </div>
   ` : `
