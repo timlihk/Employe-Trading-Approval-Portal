@@ -444,34 +444,50 @@ class AdminController {
     const changelog = await RestrictedStockChangelog.getRecentChanges(20);
 
     // Fix company names for bonds that show "Added via Admin Panel"
-    const ISINService = require('../services/ISINService');
+    const ISINServiceClass = require('../services/ISINService');
+    const isinService = ISINServiceClass.instance;
+    
     for (const stock of restrictedStocks) {
-      if (stock.company_name === 'Added via Admin Panel' && ISINService.detectISIN(stock.ticker)) {
+      if (stock.company_name === 'Added via Admin Panel' && ISINServiceClass.detectISIN(stock.ticker)) {
         try {
-          const isinResult = await ISINService.validateISIN(stock.ticker);
-          if (isinResult.valid && isinResult.issuer) {
-            stock.company_name = isinResult.issuer;
-          } else if (isinResult.valid && isinResult.name) {
-            stock.company_name = isinResult.name;
+          const isinResult = await isinService.validateISIN(stock.ticker);
+          if (isinResult.valid) {
+            if (isinResult.issuer && isinResult.issuer !== 'Unknown Issuer') {
+              stock.company_name = isinResult.issuer;
+            } else if (isinResult.name && isinResult.name !== `Bond ${stock.ticker}`) {
+              stock.company_name = isinResult.name;
+            } else {
+              // Use country-based fallback
+              const countryCode = stock.ticker.substring(0, 2).toUpperCase();
+              stock.company_name = `${countryCode} Government/Corporate Bond`;
+            }
           }
         } catch (error) {
           // Keep original name if ISIN lookup fails
+          console.error('Error looking up ISIN', { ticker: stock.ticker, error: error.message });
         }
       }
     }
 
     // Fix company names in changelog too
     for (const change of changelog) {
-      if (change.company_name === 'Added via Admin Panel' && ISINService.detectISIN(change.ticker)) {
+      if (change.company_name === 'Added via Admin Panel' && ISINServiceClass.detectISIN(change.ticker)) {
         try {
-          const isinResult = await ISINService.validateISIN(change.ticker);
-          if (isinResult.valid && isinResult.issuer) {
-            change.company_name = isinResult.issuer;
-          } else if (isinResult.valid && isinResult.name) {
-            change.company_name = isinResult.name;
+          const isinResult = await isinService.validateISIN(change.ticker);
+          if (isinResult.valid) {
+            if (isinResult.issuer && isinResult.issuer !== 'Unknown Issuer') {
+              change.company_name = isinResult.issuer;
+            } else if (isinResult.name && isinResult.name !== `Bond ${change.ticker}`) {
+              change.company_name = isinResult.name;
+            } else {
+              // Use country-based fallback
+              const countryCode = change.ticker.substring(0, 2).toUpperCase();
+              change.company_name = `${countryCode} Government/Corporate Bond`;
+            }
           }
         } catch (error) {
           // Keep original name if ISIN lookup fails
+          console.error('Error looking up ISIN in changelog', { ticker: change.ticker, error: error.message });
         }
       }
     }

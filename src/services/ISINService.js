@@ -254,4 +254,6 @@ class ISINService {
   }
 }
 
+// Export both the class and a singleton instance
 module.exports = ISINService;
+module.exports.instance = new ISINService();

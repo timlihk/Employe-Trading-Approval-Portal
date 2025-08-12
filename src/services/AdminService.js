@@ -90,10 +90,12 @@ class AdminService {
       let companyName = 'Added via Admin Panel';
       try {
         // Check if it's an ISIN (bond) first
-        const ISINService = require('./ISINService');
-        if (ISINService.detectISIN(ticker)) {
+        const ISINServiceClass = require('./ISINService');
+        const isinService = ISINServiceClass.instance;
+        
+        if (ISINServiceClass.detectISIN(ticker)) {
           logger.info('Detected ISIN, fetching bond information', { ticker });
-          const isinResult = await ISINService.validateISIN(ticker);
+          const isinResult = await isinService.validateISIN(ticker);
           
           if (isinResult.valid) {
             if (isinResult.issuer && isinResult.issuer !== 'Unknown Issuer') {
@@ -104,10 +106,12 @@ class AdminService {
               logger.info('Found bond name', { ticker, name: companyName });
             } else {
               // Use country-based fallback
-              const countryCode = ticker.substring(0, 2);
+              const countryCode = ticker.substring(0, 2).toUpperCase();
               companyName = `${countryCode} Government/Corporate Bond`;
               logger.info('Using country-based fallback', { ticker, companyName });
             }
+          } else {
+            logger.warn('ISIN validation failed', { ticker, result: isinResult });
           }
         } else {
           // It's a regular ticker, use Yahoo Finance
@@ -117,7 +121,7 @@ class AdminService {
           }
         }
       } catch (error) {
-        logger.warn('Could not fetch company name', { ticker, error: error.message });
+        logger.error('Error fetching company name', { ticker, error: error.message, stack: error.stack });
       }
 
       // Add stock to restricted list
