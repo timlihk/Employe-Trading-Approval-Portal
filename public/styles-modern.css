@@ -2024,6 +2024,30 @@ button[style*="background: var(--gs-primary-blue)"]:hover {
 .opacity-50 { opacity: 0.5; }
 .opacity-75 { opacity: 0.75; }
 
+/* Table utility classes - ensure consistent small font sizes */
+.table-zebra, .table-hover, .table-sticky {
+  font-size: var(--font-size-xs) !important;
+}
+
+.table-zebra td, .table-hover td, .table-sticky td,
+.table-zebra th, .table-hover th, .table-sticky th {
+  font-size: var(--font-size-xs) !important;
+}
+
+/* Ensure all table elements use consistent font sizes */
+.table td, .table th, 
+.modern-table td, .modern-table th {
+  font-size: var(--font-size-xs) !important;
+}
+
+/* Ensure badges and other elements within tables also use smaller font */
+.table td .badge, .modern-table td .badge,
+.table td span, .modern-table td span,
+.table td strong, .modern-table td strong,
+.table td small, .modern-table td small {
+  font-size: var(--font-size-xs) !important;
+}
+
 /* =============================================
    INSTAGRAM-GRADE VISUAL SYSTEM EXTENSIONS
    ============================================= */
