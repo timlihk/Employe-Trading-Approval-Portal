@@ -37,7 +37,7 @@ class EmployeeController {
             ${req.csrfInput()}
             <div class="grid grid-auto gap-4 grid-mobile-stack">
               <div>
-                <label class="form-label">Stock Ticker or Bond ISIN *</label>
+                <label class="form-label">Stock Ticker or Bond ISIN</label>
                 <input type="text" name="ticker" value="${prefilledTicker}" required 
                        placeholder="e.g., AAPL, MSFT or US1234567890" 
                        class="form-control text-uppercase"
@@ -51,14 +51,11 @@ class EmployeeController {
                     <strong>UK:</strong> BARC.L (Barclays), LLOY.L (Lloyds), VOD.L (Vodafone)<br>
                     <strong>Europe:</strong> ASML.AS (ASML), SAP.DE (SAP), NESN.SW (Nestle)
                   </div>
-                  <div class="mt-2">
-                    <small class="text-info">💡 <strong>Tip:</strong> For bonds, enter the 12-character ISIN code (e.g., US1234567890). The system will automatically detect and validate ISINs.</small>
-                  </div>
                 </div>
               </div>
               
               <div>
-                <label class="form-label">Number of Shares/Units *</label>
+                <label class="form-label">Number of Shares/Units</label>
                 <input type="number" name="shares" value="${prefilledShares}" required min="1" max="1000000"
                        class="form-control">
                 <small class="form-text">Enter the number of shares (1 - 1,000,000)</small>
@@ -66,8 +63,8 @@ class EmployeeController {
               </div>
               
               <div>
-                <label class="form-label">Trading Type *</label>
-                <div class="d-flex gap-4">
+                <label class="form-label">Trading Type</label>
+                <div class="d-flex gap-6">
                   <label class="d-flex align-items-center cursor-pointer">
                     <input type="radio" name="trading_type" value="buy" ${prefilledType === 'buy' ? 'checked' : ''} 
                            class="mr-2">
