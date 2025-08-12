@@ -427,7 +427,7 @@ class AdminController {
    * Get restricted stocks page
    */
   getRestrictedStocks = catchAsync(async (req, res) => {
-    const { message, ticker, error } = req.query;
+    const { message, ticker, error, sort_by = 'ticker', sort_order = 'ASC' } = req.query;
     let banner = '';
     
     if (message === 'stock_added' && ticker) {
@@ -440,7 +440,16 @@ class AdminController {
       banner = generateNotificationBanner(`${ticker} is not in the restricted instruments list`, 'error');
     }
 
-    const restrictedStocks = await RestrictedStock.findAll();
+    // Get restricted stocks with sorting
+    const sortMap = {
+      'ticker': 'ticker',
+      'company_name': 'company_name', 
+      'created_at': 'created_at'
+    };
+    const validSortBy = sortMap[sort_by] || 'ticker';
+    const validSortOrder = sort_order?.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
+    
+    const restrictedStocks = await RestrictedStock.findAll({}, `${validSortBy} ${validSortOrder}`);
     const changelog = await RestrictedStockChangelog.getRecentChanges(20);
 
     // Fix company names for bonds that show "Added via Admin Panel"
@@ -552,6 +561,11 @@ class AdminController {
         <div class="card-header">
           <h3 class="card-title heading text-xl">Restricted Instruments List</h3>
           <p class="mt-2 m-0 text-muted text-sm">${restrictedStocks.length} instruments restricted</p>
+          ${restrictedStocks.length > 0 ? `
+            <div class="mt-4">
+              ${generateRestrictedStocksSortingControls('/admin-restricted-stocks', sort_by, sort_order, req.query)}
+            </div>
+          ` : ''}
         </div>
         <div class="card-body p-0">
           ${restrictedStocks.length > 0 ? `
@@ -559,9 +573,9 @@ class AdminController {
               <table class="table table-zebra table-hover table-sticky">
                 <thead>
                   <tr>
-                    <th>Ticker</th>
-                    <th>Company Name</th>
-                    <th>Date Added</th>
+                    ${generateSortableHeader('ticker', 'Ticker', '/admin-restricted-stocks', sort_by, sort_order, req.query)}
+                    ${generateSortableHeader('company_name', 'Company Name', '/admin-restricted-stocks', sort_by, sort_order, req.query)}
+                    ${generateSortableHeader('created_at', 'Date Added', '/admin-restricted-stocks', sort_by, sort_order, req.query)}
                     <th>Actions</th>
                   </tr>
                 </thead>
@@ -1021,6 +1035,67 @@ function getSortDisplayName(sortBy) {
     'employee_email': 'Employee'
   };
   return displayNames[sortBy] || 'Request ID';
+}
+
+function generateSortableHeader(sortBy, displayName, baseUrl, currentSortBy, currentSortOrder, queryParams = {}) {
+  const cleanParams = { ...queryParams };
+  delete cleanParams.sort_by;
+  delete cleanParams.sort_order;
+  
+  const isCurrentSort = currentSortBy === sortBy;
+  const nextOrder = isCurrentSort && currentSortOrder === 'ASC' ? 'DESC' : 'ASC';
+  
+  const sortIcon = isCurrentSort 
+    ? (currentSortOrder === 'ASC' ? ' ↑' : ' ↓')
+    : '';
+  
+  const paramString = new URLSearchParams({
+    ...cleanParams,
+    sort_by: sortBy,
+    sort_order: nextOrder
+  }).toString();
+  
+  return `
+    <th>
+      <a href="${baseUrl}?${paramString}" 
+         style="text-decoration: none; color: inherit; font-weight: 600; display: block; padding: 8px 0;"
+         onmouseover="this.style.color='#0066cc'" 
+         onmouseout="this.style.color='inherit'">
+        ${displayName}${sortIcon}
+      </a>
+    </th>
+  `;
+}
+
+function generateRestrictedStocksSortingControls(baseUrl, currentSortBy, currentSortOrder, queryParams = {}) {
+  // Remove existing sort parameters
+  const cleanParams = { ...queryParams };
+  delete cleanParams.sort_by;
+  delete cleanParams.sort_order;
+  
+  return `
+    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 14px;">
+      <span style="font-weight: 600; color: var(--gs-neutral-700);">Sort by:</span>
+      <form method="get" action="${baseUrl}" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+        ${Object.entries(cleanParams).map(([key, value]) => 
+          `<input type="hidden" name="${key}" value="${value || ''}">`
+        ).join('')}
+        
+        <select name="sort_by" style="padding: 6px 10px; border: 1px solid var(--gs-neutral-300); border-radius: 4px; font-size: 14px;">
+          <option value="ticker" ${currentSortBy === 'ticker' ? 'selected' : ''}>Ticker</option>
+          <option value="company_name" ${currentSortBy === 'company_name' ? 'selected' : ''}>Company Name</option>
+          <option value="created_at" ${currentSortBy === 'created_at' ? 'selected' : ''}>Date Added</option>
+        </select>
+        <select name="sort_order" style="padding: 6px 10px; border: 1px solid var(--gs-neutral-300); border-radius: 4px; font-size: 14px;">
+          <option value="ASC" ${currentSortOrder === 'ASC' ? 'selected' : ''}>↑ Ascending</option>
+          <option value="DESC" ${currentSortOrder === 'DESC' ? 'selected' : ''}>↓ Descending</option>
+        </select>
+        <button type="submit" class="btn btn-primary btn-sm" style="padding: 6px 15px; font-size: 14px;">
+          Apply Sort
+        </button>
+      </form>
+    </div>
+  `;
 }
 
 function generateSortingControls(baseUrl, currentSortBy, currentSortOrder, queryParams = {}) {
