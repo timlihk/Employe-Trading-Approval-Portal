@@ -32,9 +32,18 @@ class AdminController {
     const adminEmail = req.session.admin.username;
     const ipAddress = req.ip;
 
-    const result = await AdminService.addRestrictedStock(ticker, adminEmail, ipAddress);
-    
-    res.redirect('/admin-restricted-stocks?message=stock_added&ticker=' + encodeURIComponent(result.ticker));
+    try {
+      const result = await AdminService.addRestrictedStock(ticker, adminEmail, ipAddress);
+      res.redirect('/admin-restricted-stocks?message=stock_added&ticker=' + encodeURIComponent(result.ticker));
+    } catch (error) {
+      if (error.statusCode === 409) {
+        // Duplicate entry error
+        res.redirect('/admin-restricted-stocks?error=already_exists&ticker=' + encodeURIComponent(ticker.toUpperCase()));
+      } else {
+        // Re-throw other errors to be handled by catchAsync
+        throw error;
+      }
+    }
   });
 
   /**
@@ -422,13 +431,13 @@ class AdminController {
     let banner = '';
     
     if (message === 'stock_added' && ticker) {
-      banner = generateNotificationBanner(`${ticker} has been successfully added to the restricted stocks list`, 'success');
+      banner = generateNotificationBanner(`${ticker} has been successfully added to the restricted instruments list`, 'success');
     } else if (message === 'stock_removed' && ticker) {
-      banner = generateNotificationBanner(`${ticker} has been successfully removed from the restricted stocks list`, 'success');
+      banner = generateNotificationBanner(`${ticker} has been successfully removed from the restricted instruments list`, 'success');
     } else if (error === 'already_exists' && ticker) {
-      banner = generateNotificationBanner(`${ticker} is already in the restricted stocks list`, 'error');
+      banner = generateNotificationBanner(`${ticker} is already in the restricted instruments list`, 'error');
     } else if (error === 'not_found' && ticker) {
-      banner = generateNotificationBanner(`${ticker} is not in the restricted stocks list`, 'error');
+      banner = generateNotificationBanner(`${ticker} is not in the restricted instruments list`, 'error');
     }
 
     const restrictedStocks = await RestrictedStock.findAll();

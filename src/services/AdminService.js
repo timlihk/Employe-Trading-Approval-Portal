@@ -92,11 +92,22 @@ class AdminService {
         // Check if it's an ISIN (bond) first
         const ISINService = require('./ISINService');
         if (ISINService.detectISIN(ticker)) {
+          logger.info('Detected ISIN, fetching bond information', { ticker });
           const isinResult = await ISINService.validateISIN(ticker);
-          if (isinResult.valid && isinResult.issuer) {
-            companyName = isinResult.issuer;
-          } else if (isinResult.valid && isinResult.name) {
-            companyName = isinResult.name;
+          
+          if (isinResult.valid) {
+            if (isinResult.issuer && isinResult.issuer !== 'Unknown Issuer') {
+              companyName = isinResult.issuer;
+              logger.info('Found bond issuer', { ticker, issuer: companyName });
+            } else if (isinResult.name && isinResult.name !== `Bond ${ticker}`) {
+              companyName = isinResult.name;
+              logger.info('Found bond name', { ticker, name: companyName });
+            } else {
+              // Use country-based fallback
+              const countryCode = ticker.substring(0, 2);
+              companyName = `${countryCode} Government/Corporate Bond`;
+              logger.info('Using country-based fallback', { ticker, companyName });
+            }
           }
         } else {
           // It's a regular ticker, use Yahoo Finance
