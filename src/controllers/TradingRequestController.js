@@ -34,10 +34,11 @@ class TradingRequestController {
       const isRestricted = await TradingRequestService.checkRestrictedStatus(ticker.toUpperCase());
 
       // Calculate values for display
-      const sharePrice = validation.regularMarketPrice || validation.price || 100; // Default price for bonds if not available
-      const estimatedValue = sharePrice * parseInt(shares);
       const instrumentCurrency = validation.currency || 'USD';
       const instrumentType = validation.instrument_type;
+      // For bonds, assume unit price = $1 USD (face value). For stocks, use market price
+      const sharePrice = instrumentType === 'bond' ? 1 : (validation.regularMarketPrice || validation.price || 100);
+      const estimatedValue = sharePrice * parseInt(shares);
       const instrumentName = validation.longName || validation.name || `${instrumentType.charAt(0).toUpperCase() + instrumentType.slice(1)} ${ticker.toUpperCase()}`;
       
       // Convert to USD for display
@@ -110,10 +111,10 @@ class TradingRequestController {
                       : `${estimatedValue.toLocaleString('en-US', {minimumFractionDigits: 2})} ${instrumentCurrency} (~$${estimatedValueUSD.toLocaleString('en-US', {minimumFractionDigits: 2})} USD)`
                     }
                   </span>
-                </div>${stockCurrency !== 'USD' ? `
+                </div>${instrumentCurrency !== 'USD' ? `
                 <div class="d-flex justify-content-between p-3 rounded" style="background: #e7f3ff; border: 1px solid #b3d9ff;">
                   <span class="font-weight-600">Exchange Rate:</span>
-                  <span>1 ${stockCurrency} = $${exchangeRate.toFixed(4)} USD</span>
+                  <span>1 ${instrumentCurrency} = $${exchangeRate.toFixed(4)} USD</span>
                 </div>` : ''}
               </div>
             </div>

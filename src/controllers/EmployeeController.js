@@ -62,6 +62,7 @@ class EmployeeController {
                 <input type="number" name="shares" value="${prefilledShares}" required min="1" max="1000000"
                        class="form-control">
                 <small class="form-text">Enter the number of shares (1 - 1,000,000)</small>
+                <small class="text-info d-block mt-2">📋 <strong>For Bonds:</strong> Enter the face value in USD (e.g., 10000 for $10,000 face value). The system assumes USD currency for bonds.</small>
               </div>
               
               <div>

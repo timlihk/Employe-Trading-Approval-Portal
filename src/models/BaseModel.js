@@ -6,14 +6,23 @@ class BaseModel {
   }
 
   static query(sql, params = []) {
+    if (!database.getPool()) {
+      return Promise.resolve([]);
+    }
     return database.query(sql, params);
   }
 
   static get(sql, params = []) {
+    if (!database.getPool()) {
+      return Promise.resolve(null);
+    }
     return database.get(sql, params);
   }
 
   static run(sql, params = []) {
+    if (!database.getPool()) {
+      return Promise.resolve({ lastID: null, changes: 0 });
+    }
     return database.run(sql, params);
   }
 

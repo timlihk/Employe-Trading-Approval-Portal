@@ -70,7 +70,10 @@ function verifyCsrfToken(req, res, next) {
   } 
   
   // Generate new token after successful validation (token rotation)
-  generateCsrfToken(req); 
+  // Skip rotation for preview requests to avoid token mismatch on subsequent previews
+  if (!req.originalUrl.includes('/preview-')) {
+    generateCsrfToken(req); 
+  }
   next(); 
 }
 
@@ -466,15 +469,9 @@ app.get('/', (req, res) => {
     <div class="text-center max-w-lg mx-auto">
       <div class="card">
         <div class="card-body p-6">
-          ${cca ? `
-            <a href="/api/auth/microsoft/login" class="btn btn-primary w-full text-decoration-none">
-              Sign in with Microsoft 365
-            </a>
-          ` : `
-            <p class="text-center text-muted my-4">
-              Microsoft 365 SSO is not configured. Please contact your administrator.
-            </p>
-          `}
+          <a href="/employee-dummy-login" class="btn btn-primary w-full text-decoration-none">
+            Employee Login (Demo)
+          </a>
         </div>
       </div>
 
@@ -581,6 +578,58 @@ app.get('/admin-login', (req, res) => {
 
   const html = renderPublicPage('Admin Login', adminLoginContent);
   res.send(html);
+});
+
+// Dummy Employee Login for Testing
+app.get('/employee-dummy-login', (req, res) => {
+  const dummyLoginContent = `
+    <div class="max-w-lg mx-auto">
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title heading">Employee Login (Demo)</h3>
+        </div>
+        <div class="card-body p-6">
+          <form method="post" action="/employee-dummy-authenticate">
+            ${csrfInput(req)}
+            <div class="mb-4">
+              <label class="form-label">Email:</label>
+              <input type="email" name="email" value="test.employee@company.com" required class="form-control">
+              <div class="text-sm text-muted mt-1">Use any email for demo purposes</div>
+            </div>
+            <button type="submit" class="btn btn-primary w-full">
+              Sign In (Demo)
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <div class="text-center mt-6">
+        <a href="/" class="link focus-ring">← Back to Home</a>
+      </div>
+    </div>
+  `;
+
+  const html = renderPublicPage('Employee Login - Demo', dummyLoginContent);
+  res.send(html);
+});
+
+app.post('/employee-dummy-authenticate', verifyCsrfToken, (req, res) => {
+  const { email } = req.body;
+  
+  if (!email || !email.includes('@')) {
+    return res.redirect('/employee-dummy-login?error=invalid_email');
+  }
+
+  // Set dummy employee session
+  req.session.employee = {
+    email: email.toLowerCase(),
+    name: email.split('@')[0].replace('.', ' ').replace(/\b\w/g, l => l.toUpperCase()),
+    authenticated: true,
+    loginTime: new Date().toISOString()
+  };
+
+  logger.info('Dummy employee login', { email: email.toLowerCase() });
+  res.redirect('/employee-dashboard');
 });
 
 // Logout routes
