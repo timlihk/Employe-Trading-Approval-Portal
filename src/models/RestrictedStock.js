@@ -17,11 +17,12 @@ class RestrictedStock extends BaseModel {
     return this.findOne({ ticker: ticker.toUpperCase() });
   }
 
-  static add(ticker, company_name, exchange = null) {
+  static add(ticker, company_name, exchange = null, instrument_type = 'equity') {
     return this.create({
       ticker: ticker.toUpperCase(),
       company_name,
-      exchange
+      exchange,
+      instrument_type
     });
   }
 

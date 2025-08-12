@@ -124,8 +124,12 @@ class AdminService {
         logger.error('Error fetching company name', { ticker, error: error.message, stack: error.stack });
       }
 
+      // Determine instrument type
+      const instrumentType = ISINServiceClass.detectISIN(ticker) ? 'bond' : 'equity';
+      logger.info('Determined instrument type', { ticker, instrumentType });
+
       // Add stock to restricted list
-      const stock = await RestrictedStock.add(ticker.toUpperCase(), companyName);
+      const stock = await RestrictedStock.add(ticker.toUpperCase(), companyName, null, instrumentType);
 
       // Log the change in changelog
       await RestrictedStockChangelog.logChange({
@@ -134,7 +138,8 @@ class AdminService {
         action: 'added',
         admin_email: adminEmail,
         reason: 'Added via admin panel',
-        ip_address: ipAddress
+        ip_address: ipAddress,
+        instrument_type: instrumentType
       });
 
       // Log in audit log
@@ -200,7 +205,8 @@ class AdminService {
         action: 'removed',
         admin_email: adminEmail,
         reason: 'Removed via admin panel',
-        ip_address: ipAddress
+        ip_address: ipAddress,
+        instrument_type: existingStock.instrument_type || 'equity'
       });
 
       // Log in audit log

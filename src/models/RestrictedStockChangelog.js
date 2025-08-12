@@ -13,7 +13,8 @@ class RestrictedStockChangelog extends BaseModel {
       reason = null,
       ip_address = null,
       user_agent = null,
-      session_id = null
+      session_id = null,
+      instrument_type = 'equity'
     } = changeData;
     
     return this.create({
@@ -24,7 +25,8 @@ class RestrictedStockChangelog extends BaseModel {
       reason,
       ip_address,
       user_agent,
-      session_id
+      session_id,
+      instrument_type
     });
   }
 

@@ -459,21 +459,44 @@ app.get('/', (req, res) => {
   let banner = '';
   
   if (error === 'authentication_required') {
-    banner = generateNotificationBanner({ error: 'Please log in to access that page' });
+    banner = generateNotificationBanner('Please log in to access that page', 'error');
   } else if (message === 'logged_out') {
-    banner = generateNotificationBanner({ message: 'You have been successfully logged out' });
+    banner = generateNotificationBanner('You have been successfully logged out', 'success');
+  } else if (error === 'sso_error') {
+    banner = generateNotificationBanner('Microsoft 365 sign-in error. Please try again.', 'error');
+  } else if (error === 'sso_state_mismatch') {
+    banner = generateNotificationBanner('Security error during sign-in. Please try again.', 'error');
   }
+
+  // Choose login method based on whether Microsoft 365 is configured
+  const loginButton = cca ? `
+    <div class="card">
+      <div class="card-body p-6">
+        <a href="/api/auth/microsoft/login" class="btn btn-primary w-full text-decoration-none mb-4">
+          🔑 Sign in with Microsoft 365
+        </a>
+        <p class="text-muted text-sm">
+          Sign in with your company Microsoft 365 account
+        </p>
+      </div>
+    </div>
+  ` : `
+    <div class="card">
+      <div class="card-body p-6">
+        <a href="/employee-dummy-login" class="btn btn-primary w-full text-decoration-none">
+          Employee Login (Demo)
+        </a>
+        <p class="text-muted text-sm mt-3">
+          Demo mode - Microsoft 365 not configured
+        </p>
+      </div>
+    </div>
+  `;
 
   const landingContent = `
     ${banner}
     <div class="text-center max-w-lg mx-auto">
-      <div class="card">
-        <div class="card-body p-6">
-          <a href="/employee-dummy-login" class="btn btn-primary w-full text-decoration-none">
-            Employee Login (Demo)
-          </a>
-        </div>
-      </div>
+      ${loginButton}
 
       <div class="mt-6 text-center">
         <p class="text-muted text-sm">
