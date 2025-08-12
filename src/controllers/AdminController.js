@@ -668,47 +668,129 @@ csvContent += `"${sanitizeCsv(request.id)}","${sanitizeCsv(createdDate)}","${san
   });
 
   /**
-   * Backup database as CSV files in ZIP
+   * Backup database - complete export of all data
    */
   backupDatabase = catchAsync(async (req, res) => {
     try {
       const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
       
-      // For PostgreSQL, we'll export all data as CSV files
+      // Get comprehensive backup data from all tables
       const backupData = {
         metadata: {
           backup_date: new Date().toISOString(),
           database_type: 'PostgreSQL',
-          version: '1.0'
+          version: '2.0',
+          admin_user: req.session.admin.username,
+          app_version: 'Employee Trading Approval Portal',
+          notes: 'Complete database backup including all tables and data'
         }
       };
 
-      // Get all trading requests
+      // Get ALL trading requests (no limit)
       const requests = await TradingRequest.getAll();
       backupData.trading_requests = requests;
 
-      // Get all restricted stocks  
+      // Get ALL restricted stocks  
       const restrictedStocks = await RestrictedStock.getAll();
       backupData.restricted_stocks = restrictedStocks;
 
-      // Get audit logs (recent 1000 entries)
-      const auditLogs = await AuditLog.getAuditLogs({ limit: 1000 });
+      // Get ALL audit logs (remove limit to get everything)
+      const auditLogs = await AuditLog.getAuditLogs({});
       backupData.audit_logs = auditLogs;
 
-      // Get restricted stock changelog
+      // Get ALL restricted stock changelog
       const changelog = await RestrictedStockChangelog.getAll();
       backupData.restricted_stock_changelog = changelog;
 
-      // Generate JSON backup file
+      // Get session data (if exists) - for recovery purposes
+      try {
+        const sessionData = await database.query(`
+          SELECT session_id, data, expire 
+          FROM session 
+          WHERE expire > NOW() 
+          ORDER BY expire DESC 
+          LIMIT 50
+        `);
+        backupData.active_sessions = sessionData;
+      } catch (error) {
+        // Session table might not exist or might be different structure
+        backupData.active_sessions = [];
+        console.log('Session data not included in backup:', error.message);
+      }
+
+      // Get database statistics for verification
+      try {
+        const stats = await database.query(`
+          SELECT 
+            'trading_requests' as table_name,
+            COUNT(*) as record_count
+          FROM trading_requests
+          UNION ALL
+          SELECT 
+            'restricted_stocks' as table_name,
+            COUNT(*) as record_count  
+          FROM restricted_stocks
+          UNION ALL
+          SELECT 
+            'audit_logs' as table_name,
+            COUNT(*) as record_count
+          FROM audit_logs
+          UNION ALL
+          SELECT 
+            'restricted_stock_changelog' as table_name,
+            COUNT(*) as record_count
+          FROM restricted_stock_changelog
+        `);
+        backupData.statistics = stats;
+      } catch (error) {
+        backupData.statistics = [];
+        console.log('Statistics not included in backup:', error.message);
+      }
+
+      // Generate comprehensive JSON backup file
       const jsonContent = JSON.stringify(backupData, null, 2);
-      const filename = `trading_approval_backup_${timestamp}.json`;
+      const filename = `trading_approval_complete_backup_${timestamp}.json`;
+
+      // Log the backup operation
+      await AuditLog.logActivity(
+        req.session.admin.username,
+        'admin',
+        'database_backup',
+        'system',
+        null,
+        `Complete database backup created - ${Object.keys(backupData).length - 1} data sections exported`,
+        req.ip
+      );
+
+      console.log('✅ Database backup created successfully', {
+        filename,
+        admin: req.session.admin.username,
+        tables: Object.keys(backupData).filter(key => key !== 'metadata'),
+        size: `${Math.round(jsonContent.length / 1024)} KB`
+      });
 
       res.setHeader('Content-Type', 'application/json');
       res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
       res.send(jsonContent);
 
     } catch (error) {
-      console.error('Database backup error:', error);
+      console.error('❌ Database backup error:', error);
+      
+      // Log the failed backup attempt
+      try {
+        await AuditLog.logActivity(
+          req.session.admin.username,
+          'admin',
+          'database_backup_failed',
+          'system',
+          null,
+          `Database backup failed: ${error.message}`,
+          req.ip
+        );
+      } catch (logError) {
+        console.error('Failed to log backup error:', logError);
+      }
+
       res.status(500).json({
         error: 'Failed to create database backup',
         details: error.message
