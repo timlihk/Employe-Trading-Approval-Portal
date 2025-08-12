@@ -89,9 +89,21 @@ class AdminService {
       // Try to get company name from external API
       let companyName = 'Added via Admin Panel';
       try {
-        const companyInfo = await this.getCompanyName(ticker);
-        if (companyInfo) {
-          companyName = companyInfo;
+        // Check if it's an ISIN (bond) first
+        const ISINService = require('./ISINService');
+        if (ISINService.detectISIN(ticker)) {
+          const isinResult = await ISINService.validateISIN(ticker);
+          if (isinResult.valid && isinResult.issuer) {
+            companyName = isinResult.issuer;
+          } else if (isinResult.valid && isinResult.name) {
+            companyName = isinResult.name;
+          }
+        } else {
+          // It's a regular ticker, use Yahoo Finance
+          const companyInfo = await this.getCompanyName(ticker);
+          if (companyInfo) {
+            companyName = companyInfo;
+          }
         }
       } catch (error) {
         logger.warn('Could not fetch company name', { ticker, error: error.message });

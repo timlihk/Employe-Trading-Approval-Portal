@@ -1075,7 +1075,7 @@ select.form-control.compact {
 .modern-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
   background: var(--white);
 }
 
@@ -1092,7 +1092,7 @@ select.form-control.compact {
   font-weight: 600;
   text-align: left;
   padding: var(--spacing-4) var(--spacing-5);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   white-space: nowrap;
@@ -1117,7 +1117,7 @@ select.form-control.compact {
   color: var(--secondary);
   vertical-align: middle;
   text-align: left;
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
 }
 
 .modern-table tbody td:last-child {
@@ -1269,7 +1269,7 @@ select.form-control.compact {
 /* Responsive Table */
 @media (max-width: 1024px) {
   .modern-table {
-    font-size: var(--font-size-sm);
+    font-size: var(--font-size-xs);
   }
   
   .modern-table thead th,
@@ -1295,7 +1295,7 @@ select.form-control.compact {
   }
   
   .modern-table thead th {
-    font-size: var(--font-size-sm);
+    font-size: var(--font-size-xs);
     padding: var(--spacing-2) var(--spacing-3);
   }
   
@@ -1651,7 +1651,7 @@ button[style*="background: var(--gs-primary-blue)"]:hover {
 .table {
   width: 100%;
   border-collapse: collapse;
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
   background: var(--white);
   margin-bottom: var(--spacing-4);
 }
@@ -1668,7 +1668,7 @@ button[style*="background: var(--gs-primary-blue)"]:hover {
   font-weight: 600;
   text-align: left;
   padding: var(--spacing-4) var(--spacing-3);
-  font-size: var(--font-size-sm);
+  font-size: var(--font-size-xs);
   text-transform: uppercase;
   letter-spacing: 0.05em;
   border-bottom: 2px solid var(--gray-200);
@@ -1695,6 +1695,7 @@ button[style*="background: var(--gs-primary-blue)"]:hover {
   border-bottom: 1px solid var(--gray-200);
   vertical-align: middle;
   word-wrap: break-word;
+  font-size: var(--font-size-xs);
   max-width: 200px;
   color: var(--secondary);
 }
