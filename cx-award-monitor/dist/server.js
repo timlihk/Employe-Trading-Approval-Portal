@@ -4,9 +4,10 @@ import cron from 'node-cron';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { config } from './config.js';
-import { addWatch, deleteWatch, listWatches, getCached, upsertCache } from './db.js';
+import { addWatch, deleteWatch, listWatches, getCached, upsertCache, upsertUser, getUserById } from './db.js';
 import { CathayClient, toCathayYmd } from './cathay.js';
 import { sendEmail } from './mailer.js';
+import { encryptString } from './crypto.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const app = express();
@@ -14,6 +15,7 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, '../public')));
 const client = new CathayClient();
 const watchSchema = z.object({
+    userId: z.number().int().optional(),
     from: z.string().regex(/^[A-Z]{3}$/),
     to: z.string().regex(/^[A-Z]{3}$/),
     startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
@@ -24,12 +26,34 @@ const watchSchema = z.object({
     nonstopOnly: z.boolean().default(false),
     minCabin: z.enum(['Y', 'W', 'C', 'F']).optional(),
 });
+const userSchema = z.object({
+    email: z.string().email(),
+    cathayMember: z.string().min(3),
+    cathayPassword: z.string().min(3),
+});
 app.get('/healthz', (_req, res) => res.json({ ok: true }));
 app.get('/', (_req, res) => {
     res.sendFile(path.join(__dirname, '../public/index.html'));
 });
-app.get('/api/watch', (_req, res) => {
-    res.json(listWatches());
+app.post('/api/user', (req, res) => {
+    const parsed = userSchema.safeParse(req.body);
+    if (!parsed.success)
+        return res.status(400).json({ error: parsed.error.flatten() });
+    const { email, cathayMember, cathayPassword } = parsed.data;
+    const enc = encryptString(cathayPassword);
+    const userId = upsertUser(email, cathayMember, enc);
+    res.json({ userId });
+});
+app.get('/api/user/:id', (req, res) => {
+    const id = Number(req.params.id);
+    const user = getUserById(id);
+    if (!user)
+        return res.status(404).json({ error: 'not found' });
+    res.json({ id: user.id, email: user.email, cathayMember: user.cathay_member ? 'set' : null, cathayPassword: user.cathay_pass_enc ? 'set' : null });
+});
+app.get('/api/watch', (req, res) => {
+    const userId = req.query.userId ? Number(req.query.userId) : undefined;
+    res.json(listWatches(userId));
 });
 app.post('/api/open-login', async (_req, res) => {
     try {
@@ -45,11 +69,19 @@ app.post('/api/watch', (req, res) => {
     if (!parsed.success)
         return res.status(400).json({ error: parsed.error.flatten() });
     const body = parsed.data;
-    const id = addWatch({
-        ...body,
+    const userId = body.userId || upsertUser(body.email);
+    const id = addWatch(userId, {
+        from: body.from,
+        to: body.to,
+        startDate: body.startDate,
+        endDate: body.endDate,
+        numAdults: body.numAdults,
+        numChildren: body.numChildren,
+        email: body.email,
         nonstopOnly: body.nonstopOnly ? 1 : 0,
+        minCabin: body.minCabin,
     });
-    res.json({ id });
+    res.json({ id, userId });
 });
 app.delete('/api/watch/:id', (req, res) => {
     const id = Number(req.params.id);
@@ -117,7 +149,7 @@ async function runJobOnce() {
                 result = JSON.parse(cached);
             }
             else {
-                result = await client.searchSingleDay({ from: w.from, to: w.to, dateYmd: ymd, adults: w.numAdults, children: w.numChildren });
+                result = await client.searchSingleDaySmart({ from: w.from, to: w.to, dateYmd: ymd, adults: w.numAdults, children: w.numChildren });
                 upsertCache(ymd, w.from, w.to, JSON.stringify(result));
             }
             if (result?.flights?.length) {
