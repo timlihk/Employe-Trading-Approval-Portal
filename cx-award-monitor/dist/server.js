@@ -4,10 +4,10 @@ import cron from 'node-cron';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { config } from './config.js';
-import { addWatch, deleteWatch, listWatches, getCached, upsertCache, upsertUser, getUserById } from './db.js';
+import { addWatch, deleteWatch, listWatches, getCached, upsertCache, upsertUser, getUserById, listWatchesWithCreds } from './db.js';
 import { CathayClient, toCathayYmd } from './cathay.js';
 import { sendEmail } from './mailer.js';
-import { encryptString } from './crypto.js';
+import { encryptString, decryptString } from './crypto.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const app = express();
@@ -134,7 +134,7 @@ function flightHasCabin(avail, min) {
     return ranks.some((r) => cabinRank(r.c) >= threshold && r.n > 0);
 }
 async function runJobOnce() {
-    const items = listWatches();
+    const items = listWatchesWithCreds();
     if (items.length === 0)
         return;
     await client.warmup();
@@ -150,6 +150,22 @@ async function runJobOnce() {
             }
             else {
                 result = await client.searchSingleDaySmart({ from: w.from, to: w.to, dateYmd: ymd, adults: w.numAdults, children: w.numChildren });
+                // Attempt auto re-login if needed and credentials available
+                if ((!result.flights?.length && client.needsLogin) || client.lastError) {
+                    if (w.cathayMember && w.cathayPassEnc) {
+                        try {
+                            const pass = decryptString(w.cathayPassEnc);
+                            const ok = await client.reloginWithCredentials(w.cathayMember, pass);
+                            if (ok) {
+                                // Re-run smart search to refresh template and data
+                                result = await client.searchSingleDaySmart({ from: w.from, to: w.to, dateYmd: ymd, adults: w.numAdults, children: w.numChildren });
+                            }
+                        }
+                        catch (e) {
+                            // ignore; will surface below
+                        }
+                    }
+                }
                 upsertCache(ymd, w.from, w.to, JSON.stringify(result));
             }
             if (result?.flights?.length) {
