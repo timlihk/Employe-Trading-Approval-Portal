@@ -1,0 +1,315 @@
+import { chromium } from 'playwright';
+import { config } from './config.js';
+const ENTRY_LANG = 'en';
+const ENTRY_COUNTRY = 'HK';
+function ymd(date) {
+    const y = date.getFullYear();
+    const m = String(date.getMonth() + 1).padStart(2, '0');
+    const d = String(date.getDate()).padStart(2, '0');
+    return `${y}${m}${d}`;
+}
+function msToDurationMinutes(ms) {
+    return Math.round(ms / 60000);
+}
+function toIsoUtc(ts) {
+    return new Date(ts).toISOString();
+}
+function buildIbefacadeUrl(route, pax, cabin = 'Y') {
+    const url = new URL('https://api.cathaypacific.com/redibe/IBEFacade');
+    const params = new URLSearchParams();
+    params.set('ACTION', 'RED_AWARD_SEARCH');
+    params.set('ENTRYPOINT', `https://www.cathaypacific.com/cx/${ENTRY_LANG}_${ENTRY_COUNTRY}/book-a-trip/redeem-flights/redeem-flight-awards.html`);
+    params.set('ENTRYLANGUAGE', ENTRY_LANG);
+    params.set('ENTRYCOUNTRY', ENTRY_COUNTRY);
+    params.set('RETURNURL', `https://www.cathaypacific.com/cx/${ENTRY_LANG}_${ENTRY_COUNTRY}/book-a-trip/redeem-flights/redeem-flight-awards.html?recent_search=ow`);
+    params.set('ERRORURL', `https://www.cathaypacific.com/cx/${ENTRY_LANG}_${ENTRY_COUNTRY}/book-a-trip/redeem-flights/redeem-flight-awards.html?recent_search=ow`);
+    params.set('CABINCLASS', cabin);
+    params.set('BRAND', 'CX');
+    params.set('ADULT', String(pax.adult || 1));
+    params.set('CHILD', String(pax.child || 0));
+    params.set('FLEXIBLEDATE', 'false');
+    params.set('ORIGIN[1]', route.from);
+    params.set('DESTINATION[1]', route.to);
+    params.set('DEPARTUREDATE[1]', route.date);
+    params.set('LOGINURL', `https://www.cathaypacific.com/cx/${ENTRY_LANG}_${ENTRY_COUNTRY}/sign-in/campaigns/miles-flight.html`);
+    url.search = params.toString();
+    return url.toString();
+}
+function parseFlights(payload) {
+    const root = payload?.modelObject ?? (payload?.pageBom ? JSON.parse(payload.pageBom) : null);
+    const bound = root?.availabilities?.upsell?.bounds?.[0];
+    const flights = [];
+    if (!bound?.flights)
+        return flights;
+    for (const f of bound.flights) {
+        const segs = f.segments || [];
+        if (segs.length === 0)
+            continue;
+        const seg1 = segs[0];
+        const leg1Air = seg1.flightIdentifier.marketingAirline;
+        const leg1Num = seg1.flightIdentifier.flightNumber;
+        const origin = seg1.originLocation.slice(-3);
+        const destEnd = (segs.length === 1 ? seg1.destinationLocation : segs[1].destinationLocation).slice(-3);
+        const departTs = seg1.flightIdentifier.originDate;
+        const arriveTs = segs.length === 1 ? seg1.destinationDate : segs[1].destinationDate;
+        const leg1F = Number(seg1.cabins?.F?.status || 0);
+        const leg1J = Number(seg1.cabins?.B?.status || 0);
+        const leg1P = Number(seg1.cabins?.N?.status || 0);
+        const leg1Y = Number(seg1.cabins?.E?.status || 0) + Number(seg1.cabins?.R?.status || 0);
+        let direct = true;
+        let stopCity;
+        let marketingAirline = leg1Air;
+        const flightNumbers = [leg1Air + leg1Num];
+        let fAvail = leg1F, jAvail = leg1J, pAvail = leg1P, yAvail = leg1Y;
+        if (segs.length > 1) {
+            direct = false;
+            const seg2 = segs[1];
+            const leg2F = Number(seg2.cabins?.F?.status || 0);
+            const leg2J = Number(seg2.cabins?.B?.status || 0);
+            const leg2P = Number(seg2.cabins?.N?.status || 0);
+            const leg2Y = Number(seg2.cabins?.E?.status || 0) + Number(seg2.cabins?.R?.status || 0);
+            fAvail = Math.min(fAvail, leg2F);
+            jAvail = Math.min(jAvail, leg2J);
+            pAvail = Math.min(pAvail, leg2P);
+            yAvail = Math.min(yAvail, leg2Y);
+            marketingAirline = `${leg1Air}/${seg2.flightIdentifier.marketingAirline}`;
+            flightNumbers.push(seg2.flightIdentifier.marketingAirline + seg2.flightIdentifier.flightNumber);
+            const match = /^[A-Z]{3}:([A-Z:]{3,7}):[A-Z]{3}_/.exec(f.flightIdString);
+            if (match?.[1])
+                stopCity = match[1].replace(':', ' / ');
+        }
+        flights.push({
+            direct,
+            marketingAirline,
+            flightNumbers,
+            origin,
+            destination: destEnd,
+            stopCity,
+            departureUtc: toIsoUtc(departTs),
+            arrivalUtc: toIsoUtc(arriveTs),
+            durationMinutes: msToDurationMinutes(f.duration),
+            availability: {
+                first: fAvail || 0,
+                business: jAvail || 0,
+                premium: pAvail || 0,
+                economy: yAvail || 0,
+            },
+        });
+    }
+    return flights;
+}
+export class CathayClient {
+    constructor(profileDir) {
+        this.context = null;
+        this.availabilityUrl = null;
+        this.baseParams = null;
+        this.needsLogin = false;
+        this.lastError = null;
+        this.lastCheckAt = null;
+        this.profileDir = profileDir;
+    }
+    async ensureContext(forceHeadful) {
+        if (this.context)
+            return this.context;
+        const browser = await chromium.launchPersistentContext(this.profileDir, {
+            headless: forceHeadful ? false : !config.playwright.headful,
+            channel: config.playwright.channel,
+            viewport: { width: 1280, height: 900 },
+            userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120 Safari/537.36',
+        });
+        this.context = browser;
+        return this.context;
+    }
+    async warmup() {
+        const ctx = await this.ensureContext();
+        const page = await ctx.newPage();
+        await page.goto(`https://www.cathaypacific.com/cx/${ENTRY_LANG}_${ENTRY_COUNTRY}/book-a-trip/redeem-flights/redeem-flight-awards.html`, { waitUntil: 'domcontentloaded' });
+        await page.waitForTimeout(1500);
+        await page.close();
+    }
+    async openLoginWindow() {
+        if (this.context) {
+            await this.context.close().catch(() => { });
+            this.context = null;
+        }
+        const ctx = await this.ensureContext(true);
+        const page = await ctx.newPage();
+        const loginUrl = `https://www.cathaypacific.com/content/cx/${ENTRY_LANG}_${ENTRY_COUNTRY}/sign-in.html`;
+        await page.goto(loginUrl, { waitUntil: 'domcontentloaded' });
+        this.needsLogin = false;
+    }
+    async reloginWithCredentials(member, password) {
+        // Try headless first if configured, fallback to headful if needed
+        const ctx = await this.ensureContext(!config.playwright.headful ? false : undefined);
+        const page = await ctx.newPage();
+        try {
+            await page.goto(`https://www.cathaypacific.com/cx/${ENTRY_LANG}_${ENTRY_COUNTRY}/sign-in.html`, { waitUntil: 'domcontentloaded' });
+            await page.waitForTimeout(500);
+            const membershipBtn = await page.locator('button:has-text("membership"), [data-testid*="membership"], [role="tab"]:has-text("member")').first();
+            if (await membershipBtn.count())
+                await membershipBtn.click();
+            const memInput = page.locator('input[name*="member" i], input[id*="member" i], input[placeholder*="membership" i]');
+            await memInput.first().fill(member);
+            const contBtn = page.locator('button:has-text("Continue"), button:has-text("continue")');
+            if (await contBtn.count())
+                await contBtn.first().click();
+            const passInput = page.locator('input[type="password"]');
+            await passInput.first().fill(password);
+            const signInBtn = page.locator('button:has-text("Sign in"), button:has-text("sign in")');
+            await signInBtn.first().click();
+            await page.waitForTimeout(2000);
+            const ok = await page.evaluate(async () => {
+                try {
+                    const res = await fetch('https://api.cathaypacific.com/redibe/login/getProfile', { credentials: 'include' });
+                    const j = await res.json();
+                    return Boolean(j?.membershipNumber);
+                }
+                catch {
+                    return false;
+                }
+            });
+            await page.close();
+            this.needsLogin = !ok;
+            return ok;
+        }
+        catch {
+            try {
+                await page.close();
+            }
+            catch { }
+            this.needsLogin = true;
+            return false;
+        }
+    }
+    parseFormBody(body) {
+        const out = {};
+        body.split('&').forEach(pair => {
+            const [k, v] = pair.split('=');
+            if (k)
+                out[decodeURIComponent(k)] = decodeURIComponent(v || '');
+        });
+        return out;
+    }
+    encodeFormBody(params) {
+        return Object.entries(params).map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&');
+    }
+    updatePassengers(reqParams, adults, children) {
+        // Update common passenger keys when present
+        const keys = Object.keys(reqParams);
+        for (const k of keys) {
+            if (/^ADULT$/i.test(k))
+                reqParams[k] = String(adults);
+            if (/^CHILD$/i.test(k))
+                reqParams[k] = String(children);
+            if (/NB_ADT/i.test(k))
+                reqParams[k] = String(adults);
+            if (/NB_CHD/i.test(k))
+                reqParams[k] = String(children);
+        }
+    }
+    async httpAvailability(from, to, dateYmd, adults, children) {
+        if (!this.context || !this.availabilityUrl || !this.baseParams)
+            return { status: 0, data: null };
+        const reqParams = { ...this.baseParams };
+        reqParams.B_DATE_1 = `${dateYmd}0000`;
+        reqParams.B_LOCATION_1 = from;
+        reqParams.E_LOCATION_1 = to;
+        this.updatePassengers(reqParams, adults, children);
+        const body = this.encodeFormBody(reqParams);
+        const resp = await this.context.request.post(this.availabilityUrl, {
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'Accept': 'application/json, text/plain, */*'
+            },
+            data: body
+        });
+        let json = null;
+        try {
+            json = await resp.json();
+        }
+        catch {
+            // ignore
+        }
+        return { status: resp.status(), data: json };
+    }
+    captureTemplate(resp) {
+        try {
+            const req = resp.request();
+            const url = resp.url();
+            const method = req.method();
+            if (method === 'POST' && url.includes('/CathayPacificAwardV3/dyn/air/booking/availability')) {
+                const post = req.postData() || '';
+                const parsed = this.parseFormBody(post);
+                if (parsed && parsed.B_DATE_1 && parsed.B_LOCATION_1 && parsed.E_LOCATION_1) {
+                    this.availabilityUrl = url;
+                    this.baseParams = parsed;
+                }
+            }
+        }
+        catch {
+            // ignore
+        }
+    }
+    async searchSingleDaySmart(params) {
+        this.lastCheckAt = Date.now();
+        if (this.availabilityUrl && this.baseParams) {
+            try {
+                const res = await this.httpAvailability(params.from, params.to, params.dateYmd, params.adults, params.children);
+                if (res.status === 200 && res.data) {
+                    const flights = parseFlights(res.data);
+                    this.lastError = null;
+                    return { date: params.dateYmd, from: params.from, to: params.to, flights };
+                }
+                if (res.status === 401 || res.status === 403 || (res.status >= 300 && res.status < 400)) {
+                    this.needsLogin = true;
+                }
+            }
+            catch (e) {
+                this.lastError = e?.message || 'http-first failed';
+            }
+        }
+        const result = await this.searchSingleDay(params);
+        if (result.error && /login|Access Denied|bot|denied|sign-?in/i.test(result.error)) {
+            this.needsLogin = true;
+        }
+        return result;
+    }
+    async searchSingleDay(params) {
+        const ctx = await this.ensureContext();
+        const page = await ctx.newPage();
+        const url = buildIbefacadeUrl({ from: params.from, to: params.to, date: params.dateYmd }, { adult: params.adults, child: params.children }, params.cabin || 'Y');
+        const waitAvailability = page.waitForResponse((resp) => {
+            const hit = resp.request().method() === 'POST' && resp.url().includes('/CathayPacificAwardV3/dyn/air/booking/availability');
+            if (hit)
+                this.captureTemplate(resp);
+            return hit;
+        }, { timeout: 45000 }).catch(() => null);
+        await page.goto(url, { waitUntil: 'domcontentloaded' });
+        const resp = await waitAvailability;
+        let result = { date: params.dateYmd, from: params.from, to: params.to, flights: [] };
+        if (!resp) {
+            result.error = 'No availability response (possible bot check or session required)';
+            await page.close();
+            this.lastError = result.error;
+            return result;
+        }
+        let json;
+        try {
+            json = await resp.json();
+        }
+        catch (e) {
+            result.error = 'Invalid JSON from availability endpoint';
+            await page.close();
+            this.lastError = result.error;
+            return result;
+        }
+        result.flights = parseFlights(json);
+        await page.close();
+        this.lastError = null;
+        return result;
+    }
+}
+export function toCathayYmd(isoDate) {
+    const d = new Date(isoDate + 'T00:00:00');
+    return ymd(d);
+}
