@@ -1,6 +1,5 @@
 import { chromium } from 'playwright';
 import { config } from './config.js';
-const USER_DATA_DIR = './pw-data';
 const ENTRY_LANG = 'en';
 const ENTRY_COUNTRY = 'HK';
 function ymd(date) {
@@ -100,18 +99,19 @@ function parseFlights(payload) {
     return flights;
 }
 export class CathayClient {
-    constructor() {
+    constructor(profileDir) {
         this.context = null;
         this.availabilityUrl = null;
         this.baseParams = null;
         this.needsLogin = false;
         this.lastError = null;
         this.lastCheckAt = null;
+        this.profileDir = profileDir;
     }
     async ensureContext(forceHeadful) {
         if (this.context)
             return this.context;
-        const browser = await chromium.launchPersistentContext(USER_DATA_DIR, {
+        const browser = await chromium.launchPersistentContext(this.profileDir, {
             headless: forceHeadful ? false : !config.playwright.headful,
             channel: config.playwright.channel,
             viewport: { width: 1280, height: 900 },
@@ -139,29 +139,24 @@ export class CathayClient {
         this.needsLogin = false;
     }
     async reloginWithCredentials(member, password) {
-        // Open sign-in page and perform the membership-number flow.
-        const ctx = await this.ensureContext(true);
+        // Try headless first if configured, fallback to headful if needed
+        const ctx = await this.ensureContext(!config.playwright.headful ? false : undefined);
         const page = await ctx.newPage();
         try {
             await page.goto(`https://www.cathaypacific.com/cx/${ENTRY_LANG}_${ENTRY_COUNTRY}/sign-in.html`, { waitUntil: 'domcontentloaded' });
-            // Best-effort selectors; may need updates if CX changes DOM
-            // Click membership tab if present
             await page.waitForTimeout(500);
-            const membershipBtn = await page.locator('button:has-text("membership")').first();
+            const membershipBtn = await page.locator('button:has-text("membership"), [data-testid*="membership"], [role="tab"]:has-text("member")').first();
             if (await membershipBtn.count())
                 await membershipBtn.click();
-            // Fill member number
-            const memInput = page.locator('input[name*="member"], input[id*="member"], input[placeholder*="membership"]');
+            const memInput = page.locator('input[name*="member" i], input[id*="member" i], input[placeholder*="membership" i]');
             await memInput.first().fill(member);
             const contBtn = page.locator('button:has-text("Continue"), button:has-text("continue")');
             if (await contBtn.count())
                 await contBtn.first().click();
-            // Fill password
             const passInput = page.locator('input[type="password"]');
             await passInput.first().fill(password);
             const signInBtn = page.locator('button:has-text("Sign in"), button:has-text("sign in")');
             await signInBtn.first().click();
-            // Wait a bit and verify by calling profile API
             await page.waitForTimeout(2000);
             const ok = await page.evaluate(async () => {
                 try {
@@ -198,13 +193,28 @@ export class CathayClient {
     encodeFormBody(params) {
         return Object.entries(params).map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&');
     }
-    async httpAvailability(from, to, dateYmd) {
+    updatePassengers(reqParams, adults, children) {
+        // Update common passenger keys when present
+        const keys = Object.keys(reqParams);
+        for (const k of keys) {
+            if (/^ADULT$/i.test(k))
+                reqParams[k] = String(adults);
+            if (/^CHILD$/i.test(k))
+                reqParams[k] = String(children);
+            if (/NB_ADT/i.test(k))
+                reqParams[k] = String(adults);
+            if (/NB_CHD/i.test(k))
+                reqParams[k] = String(children);
+        }
+    }
+    async httpAvailability(from, to, dateYmd, adults, children) {
         if (!this.context || !this.availabilityUrl || !this.baseParams)
             return { status: 0, data: null };
         const reqParams = { ...this.baseParams };
         reqParams.B_DATE_1 = `${dateYmd}0000`;
         reqParams.B_LOCATION_1 = from;
         reqParams.E_LOCATION_1 = to;
+        this.updatePassengers(reqParams, adults, children);
         const body = this.encodeFormBody(reqParams);
         const resp = await this.context.request.post(this.availabilityUrl, {
             headers: {
@@ -242,16 +252,15 @@ export class CathayClient {
     }
     async searchSingleDaySmart(params) {
         this.lastCheckAt = Date.now();
-        // Try HTTP-first if we have a template
         if (this.availabilityUrl && this.baseParams) {
             try {
-                const res = await this.httpAvailability(params.from, params.to, params.dateYmd);
+                const res = await this.httpAvailability(params.from, params.to, params.dateYmd, params.adults, params.children);
                 if (res.status === 200 && res.data) {
                     const flights = parseFlights(res.data);
                     this.lastError = null;
                     return { date: params.dateYmd, from: params.from, to: params.to, flights };
                 }
-                if (res.status === 401 || res.status === 403) {
+                if (res.status === 401 || res.status === 403 || (res.status >= 300 && res.status < 400)) {
                     this.needsLogin = true;
                 }
             }
@@ -259,9 +268,8 @@ export class CathayClient {
                 this.lastError = e?.message || 'http-first failed';
             }
         }
-        // Fallback to page flow
         const result = await this.searchSingleDay(params);
-        if (result.error && /login|Access Denied|bot|denied/i.test(result.error)) {
+        if (result.error && /login|Access Denied|bot|denied|sign-?in/i.test(result.error)) {
             this.needsLogin = true;
         }
         return result;
