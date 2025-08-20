@@ -5,8 +5,8 @@ class TradingRequest extends BaseModel {
   static get tableName() {
     return 'trading_requests';
   }
-  static create(requestData) {
-    return new Promise((resolve, reject) => {
+  static async create(requestData) {
+    try {
       const { 
         employee_email, 
         stock_name, 
@@ -30,37 +30,80 @@ class TradingRequest extends BaseModel {
       const finalSharePrice = share_price || (estimated_value ? (estimated_value / shares) : null);
       const finalTotalValue = total_value || estimated_value;
       
-      const sql = `
-        INSERT INTO trading_requests (
-          uuid, employee_email, stock_name, ticker, shares, 
-          share_price, total_value, currency, share_price_usd, 
-          total_value_usd, exchange_rate, trading_type, instrument_type, status, 
-          rejection_reason, processed_at, created_at
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, CURRENT_TIMESTAMP)
-        RETURNING id, uuid
-      `;
+      // Check if UUID column exists by trying a simple query first
+      let hasUuidColumn = false;
+      try {
+        await this.query("SELECT uuid FROM trading_requests LIMIT 1");
+        hasUuidColumn = true;
+      } catch (e) {
+        // UUID column doesn't exist yet, use legacy insert
+        hasUuidColumn = false;
+      }
       
-      const params = [
-        uuid,
-        employee_email.toLowerCase(), stock_name, ticker, shares, 
-        finalSharePrice, finalTotalValue, currency, share_price_usd || finalSharePrice,
-        total_value_usd || finalTotalValue, exchange_rate || 1, trading_type, instrument_type,
-        requestData.status || 'pending',
-        requestData.rejection_reason || null,
-        requestData.processed_at || new Date().toISOString()
-      ];
+      let sql, params;
+      if (hasUuidColumn) {
+        sql = `
+          INSERT INTO trading_requests (
+            uuid, employee_email, stock_name, ticker, shares, 
+            share_price, total_value, currency, share_price_usd, 
+            total_value_usd, exchange_rate, trading_type, status, 
+            rejection_reason, processed_at
+          )
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+          RETURNING id, uuid
+        `;
+        
+        params = [
+          uuid,
+          employee_email.toLowerCase(), stock_name, ticker, shares, 
+          finalSharePrice, finalTotalValue, currency, share_price_usd || finalSharePrice,
+          total_value_usd || finalTotalValue, exchange_rate || 1, trading_type,
+          requestData.status || 'pending',
+          requestData.rejection_reason || null,
+          requestData.processed_at || new Date().toISOString()
+        ];
+      } else {
+        // Legacy insert without UUID column
+        sql = `
+          INSERT INTO trading_requests (
+            employee_email, stock_name, ticker, shares, 
+            share_price, total_value, currency, share_price_usd, 
+            total_value_usd, exchange_rate, trading_type, status, 
+            rejection_reason, processed_at
+          )
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+          RETURNING id
+        `;
+        
+        params = [
+          employee_email.toLowerCase(), stock_name, ticker, shares, 
+          finalSharePrice, finalTotalValue, currency, share_price_usd || finalSharePrice,
+          total_value_usd || finalTotalValue, exchange_rate || 1, trading_type,
+          requestData.status || 'pending',
+          requestData.rejection_reason || null,
+          requestData.processed_at || new Date().toISOString()
+        ];
+      }
       
-      this.run(sql, params).then(result => {
-        resolve({ 
-          id: result.lastID,
-          uuid: uuid,
-          ...requestData 
-        });
-      }).catch(err => {
-        reject(err);
-      });
-    });
+      const result = await this.run(sql, params);
+      
+      // Handle PostgreSQL RETURNING clause result
+      const insertedRow = result.rows ? result.rows[0] : result;
+      const response = { 
+        id: insertedRow?.id || result.lastID, // PostgreSQL vs SQLite compatibility
+        ...requestData 
+      };
+      
+      // Only include UUID if the column exists
+      if (hasUuidColumn) {
+        response.uuid = insertedRow?.uuid || uuid;
+      }
+      
+      return response;
+      
+    } catch (error) {
+      throw error;
+    }
   }
 
   static updateStatus(idOrUuid, status, rejection_reason = null) {
