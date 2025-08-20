@@ -720,12 +720,37 @@ app.use(globalErrorHandler);
 // ===========================================
 
 const PORT = process.env.PORT || 3001;
-const server = app.listen(PORT, () => {
-  logger.info(`🚀 Server running on port ${PORT}`);
-  logger.info(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
-  logger.info(`🔒 Session secret: ${process.env.SESSION_SECRET ? 'configured' : 'using default (insecure!)'}`);
-  logger.info(`🔑 Microsoft SSO: ${cca ? 'enabled' : 'disabled'}`);
-  logger.info(`🗄️  Database: ${process.env.DATABASE_URL ? 'PostgreSQL (Railway)' : 'PostgreSQL URL not set'}`);
+
+// Run migrations on startup (production only to avoid local issues)
+async function startServerWithMigrations() {
+  if (process.env.NODE_ENV === 'production' && process.env.DATABASE_URL) {
+    try {
+      const { runMigrations } = require('../run-migrations');
+      logger.info('🔄 Running UUID migrations...');
+      await runMigrations();
+      logger.info('✅ Migrations completed');
+    } catch (error) {
+      logger.warn('⚠️  Migration warning:', error.message);
+      // Don't fail startup for migration errors - UUID columns might already exist
+    }
+  }
+  
+  return app.listen(PORT, () => {
+    logger.info(`🚀 Server running on port ${PORT}`);
+    logger.info(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+    logger.info(`🔒 Session secret: ${process.env.SESSION_SECRET ? 'configured' : 'using default (insecure!)'}`);
+    logger.info(`🔑 Microsoft SSO: ${cca ? 'enabled' : 'disabled'}`);
+    logger.info(`🗄️  Database: ${process.env.DATABASE_URL ? 'PostgreSQL (Railway)' : 'PostgreSQL URL not set'}`);
+  });
+}
+
+// Start server with migrations (IIFE to handle async)
+let server;
+(async () => {
+  server = await startServerWithMigrations();
+})().catch(error => {
+  logger.error('Failed to start server:', error);
+  process.exit(1);
 });
 
 function shutdown(signal) {

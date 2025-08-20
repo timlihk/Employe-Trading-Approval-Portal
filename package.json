@@ -10,6 +10,7 @@
   "scripts": {
     "start": "node src/app.js",
     "dev": "node src/app.js",
+    "migrate": "node run-migrations.js",
     "build": "echo 'No build step needed'",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
