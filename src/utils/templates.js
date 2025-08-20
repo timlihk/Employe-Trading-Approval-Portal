@@ -8,11 +8,25 @@ function renderBasePage(title, subtitle, content, navigation = '') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${title} - Inspiration Capital Management Limited</title>
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com">
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"></noscript>
-    <link rel="stylesheet" href="/styles-modern.css?v=${new Date().getTime()}">
+    <style>
+      /* Critical CSS for above-the-fold content */
+      body{margin:0;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#fbfbfd;color:#1d1d1f}
+      .container{max-width:1200px;margin:0 auto;padding:0 20px}
+      header{background:#fff;border-bottom:1px solid #e8e8ed;padding:1.5rem 0}
+      .header-content h1{font-size:1.5rem;margin:0;font-weight:600}
+      .header-subtitle{color:#6e6e73;font-size:0.875rem;margin-top:0.25rem}
+      .card{background:#fff;border-radius:12px;box-shadow:0 1px 3px rgba(0,0,0,0.05);margin-bottom:1.5rem}
+      .btn{padding:0.625rem 1.25rem;border-radius:8px;font-weight:500;text-decoration:none;display:inline-block;border:none;cursor:pointer;transition:all 0.2s}
+      .btn-primary{background:#0071e3;color:#fff}
+      .btn-primary:hover{background:#0051a2}
+    </style>
+    <link rel="stylesheet" href="/styles-modern.css?v=1.0.2">
 </head>
 <body>
     <div class="container">
