@@ -26,15 +26,13 @@ function formatUuid(uuid) {
 
 /**
  * Get display ID for a trading request
- * Prefers UUID if available, falls back to numeric ID
+ * Always uses UUID as primary identifier
  * @param {object} request - Trading request object
  * @returns {string} Display ID
  */
 function getDisplayId(request) {
-  if (request.uuid) {
-    return formatUuid(request.uuid);
-  }
-  return formatUuid(request.id);
+  // UUID is now the primary identifier
+  return formatUuid(request.uuid || request.id);
 }
 
 module.exports = {

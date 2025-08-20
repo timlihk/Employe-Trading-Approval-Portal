@@ -30,62 +30,27 @@ class TradingRequest extends BaseModel {
       const finalSharePrice = share_price || (estimated_value ? (estimated_value / shares) : null);
       const finalTotalValue = total_value || estimated_value;
       
-      // Check if UUID column exists by trying a simple query first
-      let hasUuidColumn = false;
-      try {
-        await this.query("SELECT uuid FROM trading_requests LIMIT 1");
-        hasUuidColumn = true;
-        console.log('✅ UUID column detected, using UUID insert');
-      } catch (e) {
-        // UUID column doesn't exist yet, use legacy insert
-        hasUuidColumn = false;
-        console.log('⚠️  UUID column not found, using legacy insert:', e.message);
-      }
+      // Simplified: Always use UUID since migration has completed
+      const sql = `
+        INSERT INTO trading_requests (
+          uuid, employee_email, stock_name, ticker, shares, 
+          share_price, total_value, currency, share_price_usd, 
+          total_value_usd, exchange_rate, trading_type, status, 
+          rejection_reason, processed_at
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+        RETURNING uuid, id
+      `;
       
-      let sql, params;
-      if (hasUuidColumn) {
-        sql = `
-          INSERT INTO trading_requests (
-            uuid, employee_email, stock_name, ticker, shares, 
-            share_price, total_value, currency, share_price_usd, 
-            total_value_usd, exchange_rate, trading_type, status, 
-            rejection_reason, processed_at
-          )
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
-          RETURNING id, uuid
-        `;
-        
-        params = [
-          uuid,
-          employee_email.toLowerCase(), stock_name, ticker, shares, 
-          finalSharePrice, finalTotalValue, currency, share_price_usd || finalSharePrice,
-          total_value_usd || finalTotalValue, exchange_rate || 1, trading_type,
-          requestData.status || 'pending',
-          requestData.rejection_reason || null,
-          requestData.processed_at || new Date().toISOString()
-        ];
-      } else {
-        // Legacy insert without UUID column
-        sql = `
-          INSERT INTO trading_requests (
-            employee_email, stock_name, ticker, shares, 
-            share_price, total_value, currency, share_price_usd, 
-            total_value_usd, exchange_rate, trading_type, status, 
-            rejection_reason, processed_at
-          )
-          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
-          RETURNING id
-        `;
-        
-        params = [
-          employee_email.toLowerCase(), stock_name, ticker, shares, 
-          finalSharePrice, finalTotalValue, currency, share_price_usd || finalSharePrice,
-          total_value_usd || finalTotalValue, exchange_rate || 1, trading_type,
-          requestData.status || 'pending',
-          requestData.rejection_reason || null,
-          requestData.processed_at || new Date().toISOString()
-        ];
-      }
+      const params = [
+        uuid,
+        employee_email.toLowerCase(), stock_name, ticker, shares, 
+        finalSharePrice, finalTotalValue, currency, share_price_usd || finalSharePrice,
+        total_value_usd || finalTotalValue, exchange_rate || 1, trading_type,
+        requestData.status || 'pending',
+        requestData.rejection_reason || null,
+        requestData.processed_at || new Date().toISOString()
+      ];
       
       // Use query() instead of run() to avoid double RETURNING clause
       const result = await this.query(sql, params);
@@ -97,17 +62,11 @@ class TradingRequest extends BaseModel {
         throw new Error('Failed to create trading request - no result returned');
       }
       
-      const response = { 
-        id: insertedRow.id,
+      return { 
+        uuid: insertedRow.uuid,
+        id: insertedRow.id, // Keep for compatibility but UUID is primary
         ...requestData 
       };
-      
-      // Only include UUID if the column exists
-      if (hasUuidColumn && insertedRow.uuid) {
-        response.uuid = insertedRow.uuid;
-      }
-      
-      return response;
       
     } catch (error) {
       console.error('TradingRequest.create error:', {
@@ -120,19 +79,15 @@ class TradingRequest extends BaseModel {
     }
   }
 
-  static updateStatus(idOrUuid, status, rejection_reason = null) {
+  static updateStatus(uuid, status, rejection_reason = null) {
     return new Promise((resolve, reject) => {
-      // Support both ID and UUID
-      const isUuid = typeof idOrUuid === 'string' && idOrUuid.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
-      const whereClause = isUuid ? 'uuid = $3' : 'id = $3';
-      
       const sql = `
         UPDATE trading_requests 
         SET status = $1, rejection_reason = $2, processed_at = CURRENT_TIMESTAMP
-        WHERE ${whereClause}
+        WHERE uuid = $3
       `;
       
-      this.run(sql, [status, rejection_reason, idOrUuid]).then(result => {
+      this.run(sql, [status, rejection_reason, uuid]).then(result => {
         resolve({ changes: result.changes });
       }).catch(err => {
         reject(err);
@@ -140,19 +95,29 @@ class TradingRequest extends BaseModel {
     });
   }
 
-  static getById(idOrUuid) {
-    // Support both ID and UUID
-    const isUuid = typeof idOrUuid === 'string' && idOrUuid.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
-    
-    if (isUuid) {
-      return this.findOne({ uuid: idOrUuid });
-    } else {
-      return this.findById(idOrUuid);
-    }
-  }
-  
   static getByUuid(uuid) {
     return this.findOne({ uuid: uuid });
+  }
+  
+  // Simplified: Only use UUID as primary identifier
+  static getById(uuid) {
+    return this.getByUuid(uuid);
+  }
+
+  static escalate(uuid, escalationReason) {
+    return new Promise((resolve, reject) => {
+      const sql = `
+        UPDATE trading_requests 
+        SET escalated = true, escalation_reason = $1, escalated_at = CURRENT_TIMESTAMP
+        WHERE uuid = $2
+      `;
+      
+      this.run(sql, [escalationReason, uuid]).then(result => {
+        resolve({ changes: result.changes });
+      }).catch(err => {
+        reject(err);
+      });
+    });
   }
 
   static getAll(sortBy = 'id', sortOrder = 'DESC') {

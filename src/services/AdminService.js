@@ -248,9 +248,9 @@ class AdminService {
   /**
    * Approve a trading request
    */
-  async approveRequest(requestId, adminEmail, ipAddress = null) {
+  async approveRequest(requestUuid, adminEmail, ipAddress = null) {
     try {
-      const request = await TradingRequest.getById(requestId);
+      const request = await TradingRequest.getByUuid(requestUuid);
       if (!request) {
         throw new AppError('Trading request not found', 404);
       }
@@ -260,7 +260,7 @@ class AdminService {
       }
 
       // Update status
-      await TradingRequest.updateStatus(requestId, 'approved');
+      await TradingRequest.updateStatus(requestUuid, 'approved');
 
       // Log the action
       await AuditLog.logActivity(
@@ -268,13 +268,13 @@ class AdminService {
         'admin',
         'approve_trading_request',
         'trading_request',
-        requestId,
+        requestUuid,
         `Approved ${request.trading_type} request for ${request.shares} shares of ${request.ticker} by ${request.employee_email}`,
         ipAddress
       );
 
       logger.info('Trading request approved', {
-        requestId,
+        requestUuid,
         admin: adminEmail,
         employee: request.employee_email,
         ticker: request.ticker
@@ -288,7 +288,7 @@ class AdminService {
       }
 
       logger.error('Error approving request', {
-        requestId,
+        requestUuid,
         admin: adminEmail,
         error: error.message
       });
@@ -300,9 +300,9 @@ class AdminService {
   /**
    * Reject a trading request
    */
-  async rejectRequest(requestId, rejectionReason, adminEmail, ipAddress = null) {
+  async rejectRequest(requestUuid, rejectionReason, adminEmail, ipAddress = null) {
     try {
-      const request = await TradingRequest.getById(requestId);
+      const request = await TradingRequest.getByUuid(requestUuid);
       if (!request) {
         throw new AppError('Trading request not found', 404);
       }
@@ -316,7 +316,7 @@ class AdminService {
         (request.escalated ? 'Administrative decision - Request rejected after review' : null);
       
       // Update status with reason
-      await TradingRequest.updateStatus(requestId, 'rejected', finalReason);
+      await TradingRequest.updateStatus(requestUuid, 'rejected', finalReason);
 
       // Log the action
       await AuditLog.logActivity(
@@ -324,13 +324,13 @@ class AdminService {
         'admin',
         'reject_trading_request',
         'trading_request',
-        requestId,
+        requestUuid,
         `Rejected ${request.trading_type} request for ${request.shares} shares of ${request.ticker} by ${request.employee_email}.${finalReason ? ` Reason: ${finalReason}` : ''}`,
         ipAddress
       );
 
       logger.info('Trading request rejected', {
-        requestId,
+        requestUuid,
         admin: adminEmail,
         employee: request.employee_email,
         ticker: request.ticker,
@@ -345,7 +345,7 @@ class AdminService {
       }
 
       logger.error('Error rejecting request', {
-        requestId,
+        requestUuid,
         admin: adminEmail,
         error: error.message
       });

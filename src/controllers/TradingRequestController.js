@@ -204,11 +204,11 @@ class TradingRequestController {
 
       // Show appropriate result page based on status
       if (request.status === 'approved') {
-        res.redirect(`/trade-result/${request.id}?status=approved`);
+        res.redirect(`/trade-result/${request.uuid}?status=approved`);
       } else if (request.status === 'rejected') {
-        res.redirect(`/trade-result/${request.id}?status=rejected`);
+        res.redirect(`/trade-result/${request.uuid}?status=rejected`);
       } else {
-        res.redirect(`/trade-result/${request.id}?status=pending`);
+        res.redirect(`/trade-result/${request.uuid}?status=pending`);
       }
       
     } catch (error) {
@@ -221,7 +221,7 @@ class TradingRequestController {
    * Show trade result page
    */
   showTradeResult = catchAsync(async (req, res) => {
-    const requestId = parseInt(req.params.requestId);
+    const requestUuid = req.params.requestId; // Now expects UUID
     const { status } = req.query;
     
     if (!req.session.employee || !req.session.employee.email) {
@@ -229,8 +229,8 @@ class TradingRequestController {
     }
 
     try {
-      // Get the request details
-      const request = await TradingRequest.getById(requestId);
+      // Get the request details by UUID
+      const request = await TradingRequest.getByUuid(requestUuid);
       if (!request || request.employee_email !== req.session.employee.email) {
         return res.redirect('/employee-history?error=request_not_found');
       }
@@ -320,7 +320,7 @@ class TradingRequestController {
             </div>
             <form method="post" action="/submit-escalation">
               ${req.csrfInput()}
-              <input type="hidden" name="requestId" value="${request.id}">
+              <input type="hidden" name="requestId" value="${request.uuid}">
               <div style="padding: 0 var(--spacing-6) var(--spacing-4) var(--spacing-6);">
                 <textarea name="escalation_reason" required rows="4" 
                          placeholder="Please provide a detailed business justification for this trade..." 
@@ -361,7 +361,7 @@ class TradingRequestController {
    */
   escalateRequest = catchAsync(async (req, res) => {
     const { escalation_reason } = req.body;
-    const requestId = parseInt(req.body.requestId || req.params.requestId);
+    const requestUuid = req.body.requestId || req.params.requestId; // Now UUID
     
     if (!req.session.employee || !req.session.employee.email) {
       return res.redirect('/?error=authentication_required');
@@ -370,7 +370,7 @@ class TradingRequestController {
     const employeeEmail = req.session.employee.email;
     const ipAddress = req.ip;
 
-    await TradingRequestService.escalateRequest(requestId, escalation_reason, employeeEmail, ipAddress);
+    await TradingRequestService.escalateRequest(requestUuid, escalation_reason, employeeEmail, ipAddress);
     
     res.redirect('/employee-history?message=escalation_submitted');
   });

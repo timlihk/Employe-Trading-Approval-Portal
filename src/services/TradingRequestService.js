@@ -401,10 +401,10 @@ class TradingRequestService {
   /**
    * Escalate a trading request
    */
-  async escalateRequest(requestId, escalationReason, employeeEmail, ipAddress = null) {
+  async escalateRequest(requestUuid, escalationReason, employeeEmail, ipAddress = null) {
     try {
       // Check if request exists and belongs to employee
-      const request = await TradingRequest.getById(requestId);
+      const request = await TradingRequest.getByUuid(requestUuid);
       if (!request) {
         throw new AppError('Trading request not found', 404);
       }
@@ -422,7 +422,7 @@ class TradingRequestService {
       }
 
       // Escalate the request
-      await TradingRequest.escalate(requestId, escalationReason);
+      await TradingRequest.escalate(requestUuid, escalationReason);
 
       // Log the escalation
       await AuditLog.logActivity(
@@ -430,13 +430,13 @@ class TradingRequestService {
         'employee',
         'escalate_trading_request',
         'trading_request',
-        requestId,
+        requestUuid,
         `Escalated request: ${escalationReason}`,
         ipAddress
       );
 
       logger.info('Trading request escalated', {
-        requestId,
+        requestUuid,
         employee: employeeEmail,
         reason: escalationReason
       });
@@ -448,7 +448,7 @@ class TradingRequestService {
       }
       
       logger.error('Error escalating request', {
-        requestId,
+        requestUuid,
         employee: employeeEmail,
         error: error.message
       });

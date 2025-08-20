@@ -353,7 +353,7 @@ class EmployeeController {
    * Get escalation form
    */
   getEscalationForm = catchAsync(async (req, res) => {
-    const requestId = parseInt(req.params.id);
+    const requestUuid = req.params.id; // Now UUID
     
     // Check if user is properly authenticated
     if (!req.session.employee || !req.session.employee.email) {
@@ -371,7 +371,7 @@ class EmployeeController {
     }
     
     const requests = result.data;
-    const request = requests.find(r => r.id === requestId);
+    const request = requests.find(r => r.uuid === requestUuid);
 
     if (!request) {
       return res.redirect('/employee-history?error=' + encodeURIComponent('Request not found or you do not have access to it'));
@@ -403,7 +403,7 @@ class EmployeeController {
           </div>
 
           <form method="post" action="/submit-escalation">\n            ${req.csrfInput()}
-            <input type="hidden" name="requestId" value="${request.id}">
+            <input type="hidden" name="requestId" value="${request.uuid}">
             
             <div class="mb-4">
               <label class="form-label">

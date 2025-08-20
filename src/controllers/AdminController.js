@@ -64,11 +64,11 @@ class AdminController {
    * Approve trading request
    */
   approveRequest = catchAsync(async (req, res) => {
-    const requestId = parseInt(req.body.requestId || req.params.id);
+    const requestUuid = req.body.requestId || req.params.id; // Now UUID
     const adminEmail = req.session.admin.username;
     const ipAddress = req.ip;
 
-    await AdminService.approveRequest(requestId, adminEmail, ipAddress);
+    await AdminService.approveRequest(requestUuid, adminEmail, ipAddress);
     
     res.redirect('/admin-requests?message=request_approved');
   });
@@ -77,12 +77,12 @@ class AdminController {
    * Reject trading request
    */
   rejectRequest = catchAsync(async (req, res) => {
-    const requestId = parseInt(req.body.requestId || req.params.id);
+    const requestUuid = req.body.requestId || req.params.id; // Now UUID
     const { rejection_reason } = req.body;
     const adminEmail = req.session.admin.username;
     const ipAddress = req.ip;
 
-    await AdminService.rejectRequest(requestId, rejection_reason, adminEmail, ipAddress);
+    await AdminService.rejectRequest(requestUuid, rejection_reason, adminEmail, ipAddress);
     
     res.redirect('/admin-requests?message=request_rejected');
   });
@@ -181,7 +181,7 @@ class AdminController {
       if (request.status === 'pending') {
         actionCell = `
           <form method="post" action="/admin-approve-request" class="d-inline mr-2">\n            ${req.csrfInput()}
-            <input type="hidden" name="requestId" value="${request.id}">
+            <input type="hidden" name="requestId" value="${request.uuid}">
             <button type="submit" class="btn btn-success btn-sm">
               ✓ Approve
             </button>
@@ -374,10 +374,10 @@ class AdminController {
    * Get reject form page
    */
   getRejectForm = catchAsync(async (req, res) => {
-    const requestId = parseInt(req.params.requestId);
+    const requestUuid = req.params.requestId; // Now UUID
     
     // Get the request details
-    const request = await TradingRequest.getById(requestId);
+    const request = await TradingRequest.getByUuid(requestUuid);
     if (!request) {
       return res.redirect('/admin-requests?error=request_not_found');
     }
@@ -386,7 +386,7 @@ class AdminController {
       <div class="max-w-lg mx-auto">
         <div class="card">
           <div class="card-header">
-            <h3 class="card-title">Reject Trading Request #${requestId}</h3>
+            <h3 class="card-title">Reject Trading Request #${getDisplayId({uuid: requestUuid})}</h3>
           </div>
           <div class="card-body">
             <div class="bg-muted p-4 rounded mb-4">
@@ -399,7 +399,7 @@ class AdminController {
             </div>
 
             <form method="post" action="/admin-reject-request">\n            ${req.csrfInput()}
-              <input type="hidden" name="requestId" value="${requestId}">
+              <input type="hidden" name="requestId" value="${requestUuid}">
               <div class="mb-4">
                 <label class="form-label">Rejection Reason (Optional for escalated requests):</label>
                 <textarea name="rejection_reason" ${request.escalated ? '' : 'required'} rows="4" 
