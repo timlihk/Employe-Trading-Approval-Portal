@@ -6,6 +6,7 @@ const AuditLog = require('../models/AuditLog');
 const database = require('../models/database');
 const { catchAsync } = require('../middleware/errorHandler');
 const { renderAdminPage, generateNotificationBanner } = require('../utils/templates');
+const { getDisplayId } = require('../utils/formatters');
 
 class AdminController {
   /**
@@ -651,7 +652,7 @@ class AdminController {
   const escapedQuotes = s.replace(/"/g, '""');
   return needsEscape ? `'${escapedQuotes}` : escapedQuotes;
 };
-csvContent += `"${sanitizeCsv(request.id)}","${sanitizeCsv(createdDate)}","${sanitizeCsv(request.employee_email)}","${sanitizeCsv(stockName)}","${sanitizeCsv(request.ticker)}","${sanitizeCsv(request.trading_type.toUpperCase())}","${sanitizeCsv(request.shares)}","${sanitizeCsv(estimatedValue)}","${sanitizeCsv(request.status.toUpperCase())}","${sanitizeCsv(escalated)}","${sanitizeCsv(escalationReason)}","${sanitizeCsv(processedDate)}"\n`;
+csvContent += `"${sanitizeCsv(getDisplayId(request))}","${sanitizeCsv(createdDate)}","${sanitizeCsv(request.employee_email)}","${sanitizeCsv(stockName)}","${sanitizeCsv(request.ticker)}","${sanitizeCsv(request.trading_type.toUpperCase())}","${sanitizeCsv(request.shares)}","${sanitizeCsv(estimatedValue)}","${sanitizeCsv(request.status.toUpperCase())}","${sanitizeCsv(escalated)}","${sanitizeCsv(escalationReason)}","${sanitizeCsv(processedDate)}"\n`;
       });
 
       res.setHeader('Content-Type', 'text/csv');

@@ -26,10 +26,16 @@ class Database {
     
     try {
       console.log('🔄 Initializing PostgreSQL database schema...');
+      
+      // Enable UUID extension
+      await this.pool.query(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`);
+      console.log('✅ UUID extension enabled');
+      
       // Create tables for PostgreSQL
       await this.pool.query(`
         CREATE TABLE IF NOT EXISTS restricted_stocks (
           id SERIAL PRIMARY KEY,
+          uuid UUID DEFAULT uuid_generate_v4() UNIQUE,
           ticker VARCHAR(20) UNIQUE NOT NULL,
           company_name TEXT NOT NULL,
           exchange VARCHAR(50),
@@ -40,6 +46,7 @@ class Database {
       await this.pool.query(`
         CREATE TABLE IF NOT EXISTS trading_requests (
           id SERIAL PRIMARY KEY,
+          uuid UUID DEFAULT uuid_generate_v4() UNIQUE,
           employee_email VARCHAR(255) NOT NULL,
           stock_name TEXT NOT NULL,
           ticker VARCHAR(20) NOT NULL,
@@ -65,6 +72,7 @@ class Database {
       await this.pool.query(`
         CREATE TABLE IF NOT EXISTS audit_logs (
           id SERIAL PRIMARY KEY,
+          uuid UUID DEFAULT uuid_generate_v4() UNIQUE,
           user_email VARCHAR(255) NOT NULL,
           user_type VARCHAR(20) NOT NULL CHECK(user_type IN ('admin', 'employee')),
           action TEXT NOT NULL,
@@ -82,6 +90,7 @@ class Database {
       await this.pool.query(`
         CREATE TABLE IF NOT EXISTS restricted_stock_changelog (
           id SERIAL PRIMARY KEY,
+          uuid UUID DEFAULT uuid_generate_v4() UNIQUE,
           ticker VARCHAR(20) NOT NULL,
           company_name TEXT NOT NULL,
           action VARCHAR(20) NOT NULL CHECK(action IN ('added', 'removed')),

@@ -1,6 +1,7 @@
 const TradingRequestService = require('../services/TradingRequestService');
 const { catchAsync } = require('../middleware/errorHandler');
 const { renderEmployeePage, generateNotificationBanner } = require('../utils/templates');
+const { getDisplayId } = require('../utils/formatters');
 
 class EmployeeController {
   /**
@@ -550,7 +551,7 @@ class EmployeeController {
           const tradingType = (request.trading_type || 'unknown').toString().toUpperCase();
           const status = (request.status || 'unknown').toString().toUpperCase();
           const shares = parseInt(request.shares || 0) || 0;
-          const requestId = request.id || 'N/A';
+          const requestId = getDisplayId(request) || 'N/A';
           
           csvContent += `"${requestId}","${createdDate}","${stockName}","${ticker}","${tradingType}","${shares}","$${estimatedValue}","${status}","${escalated}","${rejectionReason}"\n`;
           

@@ -1,4 +1,5 @@
 const BaseModel = require('./BaseModel');
+const { v4: uuidv4 } = require('uuid');
 
 class TradingRequest extends BaseModel {
   static get tableName() {
@@ -22,21 +23,26 @@ class TradingRequest extends BaseModel {
         instrument_type = 'equity', // Default to equity if not specified
       } = requestData;
       
+      // Generate UUID for the new trading request
+      const uuid = uuidv4();
+      
       // Handle both old complex format and new simple format
       const finalSharePrice = share_price || (estimated_value ? (estimated_value / shares) : null);
       const finalTotalValue = total_value || estimated_value;
       
       const sql = `
         INSERT INTO trading_requests (
-          employee_email, stock_name, ticker, shares, 
+          uuid, employee_email, stock_name, ticker, shares, 
           share_price, total_value, currency, share_price_usd, 
           total_value_usd, exchange_rate, trading_type, instrument_type, status, 
           rejection_reason, processed_at, created_at
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, CURRENT_TIMESTAMP)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, CURRENT_TIMESTAMP)
+        RETURNING id, uuid
       `;
       
       const params = [
+        uuid,
         employee_email.toLowerCase(), stock_name, ticker, shares, 
         finalSharePrice, finalTotalValue, currency, share_price_usd || finalSharePrice,
         total_value_usd || finalTotalValue, exchange_rate || 1, trading_type, instrument_type,
@@ -48,6 +54,7 @@ class TradingRequest extends BaseModel {
       this.run(sql, params).then(result => {
         resolve({ 
           id: result.lastID,
+          uuid: uuid,
           ...requestData 
         });
       }).catch(err => {
@@ -56,15 +63,19 @@ class TradingRequest extends BaseModel {
     });
   }
 
-  static updateStatus(id, status, rejection_reason = null) {
+  static updateStatus(idOrUuid, status, rejection_reason = null) {
     return new Promise((resolve, reject) => {
+      // Support both ID and UUID
+      const isUuid = typeof idOrUuid === 'string' && idOrUuid.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+      const whereClause = isUuid ? 'uuid = $3' : 'id = $3';
+      
       const sql = `
         UPDATE trading_requests 
         SET status = $1, rejection_reason = $2, processed_at = CURRENT_TIMESTAMP
-        WHERE id = $3
+        WHERE ${whereClause}
       `;
       
-      this.run(sql, [status, rejection_reason, id]).then(result => {
+      this.run(sql, [status, rejection_reason, idOrUuid]).then(result => {
         resolve({ changes: result.changes });
       }).catch(err => {
         reject(err);
@@ -72,8 +83,19 @@ class TradingRequest extends BaseModel {
     });
   }
 
-  static getById(id) {
-    return this.findById(id);
+  static getById(idOrUuid) {
+    // Support both ID and UUID
+    const isUuid = typeof idOrUuid === 'string' && idOrUuid.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
+    
+    if (isUuid) {
+      return this.findOne({ uuid: idOrUuid });
+    } else {
+      return this.findById(idOrUuid);
+    }
+  }
+  
+  static getByUuid(uuid) {
+    return this.findOne({ uuid: uuid });
   }
 
   static getAll(sortBy = 'id', sortOrder = 'DESC') {

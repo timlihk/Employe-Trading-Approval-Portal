@@ -3,6 +3,7 @@ const CurrencyService = require('../services/CurrencyService');
 const TradingRequest = require('../models/TradingRequest');
 const { catchAsync } = require('../middleware/errorHandler');
 const { renderEmployeePage, generateNotificationBanner, renderCard } = require('../utils/templates');
+const { getDisplayId } = require('../utils/formatters');
 
 class TradingRequestController {
   /**
@@ -275,7 +276,7 @@ class TradingRequestController {
             <div style="display: grid; gap: var(--spacing-4);">
               <div style="display: flex; justify-content: space-between; padding: var(--spacing-3); background: var(--gs-neutral-100); border-radius: var(--radius);">
                 <span style="font-weight: 600;">Request ID:</span>
-                <span style="font-family: monospace;">#${request.id}</span>
+                <span style="font-family: monospace;">${getDisplayId(request)}</span>
               </div>
               <div style="display: flex; justify-content: space-between; padding: var(--spacing-3); background: var(--gs-neutral-100); border-radius: var(--radius);">
                 <span style="font-weight: 600;">Stock:</span>
