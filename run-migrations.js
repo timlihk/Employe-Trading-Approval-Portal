@@ -7,23 +7,28 @@
 
 const fs = require('fs');
 const path = require('path');
-const database = require('./src/models/database');
+const { Pool } = require('pg');
 
 async function runMigrations() {
-  console.log('🔄 Starting UUID migration...');
+  console.log('🔄 Starting migrations...');
+  
+  let pool = null;
   
   try {
-    // Database initializes automatically on import
-    const pool = database.getPool();
-    
-    if (!pool) {
-      console.log('⚠️  No database connection available - skipping migrations');
+    // Create dedicated pool for migrations
+    if (!process.env.DATABASE_URL) {
+      console.log('⚠️  No DATABASE_URL found - skipping migrations');
       return;
     }
     
+    pool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+    });
+    
     // Test the connection
     await pool.query('SELECT 1');
-    console.log('✅ Database connected');
+    console.log('✅ Database connected for migrations');
     
     // Get all migration files in order
     const migrationsDir = path.join(__dirname, 'migrations');
@@ -76,11 +81,10 @@ async function runMigrations() {
       process.exit(1);
     }
   } finally {
-    // Don't close the pool when running from app startup
-    // The app will manage the connection lifecycle
-    if (require.main === module && database.getPool()) {
-      await database.getPool().end();
-      console.log('🔌 Database connection closed');
+    // Always close the migration pool since it's dedicated for this process
+    if (pool) {
+      await pool.end();
+      console.log('🔌 Migration database connection closed');
     }
     
     if (require.main === module) {
