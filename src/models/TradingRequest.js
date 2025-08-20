@@ -120,11 +120,11 @@ class TradingRequest extends BaseModel {
     });
   }
 
-  static getAll(sortBy = 'id', sortOrder = 'DESC') {
-    const validSortColumns = ['id', 'created_at', 'ticker', 'employee_email'];
+  static getAll(sortBy = 'created_at', sortOrder = 'DESC') {
+    const validSortColumns = ['created_at', 'ticker', 'employee_email'];
     const validSortOrders = ['ASC', 'DESC'];
     
-    const sortColumn = validSortColumns.includes(sortBy) ? sortBy : 'id';
+    const sortColumn = validSortColumns.includes(sortBy) ? sortBy : 'created_at';
     const sortDirection = validSortOrders.includes(sortOrder.toUpperCase()) ? sortOrder.toUpperCase() : 'DESC';
     
     return this.findAll({}, `${sortColumn} ${sortDirection}`);
@@ -132,7 +132,7 @@ class TradingRequest extends BaseModel {
 
   static findByEmail(email) {
     return new Promise((resolve, reject) => {
-      const sql = 'SELECT * FROM trading_requests WHERE LOWER(employee_email) = $1 ORDER BY id DESC';
+      const sql = 'SELECT * FROM trading_requests WHERE LOWER(employee_email) = $1 ORDER BY created_at DESC';
       
       this.query(sql, [email.toLowerCase()]).then(rows => {
         resolve(rows);

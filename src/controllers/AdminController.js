@@ -186,7 +186,7 @@ class AdminController {
               ✓ Approve
             </button>
           </form>
-          <a href="/admin-reject-form/${request.id}" class="btn btn-danger btn-sm text-decoration-none">
+          <a href="/admin-reject-form/${request.uuid}" class="btn btn-danger btn-sm text-decoration-none">
             ✗ Reject
           </a>
         `;
@@ -202,7 +202,7 @@ class AdminController {
 
       return `
         <tr ${rowClass}>
-          <td class="text-center">${request.id}</td>
+          <td class="text-center">${getDisplayId(request)}</td>
           <td class="text-center">${formatHongKongTime(new Date(request.created_at))}</td>
           <td>${request.employee_email}</td>
           <td>${request.stock_name || 'N/A'}</td>
@@ -231,7 +231,7 @@ class AdminController {
     }).join('');
 
     // Generate sorting controls
-    const currentSortBy = req.query.sort_by || 'id';
+    const currentSortBy = req.query.sort_by || 'created_at';
     const currentSortOrder = req.query.sort_order || 'DESC';
     const sortingControls = generateSortingControls('/admin-requests', currentSortBy, currentSortOrder, req.query);
 
@@ -323,7 +323,7 @@ class AdminController {
               <table class="table table-zebra table-hover table-sticky">
                 <thead>
                   <tr>
-                    <th>ID</th>
+                    <th>Request ID</th>
                     <th>Date</th>
                     <th>Employee</th>
                     <th>Company</th>
@@ -1112,12 +1112,11 @@ function formatHongKongTime(date = new Date(), includeTime = false) {
 
 function getSortDisplayName(sortBy) {
   const displayNames = {
-    'id': 'Request ID',
     'created_at': 'Date',
     'ticker': 'Ticker',
     'employee_email': 'Employee'
   };
-  return displayNames[sortBy] || 'Request ID';
+  return displayNames[sortBy] || 'Date';
 }
 
 function generateSortableHeader(sortBy, displayName, baseUrl, currentSortBy, currentSortOrder, queryParams = {}) {
@@ -1195,7 +1194,6 @@ function generateSortingControls(baseUrl, currentSortBy, currentSortOrder, query
       
       <span style="font-weight: 600; color: var(--gs-neutral-700);">Sort by:</span>
       <select name="sort_by" style="padding: 6px 10px; border: 1px solid var(--gs-neutral-300); border-radius: var(--radius);">
-        <option value="id" ${currentSortBy === 'id' ? 'selected' : ''}>Request ID</option>
         <option value="created_at" ${currentSortBy === 'created_at' ? 'selected' : ''}>Date</option>
         <option value="ticker" ${currentSortBy === 'ticker' ? 'selected' : ''}>Ticker</option>
         <option value="employee_email" ${currentSortBy === 'employee_email' ? 'selected' : ''}>Employee</option>

@@ -100,7 +100,7 @@ class EmployeeController {
    * Get employee history
    */
   getHistory = catchAsync(async (req, res) => {
-    const { message, error, start_date, end_date, ticker, trading_type, status, instrument_type, sort_by = 'id', sort_order = 'DESC', page = 1, limit = 25 } = req.query;
+    const { message, error, start_date, end_date, ticker, trading_type, status, instrument_type, sort_by = 'created_at', sort_order = 'DESC', page = 1, limit = 25 } = req.query;
     
     // Check if user is properly authenticated
     if (!req.session.employee || !req.session.employee.email) {
@@ -149,7 +149,7 @@ class EmployeeController {
 
       return `
         <tr>
-          <td class="text-center">${request.id}</td>
+          <td class="text-center">${getDisplayId(request)}</td>
           <td class="text-center">${date}</td>
           <td>${request.stock_name || 'N/A'}</td>
           <td class="text-center font-weight-600">${request.ticker}</td>
@@ -173,7 +173,7 @@ class EmployeeController {
             ${request.status === 'rejected' && request.rejection_reason ? 
               `<span class="text-danger cursor-help text-sm" title="${request.rejection_reason}">View Reason</span>` :
               (request.status === 'pending' && !request.escalated ? 
-                `<a href="/escalate-form/${request.id}" class="btn btn-outline btn-sm text-decoration-none">Escalate</a>` :
+                `<a href="/escalate-form/${request.uuid}" class="btn btn-outline btn-sm text-decoration-none">Escalate</a>` :
                 (request.escalated ? 
                   '<span class="text-warning text-sm">Escalated</span>' :
                   '<span class="text-muted">–</span>')
@@ -185,7 +185,7 @@ class EmployeeController {
     });
 
     // Generate sorting controls
-    const currentSortBy = req.query.sort_by || 'id';
+    const currentSortBy = req.query.sort_by || 'created_at';
     const currentSortOrder = req.query.sort_order || 'DESC';
     const sortingControls = generateSortingControls('/employee-history', currentSortBy, currentSortOrder, req.query);
 
@@ -263,10 +263,10 @@ class EmployeeController {
               <table class="table table-zebra table-hover table-sticky">
                 <thead>
                   <tr>
-                    <th class="th-sortable" ${currentSortBy === 'id' ? `aria-sort="${currentSortOrder === 'ASC' ? 'ascending' : 'descending'}"` : ''}>
-                      <a href="/employee-history?${new URLSearchParams({...req.query, sort_by: 'id', sort_order: currentSortBy === 'id' && currentSortOrder === 'ASC' ? 'DESC' : 'ASC'}).toString()}" 
+                    <th class="th-sortable" ${currentSortBy === 'created_at' ? `aria-sort="${currentSortOrder === 'ASC' ? 'ascending' : 'descending'}"` : ''}>
+                      <a href="/employee-history?${new URLSearchParams({...req.query, sort_by: 'created_at', sort_order: currentSortBy === 'created_at' && currentSortOrder === 'ASC' ? 'DESC' : 'ASC'}).toString()}" 
                          class="link focus-ring">
-                        ID<span class="sr-only"> - Click to sort</span>
+                        Request ID<span class="sr-only"> - Click to sort</span>
                       </a>
                     </th>
                     <th class="th-sortable" ${currentSortBy === 'created_at' ? `aria-sort="${currentSortOrder === 'ASC' ? 'ascending' : 'descending'}"` : ''}>
@@ -443,7 +443,7 @@ class EmployeeController {
       return res.redirect('/?error=authentication_required');
     }
 
-    const { start_date, end_date, ticker, trading_type, instrument_type, sort_by = 'id', sort_order = 'DESC' } = req.query;
+    const { start_date, end_date, ticker, trading_type, instrument_type, sort_by = 'created_at', sort_order = 'DESC' } = req.query;
     const employeeEmail = req.session.employee.email;
     
     try {
@@ -606,12 +606,11 @@ function formatHongKongTime(date = new Date(), includeTime = false) {
 
 function getSortDisplayName(sortBy) {
   const displayNames = {
-    'id': 'Request ID',
     'created_at': 'Date',
     'ticker': 'Ticker',
     'employee_email': 'Employee'
   };
-  return displayNames[sortBy] || 'Request ID';
+  return displayNames[sortBy] || 'Date';
 }
 
 function generateSortingControls(baseUrl, currentSortBy, currentSortOrder, queryParams = {}) {
@@ -628,7 +627,6 @@ function generateSortingControls(baseUrl, currentSortBy, currentSortOrder, query
       
       <span class="font-weight-600" style="color: var(--gs-neutral-700);">Sort by:</span>
       <select name="sort_by" class="form-control-sm py-2">
-        <option value="id" ${currentSortBy === 'id' ? 'selected' : ''}>Request ID</option>
         <option value="created_at" ${currentSortBy === 'created_at' ? 'selected' : ''}>Date</option>
         <option value="ticker" ${currentSortBy === 'ticker' ? 'selected' : ''}>Ticker</option>
       </select>
