@@ -306,11 +306,8 @@ app.use(session({
     secure: process.env.NODE_ENV === 'production',
     httpOnly: true,
     maxAge: 24 * 60 * 60 * 1000,
-    sameSite: 'lax',
-    path: '/' // Explicit path for better performance
+    sameSite: 'lax'
   },
-  name: 'sessionId', // Custom session name
-  rolling: true, // Reset expiry on activity
   proxy: true
 }));
 
@@ -318,19 +315,9 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 app.use(addRequestId);
-
-// Add response time tracking
-app.use((req, res, next) => {
-  req.startTime = Date.now();
-  res.on('finish', () => {
-    const duration = Date.now() - req.startTime;
-    res.setHeader('X-Response-Time', `${duration}ms`);
-  });
-  next();
-});
-
 app.use((req, res, next) => { 
-  metrics.requests += 1;
+  metrics.requests += 1; 
+  req.startTime = Date.now();
   
   // Track latency when response finishes
   res.on('finish', () => {

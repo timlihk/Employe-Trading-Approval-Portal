@@ -6,13 +6,7 @@ class Database {
       console.log('🐘 Using PostgreSQL database');
       this.pool = new Pool({
         connectionString: process.env.DATABASE_URL,
-        ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-        // Connection pool optimizations
-        max: 20, // Maximum number of clients in the pool
-        idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
-        connectionTimeoutMillis: 2000, // Return error after 2 seconds if connection cannot be obtained
-        statement_timeout: 10000, // Cancel queries after 10 seconds
-        query_timeout: 10000 // Query timeout
+        ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
       });
     } else {
       console.log('⚠️  No DATABASE_URL found - PostgreSQL not available');
