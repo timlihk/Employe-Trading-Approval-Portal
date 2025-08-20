@@ -34,8 +34,7 @@ class Database {
       // Create tables for PostgreSQL
       await this.pool.query(`
         CREATE TABLE IF NOT EXISTS restricted_stocks (
-          id SERIAL PRIMARY KEY,
-          uuid UUID DEFAULT uuid_generate_v4() UNIQUE,
+          uuid UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
           ticker VARCHAR(20) UNIQUE NOT NULL,
           company_name TEXT NOT NULL,
           exchange VARCHAR(50),
@@ -45,8 +44,7 @@ class Database {
 
       await this.pool.query(`
         CREATE TABLE IF NOT EXISTS trading_requests (
-          id SERIAL PRIMARY KEY,
-          uuid UUID DEFAULT uuid_generate_v4() UNIQUE,
+          uuid UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
           employee_email VARCHAR(255) NOT NULL,
           stock_name TEXT NOT NULL,
           ticker VARCHAR(20) NOT NULL,
@@ -71,8 +69,7 @@ class Database {
 
       await this.pool.query(`
         CREATE TABLE IF NOT EXISTS audit_logs (
-          id SERIAL PRIMARY KEY,
-          uuid UUID DEFAULT uuid_generate_v4() UNIQUE,
+          uuid UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
           user_email VARCHAR(255) NOT NULL,
           user_type VARCHAR(20) NOT NULL CHECK(user_type IN ('admin', 'employee')),
           action TEXT NOT NULL,
@@ -89,8 +86,7 @@ class Database {
 
       await this.pool.query(`
         CREATE TABLE IF NOT EXISTS restricted_stock_changelog (
-          id SERIAL PRIMARY KEY,
-          uuid UUID DEFAULT uuid_generate_v4() UNIQUE,
+          uuid UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
           ticker VARCHAR(20) NOT NULL,
           company_name TEXT NOT NULL,
           action VARCHAR(20) NOT NULL CHECK(action IN ('added', 'removed')),
@@ -159,14 +155,14 @@ class Database {
     if (!this.pool) {
       throw new Error('Database not available - PostgreSQL connection not established');
     }
-    // For INSERT, we need to return the ID
+    // For INSERT, return UUID instead of numeric ID
     if (sql.toLowerCase().includes('insert')) {
-      sql += ' RETURNING id';
+      sql += ' RETURNING uuid';
       const result = await this.pool.query(sql, params);
-      return { lastID: result.rows[0]?.id, changes: result.rowCount };
+      return { uuid: result.rows[0]?.uuid, changes: result.rowCount };
     } else {
       const result = await this.pool.query(sql, params);
-      return { lastID: null, changes: result.rowCount };
+      return { uuid: null, changes: result.rowCount };
     }
   }
 

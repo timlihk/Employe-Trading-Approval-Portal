@@ -30,7 +30,7 @@ class TradingRequest extends BaseModel {
       const finalSharePrice = share_price || (estimated_value ? (estimated_value / shares) : null);
       const finalTotalValue = total_value || estimated_value;
       
-      // Simplified: Always use UUID since migration has completed
+      // UUID-only: No need for numeric ID
       const sql = `
         INSERT INTO trading_requests (
           uuid, employee_email, stock_name, ticker, shares, 
@@ -39,7 +39,7 @@ class TradingRequest extends BaseModel {
           rejection_reason, processed_at
         )
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
-        RETURNING uuid, id
+        RETURNING uuid
       `;
       
       const params = [
@@ -64,14 +64,12 @@ class TradingRequest extends BaseModel {
       
       return { 
         uuid: insertedRow.uuid,
-        id: insertedRow.id, // Keep for compatibility but UUID is primary
         ...requestData 
       };
       
     } catch (error) {
       console.error('TradingRequest.create error:', {
         message: error.message,
-        hasUuidColumn,
         params: params?.length,
         sqlLength: sql?.length
       });

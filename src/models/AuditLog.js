@@ -17,7 +17,7 @@ class AuditLog extends BaseModel {
         user_agent: userAgent,
         session_id: sessionId
       }).then(result => {
-        resolve(result.id);
+        resolve(result.uuid);
       }).catch(reject);
     });
   }
