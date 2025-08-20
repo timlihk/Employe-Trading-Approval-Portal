@@ -35,9 +35,11 @@ class TradingRequest extends BaseModel {
       try {
         await this.query("SELECT uuid FROM trading_requests LIMIT 1");
         hasUuidColumn = true;
+        console.log('✅ UUID column detected, using UUID insert');
       } catch (e) {
         // UUID column doesn't exist yet, use legacy insert
         hasUuidColumn = false;
+        console.log('⚠️  UUID column not found, using legacy insert:', e.message);
       }
       
       let sql, params;
@@ -85,23 +87,35 @@ class TradingRequest extends BaseModel {
         ];
       }
       
-      const result = await this.run(sql, params);
+      // Use query() instead of run() to avoid double RETURNING clause
+      const result = await this.query(sql, params);
       
-      // Handle PostgreSQL RETURNING clause result
-      const insertedRow = result.rows ? result.rows[0] : result;
+      // PostgreSQL returns array of rows, get the first one
+      const insertedRow = Array.isArray(result) ? result[0] : result.rows?.[0];
+      
+      if (!insertedRow) {
+        throw new Error('Failed to create trading request - no result returned');
+      }
+      
       const response = { 
-        id: insertedRow?.id || result.lastID, // PostgreSQL vs SQLite compatibility
+        id: insertedRow.id,
         ...requestData 
       };
       
       // Only include UUID if the column exists
-      if (hasUuidColumn) {
-        response.uuid = insertedRow?.uuid || uuid;
+      if (hasUuidColumn && insertedRow.uuid) {
+        response.uuid = insertedRow.uuid;
       }
       
       return response;
       
     } catch (error) {
+      console.error('TradingRequest.create error:', {
+        message: error.message,
+        hasUuidColumn,
+        params: params?.length,
+        sqlLength: sql?.length
+      });
       throw error;
     }
   }
