@@ -376,6 +376,21 @@ class AdminService {
       
       if (data?.chart?.result?.[0]?.meta) {
         const meta = data.chart.result[0].meta;
+        
+        // Check if this is a valid ticker with actual market data
+        // Yahoo Finance returns placeholder data for non-existent tickers
+        const isValidTicker = (
+          meta.currency !== null && // Must have a currency
+          meta.instrumentType === 'EQUITY' && // Must be a stock (not MUTUALFUND placeholder)
+          (meta.regularMarketPrice > 0 || meta.previousClose > 0) && // Must have price data
+          (meta.longName || meta.shortName) && // Must have a company name
+          meta.exchangeName !== 'YHD' // YHD is a placeholder exchange for invalid tickers
+        );
+        
+        if (!isValidTicker) {
+          return null;
+        }
+        
         return meta.longName || meta.shortName || `${ticker} Corporation`;
       }
       
