@@ -1,5 +1,5 @@
-/* Modern SF Pro-inspired Font Stack */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+/* Modern SF Pro-inspired Font Stack - Moved to HTML for non-blocking load */
+/* @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap'); */
 
 /* Root Variables - Clean, Minimalist Design */
 :root {

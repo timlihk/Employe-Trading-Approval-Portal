@@ -133,7 +133,7 @@ class AdminController {
    * Get admin requests page
    */
   getRequests = catchAsync(async (req, res) => {
-    const { message, employee_email, start_date, end_date, ticker, trading_type, status, escalated, instrument_type, sort_by = 'id', sort_order = 'DESC', page = 1, limit = 25 } = req.query;
+    const { message, employee_email, start_date, end_date, ticker, trading_type, status, escalated, instrument_type, sort_by = 'created_at', sort_order = 'DESC', page = 1, limit = 25 } = req.query;
     let banner = '';
     
     if (message === 'request_approved') {
@@ -144,7 +144,7 @@ class AdminController {
 
     // Validate pagination params
     const validatedPage = Math.max(1, parseInt(page) || 1);
-    const validatedLimit = Math.min(100, Math.max(1, parseInt(limit) || 25));
+    const validatedLimit = Math.min(50, Math.max(1, parseInt(limit) || 25)); // Reduced max from 100 to 50
     
     // Build filters based on query parameters
     const filters = {

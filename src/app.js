@@ -181,7 +181,16 @@ app.use(helmet({
   xssFilter: false
 }));
 
-app.use(compression());
+app.use(compression({
+  level: 6, // Balance between compression and CPU usage
+  threshold: 1000, // Only compress if > 1KB
+  filter: (req, res) => {
+    // Don't compress if client doesn't support it
+    if (req.headers['x-no-compression']) return false;
+    // Use compression filter function
+    return compression.filter(req, res);
+  }
+}));
 
 // Ensure SESSION_SECRET is provided - fail fast for security
 if (!process.env.SESSION_SECRET) {
@@ -328,8 +337,14 @@ app.use((req, res, next) => { req.csrfInput = () => csrfInput(req); next(); });
 // Serve static files with caching
 app.use(express.static(path.join(__dirname, '../public'), {
   index: false,
-  maxAge: process.env.NODE_ENV === 'production' ? '1d' : 0,
-  etag: true
+  maxAge: process.env.NODE_ENV === 'production' ? '7d' : 0,
+  etag: true,
+  lastModified: true,
+  setHeaders: (res, path) => {
+    if (path.endsWith('.css') || path.endsWith('.js')) {
+      res.setHeader('Cache-Control', 'public, max-age=604800'); // 7 days for CSS/JS
+    }
+  }
 }));
 
 // ===========================================
