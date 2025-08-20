@@ -329,7 +329,7 @@ class TradingRequestService {
             'employee',
             logAction,
             'trading_request',
-            request.id,
+            request.uuid,
             logDetails,
             ipAddress
           );
@@ -339,7 +339,7 @@ class TradingRequestService {
       }
 
       logger.info('Trading request created with automatic processing', {
-        requestId: request.id,
+        requestId: request.uuid,
         employee: employeeEmail,
         ticker: ticker.toUpperCase(),
         shares,

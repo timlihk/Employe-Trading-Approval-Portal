@@ -150,7 +150,7 @@ class AdminService {
         'admin',
         'add_restricted_stock',
         'restricted_stock',
-        stock.id,
+        stock.uuid,
         `Added ${ticker.toUpperCase()} (${companyName}) to restricted list`,
         ipAddress
       );
@@ -217,7 +217,7 @@ class AdminService {
         'admin',
         'remove_restricted_stock',
         'restricted_stock',
-        existingStock.id,
+        existingStock.uuid,
         `Removed ${ticker.toUpperCase()} (${existingStock.company_name}) from restricted list`,
         ipAddress
       );

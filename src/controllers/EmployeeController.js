@@ -388,7 +388,7 @@ class EmployeeController {
     const escalationContent = `
       <div class="card">
         <div class="card-header">
-          <h3 class="card-title">Escalate Trading Request #${request.id}</h3>
+          <h3 class="card-title">Escalate Trading Request #${getDisplayId(request)}</h3>
         </div>
         <div class="card-body">
           <div class="bg-muted p-4 border-radius mb-6">
@@ -509,7 +509,7 @@ class EmployeeController {
         try {
           // Log the request object structure for debugging
           console.log(`Processing request ${index}:`, {
-            id: request.id,
+            uuid: request.uuid,
             created_at: request.created_at,
             stock_name: request.stock_name,
             ticker: request.ticker,
@@ -558,7 +558,7 @@ class EmployeeController {
         } catch (rowError) {
           console.error('Error processing row:', rowError.message, 'Request keys:', request ? Object.keys(request) : 'null');
           console.error('Full request object:', request);
-          csvContent += `"Error processing request ${request?.id || 'unknown'}: ${rowError.message}"\n`;
+          csvContent += `"Error processing request ${request?.uuid || 'unknown'}: ${rowError.message}"\n`;
         }
       });
     }

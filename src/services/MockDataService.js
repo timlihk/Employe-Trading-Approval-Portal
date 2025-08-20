@@ -1,4 +1,6 @@
 // Mock data service for local testing without database
+const { v4: uuidv4 } = require('uuid');
+
 class MockDataService {
   constructor() {
     this.mockData = {
@@ -55,7 +57,7 @@ class MockDataService {
   // Mock trading request methods
   async createTradingRequest(data) {
     const newRequest = {
-      id: this.mockData.tradingRequests.length + 1,
+      uuid: uuidv4(),
       ...data,
       created_at: new Date().toISOString(),
       processed_at: new Date().toISOString()
