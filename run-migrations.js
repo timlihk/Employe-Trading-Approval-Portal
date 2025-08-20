@@ -13,8 +13,7 @@ async function runMigrations() {
   console.log('🔄 Starting UUID migration...');
   
   try {
-    // Connect to database
-    await database.connect();
+    // Database initializes automatically on import
     const pool = database.getPool();
     
     if (!pool) {
@@ -22,6 +21,8 @@ async function runMigrations() {
       return;
     }
     
+    // Test the connection
+    await pool.query('SELECT 1');
     console.log('✅ Database connected');
     
     // Read and execute the UUID migration
@@ -62,11 +63,16 @@ async function runMigrations() {
       process.exit(1);
     }
   } finally {
-    if (database.getPool()) {
+    // Don't close the pool when running from app startup
+    // The app will manage the connection lifecycle
+    if (require.main === module && database.getPool()) {
       await database.getPool().end();
       console.log('🔌 Database connection closed');
     }
-    process.exit(0);
+    
+    if (require.main === module) {
+      process.exit(0);
+    }
   }
 }
 
