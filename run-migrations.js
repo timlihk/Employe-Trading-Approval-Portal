@@ -25,20 +25,33 @@ async function runMigrations() {
     await pool.query('SELECT 1');
     console.log('✅ Database connected');
     
-    // Read and execute the UUID migration
-    const migrationPath = path.join(__dirname, 'migrations', '006_uuid_migration.sql');
+    // Get all migration files in order
+    const migrationsDir = path.join(__dirname, 'migrations');
+    const migrationFiles = fs.readdirSync(migrationsDir)
+      .filter(file => file.endsWith('.sql'))
+      .sort(); // Run in alphabetical order
     
-    if (!fs.existsSync(migrationPath)) {
-      console.log('❌ Migration file not found:', migrationPath);
-      return;
+    console.log('📁 Found migrations:', migrationFiles);
+    
+    // Execute each migration
+    for (const file of migrationFiles) {
+      const migrationPath = path.join(migrationsDir, file);
+      console.log(`🔄 Running migration: ${file}`);
+      
+      const migrationSQL = fs.readFileSync(migrationPath, 'utf8');
+      
+      try {
+        await pool.query(migrationSQL);
+        console.log(`✅ Migration ${file} completed successfully!`);
+      } catch (error) {
+        if (error.message.includes('already exists') || error.message.includes('does not exist')) {
+          console.log(`ℹ️  Migration ${file} - changes already applied or not needed`);
+        } else {
+          console.error(`❌ Migration ${file} failed:`, error.message);
+          throw error;
+        }
+      }
     }
-    
-    const migrationSQL = fs.readFileSync(migrationPath, 'utf8');
-    console.log('📄 Loaded migration script');
-    
-    // Execute the migration
-    await pool.query(migrationSQL);
-    console.log('✅ UUID migration completed successfully!');
     
     // Verify UUID columns exist
     const result = await pool.query(`
