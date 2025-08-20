@@ -1,32 +1,44 @@
 const BaseModel = require('./BaseModel');
+const { v4: uuidv4 } = require('uuid');
 
 class RestrictedStockChangelog extends BaseModel {
   static get tableName() {
     return 'restricted_stock_changelog';
   }
   static logChange(changeData) {
-    const {
-      ticker,
-      company_name,
-      action,
-      admin_email,
-      reason = null,
-      ip_address = null,
-      user_agent = null,
-      session_id = null,
-      instrument_type = 'equity'
-    } = changeData;
-    
-    return this.create({
-      ticker,
-      company_name,
-      action,
-      admin_email,
-      reason,
-      ip_address,
-      user_agent,
-      session_id,
-      instrument_type
+    return new Promise((resolve, reject) => {
+      const {
+        ticker,
+        company_name,
+        action,
+        admin_email,
+        reason = null,
+        ip_address = null,
+        user_agent = null,
+        session_id = null,
+        instrument_type = 'equity'
+      } = changeData;
+      
+      const uuid = uuidv4();
+      
+      const sql = `
+        INSERT INTO restricted_stock_changelog (
+          uuid, ticker, company_name, action, admin_email, reason,
+          ip_address, user_agent, session_id, instrument_type
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        RETURNING uuid
+      `;
+      
+      const params = [
+        uuid, ticker, company_name, action, admin_email, reason,
+        ip_address, user_agent, session_id, instrument_type
+      ];
+      
+      this.query(sql, params).then(result => {
+        const insertedRow = Array.isArray(result) ? result[0] : result.rows?.[0];
+        resolve({ uuid: insertedRow?.uuid || uuid, ...changeData });
+      }).catch(reject);
     });
   }
 

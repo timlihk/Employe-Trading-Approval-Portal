@@ -1,4 +1,5 @@
 const BaseModel = require('./BaseModel');
+const { v4: uuidv4 } = require('uuid');
 
 class AuditLog extends BaseModel {
   static get tableName() {
@@ -6,18 +7,33 @@ class AuditLog extends BaseModel {
   }
   static logActivity(userEmail, userType, action, targetType, targetId = null, details = null, ipAddress = null, userAgent = null, sessionId = null) {
     return new Promise((resolve, reject) => {
-      this.create({
-        user_email: userEmail.toLowerCase(),
-        user_type: userType,
+      const uuid = uuidv4();
+      
+      const sql = `
+        INSERT INTO audit_logs (
+          uuid, user_email, user_type, action, target_type, target_id,
+          details, ip_address, user_agent, session_id
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        RETURNING uuid
+      `;
+      
+      const params = [
+        uuid,
+        userEmail.toLowerCase(),
+        userType,
         action,
-        target_type: targetType,
-        target_id: targetId,
+        targetType,
+        targetId,
         details,
-        ip_address: ipAddress,
-        user_agent: userAgent,
-        session_id: sessionId
-      }).then(result => {
-        resolve(result.uuid);
+        ipAddress,
+        userAgent,
+        sessionId
+      ];
+      
+      this.query(sql, params).then(result => {
+        const insertedRow = Array.isArray(result) ? result[0] : result.rows?.[0];
+        resolve(insertedRow?.uuid || uuid);
       }).catch(reject);
     });
   }
