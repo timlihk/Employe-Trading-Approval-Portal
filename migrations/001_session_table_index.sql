@@ -5,5 +5,5 @@
 -- Create index on expire column if it doesn't exist
 CREATE INDEX IF NOT EXISTS idx_session_expire ON session(expire);
 
--- Verify index creation
-\d+ session;
+-- Verify index creation (commented out - psql command not needed in migration)
+-- \d+ session;
