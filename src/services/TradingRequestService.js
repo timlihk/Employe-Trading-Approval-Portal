@@ -61,18 +61,20 @@ class TradingRequestService {
             
             // Check if this is a valid ticker with actual market data
             // Yahoo Finance returns placeholder data for non-existent tickers
+            const validInstrumentTypes = ['EQUITY', 'ETF', 'INDEX']; // Accept stocks, ETFs, and index funds
             const isValidTicker = (
               meta.currency !== null && // Must have a currency
-              meta.instrumentType === 'EQUITY' && // Must be a stock (not MUTUALFUND placeholder)
+              validInstrumentTypes.includes(meta.instrumentType) && // Must be a tradeable instrument
               (meta.regularMarketPrice > 0 || meta.previousClose > 0) && // Must have price data
               (meta.longName || meta.shortName) && // Must have a company name
-              meta.exchangeName !== 'YHD' // YHD is a placeholder exchange for invalid tickers
+              meta.exchangeName !== 'YHD' && // YHD is a placeholder exchange for invalid tickers
+              meta.exchangeName !== null // Must have an exchange
             );
             
             if (!isValidTicker) {
               return {
                 isValid: false,
-                error: `Ticker "${ticker}" not found or not a valid equity. Please verify the ticker symbol is correct`
+                error: `Ticker "${ticker}" not found or not a valid tradeable instrument. Please verify the ticker symbol is correct and that it's an equity, ETF, or index fund`
               };
             }
             
@@ -82,7 +84,8 @@ class TradingRequestService {
               currency: meta.currency || 'USD',
               exchangeName: meta.exchangeName || 'Unknown',
               longName: meta.longName || meta.shortName || `${ticker} Corporation`,
-              regularMarketPrice: meta.regularMarketPrice || meta.previousClose || 0
+              regularMarketPrice: meta.regularMarketPrice || meta.previousClose || 0,
+              instrument_type: meta.instrumentType?.toLowerCase() || 'equity' // Return actual instrument type
             };
           }
           
