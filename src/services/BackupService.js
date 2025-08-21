@@ -105,7 +105,7 @@ SET session_replication_role = 'replica';
         sqlContent += '\n';
       }
 
-      sqlContent += '-- Re-enable foreign key checks\nSET session_replication_role = 'origin';\n';
+      sqlContent += "-- Re-enable foreign key checks\nSET session_replication_role = 'origin';\n";
       
       return {
         content: sqlContent,
