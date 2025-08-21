@@ -123,8 +123,20 @@ SET session_replication_role = 'replica';
    */
   static async storeBackupLocally(backupData, maxBackups = 5) {
     try {
-      // Use /tmp for Railway or local backups directory
-      const baseDir = process.env.RAILWAY_ENVIRONMENT ? '/tmp' : process.cwd();
+      // Use Railway persistent volume, fallback to /tmp, then local
+      let baseDir;
+      if (process.env.RAILWAY_VOLUME_MOUNT_PATH) {
+        // Railway persistent volume (configured in Railway dashboard)
+        baseDir = process.env.RAILWAY_VOLUME_MOUNT_PATH;
+      } else if (process.env.RAILWAY_ENVIRONMENT) {
+        // Fallback to /tmp on Railway if no volume configured
+        baseDir = '/tmp';
+        logger.warn('Using /tmp for backups. Configure a persistent volume for permanent storage.');
+      } else {
+        // Local development
+        baseDir = process.cwd();
+      }
+      
       const backupsDir = path.join(baseDir, 'backups');
       
       // Create backups directory if it doesn't exist with proper permissions
@@ -173,7 +185,16 @@ SET session_replication_role = 'replica';
    */
   static async listLocalBackups() {
     try {
-      const baseDir = process.env.RAILWAY_ENVIRONMENT ? '/tmp' : process.cwd();
+      // Use same logic as storeBackupLocally for consistency
+      let baseDir;
+      if (process.env.RAILWAY_VOLUME_MOUNT_PATH) {
+        baseDir = process.env.RAILWAY_VOLUME_MOUNT_PATH;
+      } else if (process.env.RAILWAY_ENVIRONMENT) {
+        baseDir = '/tmp';
+      } else {
+        baseDir = process.cwd();
+      }
+      
       const backupsDir = path.join(baseDir, 'backups');
       
       // Check if directory exists

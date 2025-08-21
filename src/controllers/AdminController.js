@@ -978,7 +978,13 @@ csvContent += `"${sanitizeCsv(getDisplayId(request))}","${sanitizeCsv(createdDat
               <ul class="mb-0 mt-2">
                 <li><strong>JSON</strong>: Human-readable, easy to inspect and modify</li>
                 <li><strong>SQL</strong>: Can be imported directly via psql, more portable</li>
-                <li><strong>Server Storage</strong>: Keeps backup on Railway server (in /tmp directory)</li>
+                <li><strong>Server Storage</strong>: ${
+                  process.env.RAILWAY_VOLUME_MOUNT_PATH 
+                    ? `Persistent volume at ${process.env.RAILWAY_VOLUME_MOUNT_PATH}/backups ✅` 
+                    : process.env.RAILWAY_ENVIRONMENT 
+                      ? 'Temporary storage at /tmp/backups ⚠️ (Configure volume for persistence)' 
+                      : 'Local directory'
+                }</li>
                 <li><strong>Automatic Backups</strong>: Run daily at 2 AM HKT by default</li>
               </ul>
             </div>
@@ -1059,7 +1065,16 @@ csvContent += `"${sanitizeCsv(getDisplayId(request))}","${sanitizeCsv(createdDat
     const path = require('path');
     
     try {
-      const baseDir = process.env.RAILWAY_ENVIRONMENT ? '/tmp' : process.cwd();
+      // Use same logic as BackupService for consistency
+      let baseDir;
+      if (process.env.RAILWAY_VOLUME_MOUNT_PATH) {
+        baseDir = process.env.RAILWAY_VOLUME_MOUNT_PATH;
+      } else if (process.env.RAILWAY_ENVIRONMENT) {
+        baseDir = '/tmp';
+      } else {
+        baseDir = process.cwd();
+      }
+      
       const filepath = path.join(baseDir, 'backups', filename);
       const content = await fs.readFile(filepath, 'utf8');
       
