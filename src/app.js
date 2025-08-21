@@ -70,8 +70,12 @@ function verifyCsrfToken(req, res, next) {
   } 
   
   // Generate new token after successful validation (token rotation)
-  // Skip rotation for preview requests to avoid token mismatch on subsequent previews
-  if (!req.originalUrl.includes('/preview-')) {
+  // Skip rotation for preview and submit requests to avoid token mismatch
+  // This prevents issues when forms are submitted from preview pages
+  const skipRotationPaths = ['/preview-', '/submit-trade', '/submit-escalation'];
+  const shouldSkipRotation = skipRotationPaths.some(path => req.originalUrl.includes(path));
+  
+  if (!shouldSkipRotation) {
     generateCsrfToken(req); 
   }
   next(); 
