@@ -123,15 +123,29 @@ SET session_replication_role = 'replica';
    */
   static async storeBackupLocally(backupData, maxBackups = 5) {
     try {
-      // Use Railway persistent volume, fallback to /tmp, then local
+      // Determine the best directory for backups
       let baseDir;
+      let usingVolume = false;
+      
+      // Check if Railway volume path is configured AND accessible
       if (process.env.RAILWAY_VOLUME_MOUNT_PATH) {
-        // Railway persistent volume (configured in Railway dashboard)
-        baseDir = process.env.RAILWAY_VOLUME_MOUNT_PATH;
+        const volumePath = process.env.RAILWAY_VOLUME_MOUNT_PATH;
+        try {
+          // Test if the volume path exists and is writable
+          await fs.access(volumePath, fs.constants.W_OK);
+          baseDir = volumePath;
+          usingVolume = true;
+          logger.info(`Using Railway persistent volume at ${volumePath}`);
+        } catch (err) {
+          // Volume path not accessible, fall back to /tmp
+          logger.warn(`Railway volume path ${volumePath} not accessible: ${err.message}`);
+          logger.warn('Falling back to /tmp. Please ensure volume is properly mounted.');
+          baseDir = '/tmp';
+        }
       } else if (process.env.RAILWAY_ENVIRONMENT) {
-        // Fallback to /tmp on Railway if no volume configured
+        // On Railway but no volume configured
         baseDir = '/tmp';
-        logger.warn('Using /tmp for backups. Configure a persistent volume for permanent storage.');
+        logger.warn('Using /tmp for backups. Configure RAILWAY_VOLUME_MOUNT_PATH and mount a volume for permanent storage.');
       } else {
         // Local development
         baseDir = process.cwd();
@@ -139,12 +153,32 @@ SET session_replication_role = 'replica';
       
       const backupsDir = path.join(baseDir, 'backups');
       
-      // Create backups directory if it doesn't exist with proper permissions
+      // Create backups directory with better error handling
       try {
         await fs.mkdir(backupsDir, { recursive: true, mode: 0o755 });
+        logger.info(`Backup directory ready at ${backupsDir}`);
       } catch (err) {
-        // If mkdir fails, try to use the directory anyway (it might exist)
-        logger.warn(`Could not create backups directory: ${err.message}`);
+        // Try to create parent directory first if needed
+        if (err.code === 'ENOENT') {
+          try {
+            await fs.mkdir(baseDir, { recursive: true, mode: 0o755 });
+            await fs.mkdir(backupsDir, { recursive: true, mode: 0o755 });
+            logger.info(`Created backup directory at ${backupsDir}`);
+          } catch (retryErr) {
+            logger.error(`Failed to create backup directory: ${retryErr.message}`);
+            // If we still can't create it, fall back to /tmp
+            if (baseDir !== '/tmp') {
+              logger.warn('Falling back to /tmp due to directory creation failure');
+              baseDir = '/tmp';
+              backupsDir = path.join(baseDir, 'backups');
+              await fs.mkdir(backupsDir, { recursive: true, mode: 0o755 });
+            } else {
+              throw retryErr;
+            }
+          }
+        } else {
+          logger.warn(`Could not create backups directory: ${err.message}`);
+        }
       }
 
       // Write the new backup
@@ -185,42 +219,58 @@ SET session_replication_role = 'replica';
    */
   static async listLocalBackups() {
     try {
-      // Use same logic as storeBackupLocally for consistency
-      let baseDir;
+      // Try multiple locations in order of preference
+      const possibleDirs = [];
+      
+      // First try Railway volume if configured
       if (process.env.RAILWAY_VOLUME_MOUNT_PATH) {
-        baseDir = process.env.RAILWAY_VOLUME_MOUNT_PATH;
-      } else if (process.env.RAILWAY_ENVIRONMENT) {
-        baseDir = '/tmp';
-      } else {
-        baseDir = process.cwd();
+        possibleDirs.push(path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'backups'));
       }
       
-      const backupsDir = path.join(baseDir, 'backups');
-      
-      // Check if directory exists
-      try {
-        await fs.access(backupsDir);
-      } catch {
-        return [];
+      // Then try /tmp on Railway
+      if (process.env.RAILWAY_ENVIRONMENT) {
+        possibleDirs.push(path.join('/tmp', 'backups'));
       }
       
-      const files = await fs.readdir(backupsDir);
-      const backupFiles = await Promise.all(
-        files
-          .filter(f => f.startsWith('backup_') && f.endsWith('.json'))
-          .map(async (filename) => {
-            const filepath = path.join(backupsDir, filename);
-            const stats = await fs.stat(filepath);
-            return {
-              filename,
-              size: stats.size,
-              created: stats.mtime,
-              path: filepath
-            };
-          })
-      );
+      // Finally try local directory
+      possibleDirs.push(path.join(process.cwd(), 'backups'));
       
-      return backupFiles.sort((a, b) => b.created - a.created);
+      // Find the first directory that exists and has backups
+      let backupsDir = null;
+      let allBackups = [];
+      
+      for (const dir of possibleDirs) {
+        try {
+          await fs.access(dir);
+          const files = await fs.readdir(dir);
+          const backupFiles = files.filter(f => f.startsWith('backup_') && f.endsWith('.json'));
+          
+          if (backupFiles.length > 0) {
+            // Found backups in this directory
+            const backupsFromDir = await Promise.all(
+              backupFiles.map(async (filename) => {
+                const filepath = path.join(dir, filename);
+                const stats = await fs.stat(filepath);
+                return {
+                  filename,
+                  size: stats.size,
+                  created: stats.mtime,
+                  path: filepath,
+                  location: dir
+                };
+              })
+            );
+            allBackups = allBackups.concat(backupsFromDir);
+          }
+        } catch (err) {
+          // Directory doesn't exist or not accessible, continue to next
+          continue;
+        }
+      }
+      
+      // Return all found backups sorted by date
+      return allBackups.sort((a, b) => b.created - a.created);
+      
     } catch (error) {
       logger.error('Failed to list local backups', { error: error.message });
       return [];

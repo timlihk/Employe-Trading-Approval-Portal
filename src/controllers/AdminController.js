@@ -1065,18 +1065,35 @@ csvContent += `"${sanitizeCsv(getDisplayId(request))}","${sanitizeCsv(createdDat
     const path = require('path');
     
     try {
-      // Use same logic as BackupService for consistency
-      let baseDir;
+      // Try to find the backup file in multiple locations
+      const possiblePaths = [];
+      
       if (process.env.RAILWAY_VOLUME_MOUNT_PATH) {
-        baseDir = process.env.RAILWAY_VOLUME_MOUNT_PATH;
-      } else if (process.env.RAILWAY_ENVIRONMENT) {
-        baseDir = '/tmp';
-      } else {
-        baseDir = process.cwd();
+        possiblePaths.push(path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'backups', filename));
+      }
+      if (process.env.RAILWAY_ENVIRONMENT) {
+        possiblePaths.push(path.join('/tmp', 'backups', filename));
+      }
+      possiblePaths.push(path.join(process.cwd(), 'backups', filename));
+      
+      let content = null;
+      let foundPath = null;
+      
+      // Try each possible path
+      for (const filepath of possiblePaths) {
+        try {
+          content = await fs.readFile(filepath, 'utf8');
+          foundPath = filepath;
+          break;
+        } catch (err) {
+          // File not found at this path, try next
+          continue;
+        }
       }
       
-      const filepath = path.join(baseDir, 'backups', filename);
-      const content = await fs.readFile(filepath, 'utf8');
+      if (!content) {
+        throw new Error('Backup file not found in any location');
+      }
       
       // Log the download
       await AuditLog.logActivity(
