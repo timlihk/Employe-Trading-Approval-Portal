@@ -123,9 +123,17 @@ SET session_replication_role = 'replica';
    */
   static async storeBackupLocally(backupData, maxBackups = 5) {
     try {
-      // Create backups directory if it doesn't exist
-      const backupsDir = path.join(process.cwd(), 'backups');
-      await fs.mkdir(backupsDir, { recursive: true });
+      // Use /tmp for Railway or local backups directory
+      const baseDir = process.env.RAILWAY_ENVIRONMENT ? '/tmp' : process.cwd();
+      const backupsDir = path.join(baseDir, 'backups');
+      
+      // Create backups directory if it doesn't exist with proper permissions
+      try {
+        await fs.mkdir(backupsDir, { recursive: true, mode: 0o755 });
+      } catch (err) {
+        // If mkdir fails, try to use the directory anyway (it might exist)
+        logger.warn(`Could not create backups directory: ${err.message}`);
+      }
 
       // Write the new backup
       const timestamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-');
@@ -165,7 +173,8 @@ SET session_replication_role = 'replica';
    */
   static async listLocalBackups() {
     try {
-      const backupsDir = path.join(process.cwd(), 'backups');
+      const baseDir = process.env.RAILWAY_ENVIRONMENT ? '/tmp' : process.cwd();
+      const backupsDir = path.join(baseDir, 'backups');
       
       // Check if directory exists
       try {

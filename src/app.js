@@ -706,6 +706,8 @@ app.get('/admin-backup-database-sql', requireAdmin, AdminController.backupDataba
 app.get('/admin-backup-list', requireAdmin, AdminController.listBackups);
 app.post('/admin-store-backup', requireAdmin, verifyCsrfToken, AdminController.storeBackup);
 app.get('/admin-download-backup', requireAdmin, AdminController.downloadBackup);
+app.get('/admin-backup-scheduler', requireAdmin, AdminController.backupSchedulerStatus);
+app.post('/admin-trigger-backup', requireAdmin, verifyCsrfToken, AdminController.triggerManualBackup);
 app.get('/admin-clear-database-confirm', requireAdmin, AdminController.getClearDatabaseConfirm);
 app.post('/admin-clear-database', requireAdmin, verifyCsrfToken, AdminController.clearDatabase);
 app.get('/admin-audit-log', requireAdmin, AdminController.getAuditLog);
@@ -755,6 +757,26 @@ async function startServerWithMigrations() {
     } catch (error) {
       logger.warn('⚠️  Migration warning:', error.message);
       // Don't fail startup for migration errors - UUID columns might already exist
+    }
+  }
+  
+  // Initialize scheduled backup service if database is available
+  if (process.env.DATABASE_URL && database.getPool()) {
+    const ScheduledBackupService = require('./services/ScheduledBackupService');
+    const backupEnabled = process.env.DISABLE_SCHEDULED_BACKUPS !== 'true';
+    
+    if (backupEnabled) {
+      // Initialize with custom schedule or default (2 AM daily)
+      // Format: "seconds minutes hours day month day-of-week"
+      // Examples: 
+      //   "0 0 2 * * *" = Daily at 2 AM
+      //   "0 0 */6 * * *" = Every 6 hours
+      //   "0 30 1 * * 1" = Weekly on Monday at 1:30 AM
+      const schedule = process.env.BACKUP_SCHEDULE || '0 0 2 * * *';
+      ScheduledBackupService.initialize(schedule);
+      logger.info(`💾 Automatic backups: enabled (schedule: ${schedule})`);
+    } else {
+      logger.info('💾 Automatic backups: disabled (DISABLE_SCHEDULED_BACKUPS=true)');
     }
   }
   

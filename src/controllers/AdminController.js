@@ -917,9 +917,15 @@ csvContent += `"${sanitizeCsv(getDisplayId(request))}","${sanitizeCsv(createdDat
     let notification = '';
     if (message === 'backup_stored') {
       notification = generateNotificationBanner('Backup stored successfully!', 'success');
+    } else if (message === 'manual_backup_triggered') {
+      notification = generateNotificationBanner('Manual backup triggered successfully! Check back in a moment.', 'success');
     } else if (error) {
       notification = generateNotificationBanner(error, 'error');
     }
+    
+    // Get scheduler status
+    const ScheduledBackupService = require('../services/ScheduledBackupService');
+    const schedulerStatus = ScheduledBackupService.getStatus();
 
     const backupListContent = `
       <div class="container">
@@ -927,7 +933,30 @@ csvContent += `"${sanitizeCsv(getDisplayId(request))}","${sanitizeCsv(createdDat
         
         <div class="card mb-4">
           <div class="card-header">
-            <h3 class="card-title heading">🔧 Backup Options</h3>
+            <h3 class="card-title heading">⏰ Automatic Backup Status</h3>
+          </div>
+          <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <span class="badge ${schedulerStatus.isRunning ? 'badge-success' : 'badge-warning'}" style="font-size: 14px;">
+                  ${schedulerStatus.isRunning ? '✅ Scheduler Active' : '⚠️ Scheduler Inactive'}
+                </span>
+                ${schedulerStatus.nextRun ? `
+                  <div class="mt-2 text-muted">
+                    Next backup: ${new Date(schedulerStatus.nextRun).toLocaleString('en-US', { timeZone: 'Asia/Hong_Kong' })}
+                  </div>
+                ` : ''}
+              </div>
+              <a href="/admin-backup-scheduler" class="btn btn-sm btn-secondary">
+                ⚙️ Configure Scheduler
+              </a>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card mb-4">
+          <div class="card-header">
+            <h3 class="card-title heading">🔧 Manual Backup Options</h3>
           </div>
           <div class="card-body">
             <div class="d-flex gap-3 flex-wrap justify-center">
@@ -949,7 +978,8 @@ csvContent += `"${sanitizeCsv(getDisplayId(request))}","${sanitizeCsv(createdDat
               <ul class="mb-0 mt-2">
                 <li><strong>JSON</strong>: Human-readable, easy to inspect and modify</li>
                 <li><strong>SQL</strong>: Can be imported directly via psql, more portable</li>
-                <li><strong>Server Storage</strong>: Keeps backup on Railway server (survives deployments)</li>
+                <li><strong>Server Storage</strong>: Keeps backup on Railway server (in /tmp directory)</li>
+                <li><strong>Automatic Backups</strong>: Run daily at 2 AM HKT by default</li>
               </ul>
             </div>
           </div>
@@ -1029,7 +1059,8 @@ csvContent += `"${sanitizeCsv(getDisplayId(request))}","${sanitizeCsv(createdDat
     const path = require('path');
     
     try {
-      const filepath = path.join(process.cwd(), 'backups', filename);
+      const baseDir = process.env.RAILWAY_ENVIRONMENT ? '/tmp' : process.cwd();
+      const filepath = path.join(baseDir, 'backups', filename);
       const content = await fs.readFile(filepath, 'utf8');
       
       // Log the download
@@ -1050,6 +1081,94 @@ csvContent += `"${sanitizeCsv(getDisplayId(request))}","${sanitizeCsv(createdDat
     } catch (error) {
       console.error('Download backup error:', error);
       res.status(404).send('Backup file not found');
+    }
+  });
+
+  /**
+   * Show backup scheduler status
+   */
+  backupSchedulerStatus = catchAsync(async (req, res) => {
+    const ScheduledBackupService = require('../services/ScheduledBackupService');
+    const status = ScheduledBackupService.getStatus();
+    
+    const statusContent = `
+      <div class="container">
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title heading">⏰ Automatic Backup Scheduler</h3>
+          </div>
+          <div class="card-body">
+            <div class="alert ${status.isRunning ? 'alert-success' : 'alert-warning'}">
+              <strong>Status:</strong> ${status.isRunning ? '✅ Running' : '⚠️ Stopped'}
+            </div>
+            
+            <div class="info-grid">
+              <div class="info-item">
+                <strong>Schedule:</strong> <code>${status.schedule}</code>
+              </div>
+              <div class="info-item">
+                <strong>Timezone:</strong> ${status.timezone}
+              </div>
+              <div class="info-item">
+                <strong>Next Run:</strong> ${status.nextRun ? new Date(status.nextRun).toLocaleString('en-US', { timeZone: 'Asia/Hong_Kong' }) : 'N/A'}
+              </div>
+            </div>
+            
+            <div class="alert alert-info mt-4">
+              <strong>Schedule Format:</strong> Cron expression (seconds minutes hours day month day-of-week)
+              <ul class="mt-2 mb-0">
+                <li><code>0 0 2 * * *</code> = Daily at 2:00 AM</li>
+                <li><code>0 0 */6 * * *</code> = Every 6 hours</li>
+                <li><code>0 0 3 * * 1</code> = Weekly on Monday at 3:00 AM</li>
+              </ul>
+            </div>
+            
+            <div class="mt-4 text-center">
+              <form method="post" action="/admin-trigger-backup" style="display: inline;">
+                ${req.csrfInput()}
+                <button type="submit" class="btn btn-primary">
+                  🔄 Trigger Manual Backup Now
+                </button>
+              </form>
+            </div>
+          </div>
+        </div>
+        
+        <div class="mt-4 text-center">
+          <a href="/admin-backup-list" class="btn btn-secondary text-decoration-none">
+            ← Back to Backup Management
+          </a>
+        </div>
+      </div>
+    `;
+    
+    const html = renderAdminPage('Backup Scheduler Status', statusContent);
+    res.send(html);
+  });
+
+  /**
+   * Trigger manual backup
+   */
+  triggerManualBackup = catchAsync(async (req, res) => {
+    const ScheduledBackupService = require('../services/ScheduledBackupService');
+    
+    try {
+      await ScheduledBackupService.triggerManualBackup();
+      
+      await AuditLog.logActivity(
+        req.session.admin.username,
+        'admin',
+        'manual_scheduled_backup_triggered',
+        'system',
+        null,
+        'Manual backup triggered through scheduler',
+        req.ip
+      );
+      
+      res.redirect('/admin-backup-list?message=manual_backup_triggered');
+    } catch (error) {
+      logger.error('Manual backup trigger failed:', error);
+      res.redirect('/admin-backup-list?error=' + encodeURIComponent('Failed to trigger backup: ' + error.message));
     }
   });
 
