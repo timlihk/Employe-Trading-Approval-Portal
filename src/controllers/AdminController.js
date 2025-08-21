@@ -1,4 +1,5 @@
 const AdminService = require('../services/AdminService');
+const BackupService = require('../services/BackupService');
 const TradingRequest = require('../models/TradingRequest');
 const RestrictedStock = require('../models/RestrictedStock');
 const RestrictedStockChangelog = require('../models/RestrictedStockChangelog');
@@ -114,8 +115,8 @@ class AdminController {
             <a href="/admin-audit-log" class="btn btn-primary text-decoration-none text-center">
               📊 View Audit Log
             </a>
-            <a href="/admin-backup-database" class="btn btn-primary text-decoration-none text-center">
-              💾 Backup Database
+            <a href="/admin-backup-list" class="btn btn-primary text-decoration-none text-center">
+              💾 Backup Management
             </a>
             <a href="/admin-clear-database-confirm" class="btn btn-primary text-decoration-none text-center">
               🗑️ Clear Database
@@ -796,6 +797,259 @@ csvContent += `"${sanitizeCsv(getDisplayId(request))}","${sanitizeCsv(createdDat
         error: 'Failed to create database backup',
         details: error.message
       });
+    }
+  });
+
+  /**
+   * Create SQL backup and store locally
+   */
+  backupDatabaseSQL = catchAsync(async (req, res) => {
+    try {
+      // Create SQL backup
+      const backup = await BackupService.createSQLBackup();
+      
+      // Log the backup operation
+      await AuditLog.logActivity(
+        req.session.admin.username,
+        'admin',
+        'database_backup_sql',
+        'system',
+        null,
+        `SQL database backup created - ${backup.filename}`,
+        req.ip
+      );
+
+      console.log('✅ SQL database backup created successfully', {
+        filename: backup.filename,
+        admin: req.session.admin.username,
+        size: `${Math.round(backup.content.length / 1024)} KB`
+      });
+
+      // Send SQL file for download
+      res.setHeader('Content-Type', 'application/sql');
+      res.setHeader('Content-Disposition', `attachment; filename="${backup.filename}"`);
+      res.send(backup.content);
+
+    } catch (error) {
+      console.error('❌ SQL database backup error:', error);
+      
+      await AuditLog.logActivity(
+        req.session.admin.username,
+        'admin',
+        'database_backup_sql_failed',
+        'system',
+        null,
+        `SQL backup failed: ${error.message}`,
+        req.ip
+      );
+
+      res.status(500).json({
+        error: 'Failed to create SQL backup',
+        details: error.message
+      });
+    }
+  });
+
+  /**
+   * Store backup locally on server
+   */
+  storeBackup = catchAsync(async (req, res) => {
+    try {
+      // Get backup data first
+      const backupData = {
+        metadata: {
+          backup_date: new Date().toISOString(),
+          database_type: 'PostgreSQL',
+          version: '2.0',
+          admin_user: req.session.admin.username
+        }
+      };
+
+      // Get all data
+      backupData.trading_requests = await TradingRequest.getAll();
+      backupData.restricted_stocks = await RestrictedStock.getAll();
+      backupData.audit_logs = await AuditLog.getAuditLogs({});
+      backupData.restricted_stock_changelog = await RestrictedStockChangelog.getAll();
+
+      // Store backup locally
+      const result = await BackupService.storeBackupLocally(backupData);
+      
+      // Log the operation
+      await AuditLog.logActivity(
+        req.session.admin.username,
+        'admin',
+        'database_backup_stored',
+        'system',
+        null,
+        `Backup stored locally: ${result.filename} (${Math.round(result.size / 1024)} KB)`,
+        req.ip
+      );
+
+      // Redirect with success message
+      res.redirect('/admin-backup-list?message=backup_stored');
+
+    } catch (error) {
+      console.error('❌ Store backup error:', error);
+      
+      await AuditLog.logActivity(
+        req.session.admin.username,
+        'admin',
+        'database_backup_store_failed',
+        'system',
+        null,
+        `Store backup failed: ${error.message}`,
+        req.ip
+      );
+
+      res.redirect('/admin-backup-list?error=' + encodeURIComponent('Failed to store backup'));
+    }
+  });
+
+  /**
+   * List stored backups
+   */
+  listBackups = catchAsync(async (req, res) => {
+    const { message, error } = req.query;
+    
+    // Get list of stored backups
+    const backups = await BackupService.listLocalBackups();
+    
+    let notification = '';
+    if (message === 'backup_stored') {
+      notification = generateNotificationBanner('Backup stored successfully!', 'success');
+    } else if (error) {
+      notification = generateNotificationBanner(error, 'error');
+    }
+
+    const backupListContent = `
+      <div class="container">
+        ${notification}
+        
+        <div class="card mb-4">
+          <div class="card-header">
+            <h3 class="card-title heading">🔧 Backup Options</h3>
+          </div>
+          <div class="card-body">
+            <div class="d-flex gap-3 flex-wrap justify-center">
+              <a href="/admin-backup-database" class="btn btn-primary text-decoration-none">
+                📥 Download JSON Backup
+              </a>
+              <a href="/admin-backup-database-sql" class="btn btn-primary text-decoration-none">
+                📄 Download SQL Backup
+              </a>
+              <form method="post" action="/admin-store-backup" style="display: inline;">
+                ${req.csrfInput()}
+                <button type="submit" class="btn btn-success">
+                  💾 Create & Store on Server
+                </button>
+              </form>
+            </div>
+            <div class="alert alert-info mt-4 mb-0">
+              <strong>Format Guide:</strong>
+              <ul class="mb-0 mt-2">
+                <li><strong>JSON</strong>: Human-readable, easy to inspect and modify</li>
+                <li><strong>SQL</strong>: Can be imported directly via psql, more portable</li>
+                <li><strong>Server Storage</strong>: Keeps backup on Railway server (survives deployments)</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+        
+        <div class="card">
+          <div class="card-header">
+            <h3 class="card-title heading">📦 Stored Backups on Server</h3>
+          </div>
+          <div class="card-body">
+            ${backups.length === 0 ? `
+              <p class="text-center text-muted">No backups stored on server yet.</p>
+              <p class="text-center text-muted">Click "Create & Store on Server" above to create your first backup.</p>
+            ` : `
+              <div class="table-responsive">
+                <table class="table">
+                  <thead>
+                    <tr>
+                      <th>Filename</th>
+                      <th>Created</th>
+                      <th>Size</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    ${backups.map(backup => `
+                      <tr>
+                        <td><code>${backup.filename}</code></td>
+                        <td>${new Date(backup.created).toLocaleString('en-US', { timeZone: 'Asia/Hong_Kong' })}</td>
+                        <td>${Math.round(backup.size / 1024)} KB</td>
+                        <td>
+                          <a href="/admin-download-backup?filename=${encodeURIComponent(backup.filename)}" 
+                             class="btn btn-sm btn-primary">
+                            📥 Download
+                          </a>
+                        </td>
+                      </tr>
+                    `).join('')}
+                  </tbody>
+                </table>
+              </div>
+              <div class="alert alert-warning mt-4">
+                <strong>Storage Policy:</strong> Only the last 5 backups are kept on the server. Older backups are automatically deleted to save space.
+              </div>
+            `}
+          </div>
+        </div>
+
+        <div class="mt-6 text-center">
+          <a href="/admin-dashboard" class="btn btn-secondary text-decoration-none">
+            ← Back to Dashboard
+          </a>
+        </div>
+      </div>
+    `;
+
+    const html = renderAdminPage('Backup Management', backupListContent);
+    res.send(html);
+  });
+
+  /**
+   * Download a stored backup
+   */
+  downloadBackup = catchAsync(async (req, res) => {
+    const { filename } = req.query;
+    
+    if (!filename) {
+      return res.status(400).send('Filename required');
+    }
+
+    // Security: Validate filename to prevent directory traversal
+    if (filename.includes('..') || filename.includes('/') || !filename.startsWith('backup_')) {
+      return res.status(400).send('Invalid filename');
+    }
+
+    const fs = require('fs').promises;
+    const path = require('path');
+    
+    try {
+      const filepath = path.join(process.cwd(), 'backups', filename);
+      const content = await fs.readFile(filepath, 'utf8');
+      
+      // Log the download
+      await AuditLog.logActivity(
+        req.session.admin.username,
+        'admin',
+        'backup_downloaded',
+        'system',
+        null,
+        `Downloaded backup: ${filename}`,
+        req.ip
+      );
+      
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.send(content);
+      
+    } catch (error) {
+      console.error('Download backup error:', error);
+      res.status(404).send('Backup file not found');
     }
   });
 

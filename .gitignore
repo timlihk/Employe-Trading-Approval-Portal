@@ -35,5 +35,8 @@ Thumbs.db
 *.backup
 cookies.txt
 
+# Backup files (kept on server but not in git)
+backups/
+
 # Railway/deployment specific
 .railway/
