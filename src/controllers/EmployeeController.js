@@ -43,9 +43,12 @@ class EmployeeController {
           text-decoration: none;
           border: none;
           background: none;
-          padding: 0;
+          padding: 4px 8px;
+          border-radius: 4px;
+          transition: background-color 0.2s;
         }
         .help-toggle:hover {
+          background-color: #f0f0f0;
           text-decoration: underline;
         }
         .help-toggle::before {
@@ -64,9 +67,28 @@ class EmployeeController {
           background-color: #f8f9fa;
           border-radius: 4px;
           font-size: 0.875rem;
+          animation: slideDown 0.2s ease-out;
         }
         .help-content.show {
           display: block;
+        }
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .radio-option {
+          display: flex;
+          align-items: center;
+          cursor: pointer;
+        }
+        .radio-option input[type="radio"] {
+          margin-right: 0.75rem;
         }
       </style>
       <div class="card">
@@ -84,7 +106,7 @@ class EmployeeController {
                        class="form-control text-uppercase"
                        maxlength="20" pattern="[A-Za-z0-9.-]+">
                 <div class="collapsible-help">
-                  <button type="button" class="help-toggle" onclick="toggleHelp('ticker-help', this)">
+                  <button type="button" class="help-toggle" onclick="toggleHelp('ticker-help', this); return false;">
                     Show examples
                   </button>
                   <div id="ticker-help" class="help-content">
@@ -102,7 +124,7 @@ class EmployeeController {
                 <input type="number" name="shares" value="${prefilledShares}" required min="1" max="1000000"
                        class="form-control">
                 <div class="collapsible-help">
-                  <button type="button" class="help-toggle" onclick="toggleHelp('shares-help', this)">
+                  <button type="button" class="help-toggle" onclick="toggleHelp('shares-help', this); return false;">
                     Show details
                   </button>
                   <div id="shares-help" class="help-content">
@@ -115,14 +137,12 @@ class EmployeeController {
               <div>
                 <label class="form-label">Trading Type</label>
                 <div class="d-flex gap-6">
-                  <label class="d-flex align-items-center cursor-pointer">
-                    <input type="radio" name="trading_type" value="buy" ${prefilledType === 'buy' ? 'checked' : ''} 
-                           class="mr-2">
+                  <label class="radio-option">
+                    <input type="radio" name="trading_type" value="buy" ${prefilledType === 'buy' ? 'checked' : ''}>
                     <span class="text-success font-weight-600">BUY</span>
                   </label>
-                  <label class="d-flex align-items-center cursor-pointer">
-                    <input type="radio" name="trading_type" value="sell" ${prefilledType === 'sell' ? 'checked' : ''} 
-                           class="mr-2">
+                  <label class="radio-option" style="margin-left: 2rem;">
+                    <input type="radio" name="trading_type" value="sell" ${prefilledType === 'sell' ? 'checked' : ''}>
                     <span class="text-danger font-weight-600">SELL</span>
                   </label>
                 </div>
@@ -141,18 +161,26 @@ class EmployeeController {
       <script>
         function toggleHelp(helpId, button) {
           const helpContent = document.getElementById(helpId);
+          if (!helpContent) return;
+          
           const isExpanded = helpContent.classList.contains('show');
           
           if (isExpanded) {
             helpContent.classList.remove('show');
             button.classList.remove('expanded');
-            button.textContent = button.textContent.replace('Hide', 'Show');
+            button.innerHTML = button.innerHTML.replace('Hide', 'Show');
           } else {
             helpContent.classList.add('show');
             button.classList.add('expanded');
-            button.textContent = button.textContent.replace('Show', 'Hide');
+            button.innerHTML = button.innerHTML.replace('Show', 'Hide');
           }
+          
+          // Prevent form submission
+          return false;
         }
+        
+        // Ensure the function is available globally
+        window.toggleHelp = toggleHelp;
       </script>
     `;
 
