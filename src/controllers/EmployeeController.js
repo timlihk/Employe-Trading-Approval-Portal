@@ -45,11 +45,13 @@ class EmployeeController {
           background: none;
           padding: 4px 8px;
           border-radius: 4px;
-          transition: background-color 0.2s;
+          transition: all 0.2s;
+          user-select: none;
         }
         .help-toggle:hover {
           background-color: #f0f0f0;
           text-decoration: underline;
+          color: #0052a3;
         }
         .help-toggle::before {
           content: '▶';
@@ -83,12 +85,18 @@ class EmployeeController {
           }
         }
         .radio-option {
-          display: flex;
+          display: inline-flex;
           align-items: center;
           cursor: pointer;
+          padding: 0.25rem 0;
         }
         .radio-option input[type="radio"] {
-          margin-right: 0.75rem;
+          margin: 0;
+          margin-right: 0.5rem;
+          vertical-align: middle;
+        }
+        .radio-option span {
+          vertical-align: middle;
         }
       </style>
       <div class="card">
@@ -106,9 +114,9 @@ class EmployeeController {
                        class="form-control text-uppercase"
                        maxlength="20" pattern="[A-Za-z0-9.-]+">
                 <div class="collapsible-help">
-                  <button type="button" class="help-toggle" onclick="toggleHelp('ticker-help', this); return false;">
+                  <a href="javascript:void(0)" class="help-toggle" data-target="ticker-help">
                     Show examples
-                  </button>
+                  </a>
                   <div id="ticker-help" class="help-content">
                     <strong>US Stocks:</strong> AAPL, MSFT, GOOGL, TSLA, NVDA, AMZN<br>
                     <strong>Bond ISINs:</strong> US1234567890, GB0987654321, DE0123456789<br>
@@ -124,9 +132,9 @@ class EmployeeController {
                 <input type="number" name="shares" value="${prefilledShares}" required min="1" max="1000000"
                        class="form-control">
                 <div class="collapsible-help">
-                  <button type="button" class="help-toggle" onclick="toggleHelp('shares-help', this); return false;">
+                  <a href="javascript:void(0)" class="help-toggle" data-target="shares-help">
                     Show details
-                  </button>
+                  </a>
                   <div id="shares-help" class="help-content">
                     <strong>For Stocks:</strong> Enter the number of shares (1 - 1,000,000)<br>
                     <strong>For Bonds:</strong> Enter the face value in USD (e.g., 10000 for $10,000 face value). The system assumes USD currency for bonds.
@@ -159,28 +167,31 @@ class EmployeeController {
       </div>
 
       <script>
-        function toggleHelp(helpId, button) {
-          const helpContent = document.getElementById(helpId);
-          if (!helpContent) return;
-          
-          const isExpanded = helpContent.classList.contains('show');
-          
-          if (isExpanded) {
-            helpContent.classList.remove('show');
-            button.classList.remove('expanded');
-            button.innerHTML = button.innerHTML.replace('Hide', 'Show');
-          } else {
-            helpContent.classList.add('show');
-            button.classList.add('expanded');
-            button.innerHTML = button.innerHTML.replace('Show', 'Hide');
-          }
-          
-          // Prevent form submission
-          return false;
-        }
-        
-        // Ensure the function is available globally
-        window.toggleHelp = toggleHelp;
+        document.addEventListener('DOMContentLoaded', function() {
+          // Add click handlers to all help toggle links
+          document.querySelectorAll('.help-toggle').forEach(function(toggle) {
+            toggle.addEventListener('click', function(e) {
+              e.preventDefault();
+              
+              const targetId = this.getAttribute('data-target');
+              const helpContent = document.getElementById(targetId);
+              
+              if (!helpContent) return;
+              
+              const isExpanded = helpContent.classList.contains('show');
+              
+              if (isExpanded) {
+                helpContent.classList.remove('show');
+                this.classList.remove('expanded');
+                this.textContent = this.textContent.replace('Hide', 'Show');
+              } else {
+                helpContent.classList.add('show');
+                this.classList.add('expanded');
+                this.textContent = this.textContent.replace('Show', 'Hide');
+              }
+            });
+          });
+        });
       </script>
     `;
 
