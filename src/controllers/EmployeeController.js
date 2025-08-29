@@ -29,6 +29,46 @@ class EmployeeController {
 
     const dashboardContent = `
       ${banner}
+      <style>
+        .collapsible-help {
+          margin-top: 0.5rem;
+        }
+        .help-toggle {
+          color: #0066cc;
+          cursor: pointer;
+          font-size: 0.875rem;
+          display: inline-flex;
+          align-items: center;
+          gap: 0.25rem;
+          text-decoration: none;
+          border: none;
+          background: none;
+          padding: 0;
+        }
+        .help-toggle:hover {
+          text-decoration: underline;
+        }
+        .help-toggle::before {
+          content: '▶';
+          font-size: 0.75rem;
+          transition: transform 0.2s;
+          display: inline-block;
+        }
+        .help-toggle.expanded::before {
+          transform: rotate(90deg);
+        }
+        .help-content {
+          display: none;
+          margin-top: 0.5rem;
+          padding: 0.75rem;
+          background-color: #f8f9fa;
+          border-radius: 4px;
+          font-size: 0.875rem;
+        }
+        .help-content.show {
+          display: block;
+        }
+      </style>
       <div class="card">
         <div class="card-header">
           <h3 class="card-title heading">Submit Trading Request</h3>
@@ -43,14 +83,16 @@ class EmployeeController {
                        placeholder="e.g., AAPL, MSFT or US1234567890" 
                        class="form-control text-uppercase"
                        maxlength="20" pattern="[A-Za-z0-9.-]+">
-                <div class="mt-2">
-                  <small class="form-text">Enter a valid stock ticker symbol or bond ISIN. Examples:</small>
-                  <div class="mt-1 p-2 bg-muted border-radius font-sm">
+                <div class="collapsible-help">
+                  <button type="button" class="help-toggle" onclick="toggleHelp('ticker-help', this)">
+                    Show examples
+                  </button>
+                  <div id="ticker-help" class="help-content">
                     <strong>US Stocks:</strong> AAPL, MSFT, GOOGL, TSLA, NVDA, AMZN<br>
                     <strong>Bond ISINs:</strong> US1234567890, GB0987654321, DE0123456789<br>
-                    <strong>Hong Kong:</strong> 0700.HK (Tencent), 9988.HK (Alibaba), 2318.HK (Ping An)<br>
-                    <strong>UK:</strong> BARC.L (Barclays), LLOY.L (Lloyds), VOD.L (Vodafone)<br>
-                    <strong>Europe:</strong> ASML.AS (ASML), SAP.DE (SAP), NESN.SW (Nestle)
+                    <strong>Hong Kong:</strong> 0700.HK, 9988.HK, 2318.HK<br>
+                    <strong>UK:</strong> BARC.L, LLOY.L, VOD.L<br>
+                    <strong>Europe:</strong> ASML.AS, SAP.DE, NESN.SW
                   </div>
                 </div>
               </div>
@@ -59,8 +101,15 @@ class EmployeeController {
                 <label class="form-label">Number of Shares/Units</label>
                 <input type="number" name="shares" value="${prefilledShares}" required min="1" max="1000000"
                        class="form-control">
-                <small class="form-text">Enter the number of shares (1 - 1,000,000)</small>
-                <small class="text-info d-block mt-2">📋 <strong>For Bonds:</strong> Enter the face value in USD (e.g., 10000 for $10,000 face value). The system assumes USD currency for bonds.</small>
+                <div class="collapsible-help">
+                  <button type="button" class="help-toggle" onclick="toggleHelp('shares-help', this)">
+                    Show details
+                  </button>
+                  <div id="shares-help" class="help-content">
+                    <strong>For Stocks:</strong> Enter the number of shares (1 - 1,000,000)<br>
+                    <strong>For Bonds:</strong> Enter the face value in USD (e.g., 10000 for $10,000 face value). The system assumes USD currency for bonds.
+                  </div>
+                </div>
               </div>
               
               <div>
@@ -89,7 +138,22 @@ class EmployeeController {
         </div>
       </div>
 
-
+      <script>
+        function toggleHelp(helpId, button) {
+          const helpContent = document.getElementById(helpId);
+          const isExpanded = helpContent.classList.contains('show');
+          
+          if (isExpanded) {
+            helpContent.classList.remove('show');
+            button.classList.remove('expanded');
+            button.textContent = button.textContent.replace('Hide', 'Show');
+          } else {
+            helpContent.classList.add('show');
+            button.classList.add('expanded');
+            button.textContent = button.textContent.replace('Show', 'Hide');
+          }
+        }
+      </script>
     `;
 
     const html = renderEmployeePage('Employee Dashboard', dashboardContent, req.session.employee.name, req.session.employee.email);
