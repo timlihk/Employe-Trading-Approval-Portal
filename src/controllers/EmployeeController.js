@@ -33,6 +33,11 @@ class EmployeeController {
         .collapsible-help {
           margin-top: 0.5rem;
         }
+        /* Hide checkbox */
+        .help-checkbox {
+          display: none;
+        }
+        /* Style the label as a button */
         .help-toggle {
           color: #0066cc;
           cursor: pointer;
@@ -59,7 +64,18 @@ class EmployeeController {
           transition: transform 0.2s;
           display: inline-block;
         }
-        .help-toggle.expanded::before {
+        /* Toggle text visibility */
+        .toggle-text-hide {
+          display: none;
+        }
+        .help-checkbox:checked + .help-toggle .toggle-text-show {
+          display: none;
+        }
+        .help-checkbox:checked + .help-toggle .toggle-text-hide {
+          display: inline;
+        }
+        /* When checkbox is checked, rotate arrow */
+        .help-checkbox:checked + .help-toggle::before {
           transform: rotate(90deg);
         }
         .help-content {
@@ -69,10 +85,15 @@ class EmployeeController {
           background-color: #f8f9fa;
           border-radius: 4px;
           font-size: 0.875rem;
-          animation: slideDown 0.2s ease-out;
+          overflow: hidden;
+          max-height: 0;
+          transition: max-height 0.3s ease-out;
         }
-        .help-content.show {
+        /* Show content when checkbox is checked */
+        .help-checkbox:checked ~ .help-content {
           display: block;
+          max-height: 200px;
+          animation: slideDown 0.2s ease-out;
         }
         @keyframes slideDown {
           from {
@@ -114,10 +135,12 @@ class EmployeeController {
                        class="form-control text-uppercase"
                        maxlength="20" pattern="[A-Za-z0-9.-]+">
                 <div class="collapsible-help">
-                  <a href="javascript:void(0)" class="help-toggle" data-target="ticker-help">
-                    Show examples
-                  </a>
-                  <div id="ticker-help" class="help-content">
+                  <input type="checkbox" id="ticker-help-toggle" class="help-checkbox">
+                  <label for="ticker-help-toggle" class="help-toggle">
+                    <span class="toggle-text-show">Show examples</span>
+                    <span class="toggle-text-hide">Hide examples</span>
+                  </label>
+                  <div class="help-content">
                     <strong>US Stocks:</strong> AAPL, MSFT, GOOGL, TSLA, NVDA, AMZN<br>
                     <strong>Bond ISINs:</strong> US1234567890, GB0987654321, DE0123456789<br>
                     <strong>Hong Kong:</strong> 0700.HK, 9988.HK, 2318.HK<br>
@@ -132,10 +155,12 @@ class EmployeeController {
                 <input type="number" name="shares" value="${prefilledShares}" required min="1" max="1000000"
                        class="form-control">
                 <div class="collapsible-help">
-                  <a href="javascript:void(0)" class="help-toggle" data-target="shares-help">
-                    Show details
-                  </a>
-                  <div id="shares-help" class="help-content">
+                  <input type="checkbox" id="shares-help-toggle" class="help-checkbox">
+                  <label for="shares-help-toggle" class="help-toggle">
+                    <span class="toggle-text-show">Show details</span>
+                    <span class="toggle-text-hide">Hide details</span>
+                  </label>
+                  <div class="help-content">
                     <strong>For Stocks:</strong> Enter the number of shares (1 - 1,000,000)<br>
                     <strong>For Bonds:</strong> Enter the face value in USD (e.g., 10000 for $10,000 face value). The system assumes USD currency for bonds.
                   </div>
@@ -165,34 +190,6 @@ class EmployeeController {
           </form>
         </div>
       </div>
-
-      <script>
-        document.addEventListener('DOMContentLoaded', function() {
-          // Add click handlers to all help toggle links
-          document.querySelectorAll('.help-toggle').forEach(function(toggle) {
-            toggle.addEventListener('click', function(e) {
-              e.preventDefault();
-              
-              const targetId = this.getAttribute('data-target');
-              const helpContent = document.getElementById(targetId);
-              
-              if (!helpContent) return;
-              
-              const isExpanded = helpContent.classList.contains('show');
-              
-              if (isExpanded) {
-                helpContent.classList.remove('show');
-                this.classList.remove('expanded');
-                this.textContent = this.textContent.replace('Hide', 'Show');
-              } else {
-                helpContent.classList.add('show');
-                this.classList.add('expanded');
-                this.textContent = this.textContent.replace('Show', 'Hide');
-              }
-            });
-          });
-        });
-      </script>
     `;
 
     const html = renderEmployeePage('Employee Dashboard', dashboardContent, req.session.employee.name, req.session.employee.email);
