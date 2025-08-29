@@ -12,6 +12,56 @@ const handleValidationErrors = (req, res, next) => {
       query: req.query
     }, req);
     
+    // For web form submissions (not API calls), redirect with user-friendly error
+    if (req.path === '/preview-trade' || req.path === '/submit-trade') {
+      const firstError = errors.array()[0];
+      let errorMessage = '';
+      
+      if (firstError.path === 'ticker') {
+        const ticker = req.body.ticker || '';
+        errorMessage = `Invalid ticker format: "${ticker}". Please use only letters, numbers, dots, and hyphens (e.g., AAPL, 0700.HK, BARC.L)`;
+      } else if (firstError.path === 'shares') {
+        errorMessage = 'Invalid number of shares. Please enter a number between 1 and 1,000,000';
+      } else if (firstError.path === 'trading_type') {
+        errorMessage = 'Invalid trading type. Please select either BUY or SELL';
+      } else {
+        errorMessage = firstError.msg || 'Invalid input. Please check your form and try again';
+      }
+      
+      // Preserve form data in query params for re-population
+      const queryParams = new URLSearchParams({
+        error: errorMessage,
+        ticker: req.body.ticker || '',
+        shares: req.body.shares || '',
+        trading_type: req.body.trading_type || 'buy'
+      });
+      
+      return res.redirect(`/employee-dashboard?${queryParams.toString()}`);
+    }
+    
+    // For escalation form submissions
+    if (req.path.includes('/submit-escalation')) {
+      const firstError = errors.array()[0];
+      const errorMessage = firstError.path === 'escalation_reason' 
+        ? 'Escalation reason must be between 10 and 1000 characters. Please provide more detail.'
+        : firstError.msg || 'Invalid input. Please check your form and try again';
+      
+      return res.redirect(`/employee-history?error=${encodeURIComponent(errorMessage)}`);
+    }
+    
+    // For admin authentication
+    if (req.path === '/admin-authenticate') {
+      const firstError = errors.array()[0];
+      let errorMessage = 'Invalid credentials. Please try again.';
+      
+      if (firstError.path === 'username') {
+        errorMessage = 'Invalid username format. Please use only letters, numbers, and basic symbols.';
+      }
+      
+      return res.redirect(`/admin?error=${encodeURIComponent(errorMessage)}`);
+    }
+    
+    // For API calls, return JSON as before
     return res.status(400).json({
       error: 'Validation failed',
       details: errors.array().map(err => ({
