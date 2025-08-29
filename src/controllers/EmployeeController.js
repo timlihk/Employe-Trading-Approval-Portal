@@ -33,9 +33,12 @@ class EmployeeController {
         .collapsible-help {
           margin-top: 0.5rem;
         }
-        /* Hide checkbox */
+        /* Hide checkbox but make it accessible */
         .help-checkbox {
-          display: none;
+          position: absolute;
+          opacity: 0;
+          width: 0;
+          height: 0;
         }
         /* Style the label as a button */
         .help-toggle {
@@ -79,21 +82,20 @@ class EmployeeController {
           transform: rotate(90deg);
         }
         .help-content {
-          display: none;
           margin-top: 0.5rem;
           padding: 0.75rem;
           background-color: #f8f9fa;
           border-radius: 4px;
           font-size: 0.875rem;
           overflow: hidden;
-          max-height: 0;
-          transition: max-height 0.3s ease-out;
+          height: 0;
+          opacity: 0;
+          transition: height 0.3s ease-out, opacity 0.3s ease-out;
         }
         /* Show content when checkbox is checked */
         .help-checkbox:checked ~ .help-content {
-          display: block;
-          max-height: 200px;
-          animation: slideDown 0.2s ease-out;
+          height: auto;
+          opacity: 1;
         }
         @keyframes slideDown {
           from {
