@@ -40,51 +40,13 @@ class AuditLog extends BaseModel {
 
   static getAuditLogs(filters = {}) {
     return new Promise((resolve, reject) => {
+      // Build conditions using helper
+      const { conditions, params, paramIndex } = this._buildAuditConditions(filters);
+
       let query = 'SELECT * FROM audit_logs';
-      let params = [];
-      let conditions = [];
-      let paramIndex = 1;
-
-      if (filters.userEmail) {
-        conditions.push(`LOWER(user_email) = $${paramIndex}`);
-        params.push(filters.userEmail.toLowerCase());
-        paramIndex++;
-      }
-
-      if (filters.userType) {
-        conditions.push(`user_type = $${paramIndex}`);
-        params.push(filters.userType);
-        paramIndex++;
-      }
-
-      if (filters.action) {
-        conditions.push(`action = $${paramIndex}`);
-        params.push(filters.action);
-        paramIndex++;
-      }
-
-      if (filters.targetType) {
-        conditions.push(`target_type = $${paramIndex}`);
-        params.push(filters.targetType);
-        paramIndex++;
-      }
-
-      if (filters.startDate) {
-        conditions.push(`DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Hong_Kong') >= $${paramIndex}`);
-        params.push(filters.startDate);
-        paramIndex++;
-      }
-
-      if (filters.endDate) {
-        conditions.push(`DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Hong_Kong') <= $${paramIndex}`);
-        params.push(filters.endDate);
-        paramIndex++;
-      }
-
       if (conditions.length > 0) {
         query += ' WHERE ' + conditions.join(' AND ');
       }
-
       query += ' ORDER BY created_at DESC';
 
       // Check if pagination is requested
@@ -94,13 +56,13 @@ class AuditLog extends BaseModel {
         const page = filters.page || 1;
         const limit = filters.limit || 50;
         const offset = (page - 1) * limit;
-        
+
         query += ` LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
-        params.push(limit, offset);
+        const finalParams = [...params, limit, offset];
 
         Promise.all([
-          this.query(countQuery, params.slice(0, -2)), // Count without LIMIT/OFFSET
-          this.query(query, params) // Paginated results
+          this.query(countQuery, params), // Count uses original params (no LIMIT/OFFSET)
+          this.query(query, finalParams)  // Results with LIMIT/OFFSET
         ]).then(([countResult, rows]) => {
           const total = parseInt(countResult[0]?.total || 0, 10);
           resolve({
@@ -144,8 +106,11 @@ class AuditLog extends BaseModel {
 
   static getAuditSummary(filters = {}) {
     return new Promise((resolve, reject) => {
+      // Build conditions using helper
+      const { conditions, params } = this._buildAuditConditions(filters);
+
       let query = `
-        SELECT 
+        SELECT
           COUNT(*) as total_activities,
           COUNT(DISTINCT user_email) as unique_users,
           COUNT(CASE WHEN user_type = 'admin' THEN 1 END) as admin_activities,
@@ -156,21 +121,6 @@ class AuditLog extends BaseModel {
           COUNT(CASE WHEN action LIKE '%delete%' THEN 1 END) as delete_activities
         FROM audit_logs
       `;
-      let params = [];
-      let conditions = [];
-      let paramIndex = 1;
-
-      if (filters.startDate) {
-        conditions.push(`DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Hong_Kong') >= $${paramIndex}`);
-        params.push(filters.startDate);
-        paramIndex++;
-      }
-
-      if (filters.endDate) {
-        conditions.push(`DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Hong_Kong') <= $${paramIndex}`);
-        params.push(filters.endDate);
-        paramIndex++;
-      }
 
       if (conditions.length > 0) {
         query += ' WHERE ' + conditions.join(' AND ');
@@ -220,6 +170,51 @@ class AuditLog extends BaseModel {
       
       this.query(query, [cutoffDate.toISOString(), limit]).then(resolve).catch(reject);
     });
+  }
+
+  // Helper method to build WHERE conditions for audit log queries
+  static _buildAuditConditions(filters, initialParamIndex = 1) {
+    const conditions = [];
+    const params = [];
+    let paramIndex = initialParamIndex;
+
+    if (filters.userEmail) {
+      conditions.push(`LOWER(user_email) = $${paramIndex}`);
+      params.push(filters.userEmail.toLowerCase());
+      paramIndex++;
+    }
+
+    if (filters.userType) {
+      conditions.push(`user_type = $${paramIndex}`);
+      params.push(filters.userType);
+      paramIndex++;
+    }
+
+    if (filters.action) {
+      conditions.push(`action = $${paramIndex}`);
+      params.push(filters.action);
+      paramIndex++;
+    }
+
+    if (filters.targetType) {
+      conditions.push(`target_type = $${paramIndex}`);
+      params.push(filters.targetType);
+      paramIndex++;
+    }
+
+    if (filters.startDate) {
+      conditions.push(`DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Hong_Kong') >= $${paramIndex}`);
+      params.push(filters.startDate);
+      paramIndex++;
+    }
+
+    if (filters.endDate) {
+      conditions.push(`DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Hong_Kong') <= $${paramIndex}`);
+      params.push(filters.endDate);
+      paramIndex++;
+    }
+
+    return { conditions, params, paramIndex };
   }
 }
 

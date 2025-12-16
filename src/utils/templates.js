@@ -12,7 +12,7 @@ function renderBasePage(title, subtitle, content, navigation = '') {
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"></noscript>
-    <link rel="stylesheet" href="/styles-modern.css?v=${new Date().getTime()}">
+    <link rel="stylesheet" href="/styles-modern.min.css?v=${new Date().getTime()}">
 </head>
 <body>
     <div class="container">

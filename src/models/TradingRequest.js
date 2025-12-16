@@ -155,68 +155,14 @@ class TradingRequest extends BaseModel {
 
   static getFilteredHistory(filters, sortBy = 'id', sortOrder = 'DESC') {
     return new Promise((resolve, reject) => {
-      let sql = 'SELECT * FROM trading_requests WHERE 1=1';
-      const params = [];
-      let paramIndex = 1;
+      // Build filter clauses using helper
+      const { whereClause, params, paramIndex } = this._buildFilterClauses(filters);
 
-      if (filters.employee_email) {
-        sql += ` AND LOWER(employee_email) = $${paramIndex}`;
-        params.push(filters.employee_email.toLowerCase());
-        paramIndex++;
-      }
+      // Build sort clause using helper
+      const sortClause = this._buildSortClause(sortBy, sortOrder);
 
-      if (filters.start_date) {
-        // Convert to Hong Kong timezone (UTC+8) for date comparison
-        sql += ` AND DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Hong_Kong') >= $${paramIndex}`;
-        params.push(filters.start_date);
-        paramIndex++;
-      }
-
-      if (filters.end_date) {
-        // Convert to Hong Kong timezone (UTC+8) for date comparison
-        sql += ` AND DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Hong_Kong') <= $${paramIndex}`;
-        params.push(filters.end_date);
-        paramIndex++;
-      }
-
-      if (filters.ticker) {
-        sql += ` AND UPPER(ticker) = $${paramIndex}`;
-        params.push(filters.ticker.toUpperCase());
-        paramIndex++;
-      }
-
-      if (filters.trading_type) {
-        sql += ` AND LOWER(trading_type) = $${paramIndex}`;
-        params.push(filters.trading_type.toLowerCase());
-        paramIndex++;
-      }
-
-      if (filters.status) {
-        sql += ` AND LOWER(status) = $${paramIndex}`;
-        params.push(filters.status.toLowerCase());
-        paramIndex++;
-      }
-
-      if (filters.escalated !== undefined) {
-        sql += ` AND escalated = $${paramIndex}`;
-        params.push(filters.escalated);
-        paramIndex++;
-      }
-
-      if (filters.instrument_type) {
-        sql += ` AND LOWER(instrument_type) = $${paramIndex}`;
-        params.push(filters.instrument_type.toLowerCase());
-        paramIndex++;
-      }
-
-      // Add dynamic sorting
-      const validSortColumns = ['id', 'created_at', 'ticker', 'employee_email', 'total_value_usd'];
-      const validSortOrders = ['ASC', 'DESC'];
-      
-      const sortColumn = validSortColumns.includes(sortBy) ? sortBy : 'id';
-      const sortDirection = validSortOrders.includes(sortOrder.toUpperCase()) ? sortOrder.toUpperCase() : 'DESC';
-      
-      sql += ` ORDER BY ${sortColumn} ${sortDirection}`;
+      // Construct full SQL
+      let sql = `SELECT * FROM trading_requests WHERE 1=1${whereClause}${sortClause}`;
 
       // Check if pagination is requested
       if (filters.page !== undefined && filters.limit !== undefined) {
@@ -225,13 +171,13 @@ class TradingRequest extends BaseModel {
         const page = filters.page || 1;
         const limit = filters.limit || 25;
         const offset = (page - 1) * limit;
-        
+
         sql += ` LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
-        params.push(limit, offset);
+        const finalParams = [...params, limit, offset];
 
         Promise.all([
-          this.query(countSql, params.slice(0, -2)), // Count without LIMIT/OFFSET
-          this.query(sql, params) // Paginated results
+          this.query(countSql, params), // Count uses original params (no LIMIT/OFFSET)
+          this.query(sql, finalParams)  // Results with LIMIT/OFFSET
         ]).then(([countResult, rows]) => {
           const total = parseInt(countResult[0]?.total || 0, 10);
           resolve({
@@ -312,8 +258,11 @@ class TradingRequest extends BaseModel {
 
   static getHistorySummary(filters) {
     return new Promise((resolve, reject) => {
-      let sql = `
-        SELECT 
+      // Build filter clauses using helper
+      const { whereClause, params } = this._buildFilterClauses(filters);
+
+      const sql = `
+        SELECT
           COUNT(*) as total_requests,
           SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approved_count,
           SUM(CASE WHEN status = 'rejected' THEN 1 ELSE 0 END) as rejected_count,
@@ -324,31 +273,9 @@ class TradingRequest extends BaseModel {
           SUM(CASE WHEN trading_type = 'sell' AND total_value IS NOT NULL THEN total_value ELSE 0 END) as total_sell_value,
           COUNT(DISTINCT employee_email) as unique_employees,
           COUNT(DISTINCT ticker) as unique_stocks
-        FROM trading_requests 
-        WHERE 1=1
+        FROM trading_requests
+        WHERE 1=1${whereClause}
       `;
-      const params = [];
-      let paramIndex = 1;
-
-      if (filters.employee_email) {
-        sql += ` AND LOWER(employee_email) = $${paramIndex}`;
-        params.push(filters.employee_email.toLowerCase());
-        paramIndex++;
-      }
-
-      if (filters.start_date) {
-        // Convert to Hong Kong timezone (UTC+8) for date comparison
-        sql += ` AND DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Hong_Kong') >= $${paramIndex}`;
-        params.push(filters.start_date);
-        paramIndex++;
-      }
-
-      if (filters.end_date) {
-        // Convert to Hong Kong timezone (UTC+8) for date comparison
-        sql += ` AND DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Hong_Kong') <= $${paramIndex}`;
-        params.push(filters.end_date);
-        paramIndex++;
-      }
 
       this.get(sql, params).then(row => {
         resolve(row);
@@ -356,6 +283,75 @@ class TradingRequest extends BaseModel {
         reject(err);
       });
     });
+  }
+
+  // Helper method to build WHERE clause for filtered queries
+  static _buildFilterClauses(filters, initialParamIndex = 1) {
+    let whereClause = '';
+    const params = [];
+    let paramIndex = initialParamIndex;
+
+    if (filters.employee_email) {
+      whereClause += ` AND LOWER(employee_email) = $${paramIndex}`;
+      params.push(filters.employee_email.toLowerCase());
+      paramIndex++;
+    }
+
+    if (filters.start_date) {
+      // Convert to Hong Kong timezone (UTC+8) for date comparison
+      whereClause += ` AND DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Hong_Kong') >= $${paramIndex}`;
+      params.push(filters.start_date);
+      paramIndex++;
+    }
+
+    if (filters.end_date) {
+      whereClause += ` AND DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Hong_Kong') <= $${paramIndex}`;
+      params.push(filters.end_date);
+      paramIndex++;
+    }
+
+    if (filters.ticker) {
+      whereClause += ` AND UPPER(ticker) = $${paramIndex}`;
+      params.push(filters.ticker.toUpperCase());
+      paramIndex++;
+    }
+
+    if (filters.trading_type) {
+      whereClause += ` AND LOWER(trading_type) = $${paramIndex}`;
+      params.push(filters.trading_type.toLowerCase());
+      paramIndex++;
+    }
+
+    if (filters.status) {
+      whereClause += ` AND LOWER(status) = $${paramIndex}`;
+      params.push(filters.status.toLowerCase());
+      paramIndex++;
+    }
+
+    if (filters.escalated !== undefined) {
+      whereClause += ` AND escalated = $${paramIndex}`;
+      params.push(filters.escalated);
+      paramIndex++;
+    }
+
+    if (filters.instrument_type) {
+      whereClause += ` AND LOWER(instrument_type) = $${paramIndex}`;
+      params.push(filters.instrument_type.toLowerCase());
+      paramIndex++;
+    }
+
+    return { whereClause, params, paramIndex };
+  }
+
+  // Helper method to build ORDER BY clause
+  static _buildSortClause(sortBy, sortOrder) {
+    const validSortColumns = ['id', 'created_at', 'ticker', 'employee_email', 'total_value_usd'];
+    const validSortOrders = ['ASC', 'DESC'];
+
+    const sortColumn = validSortColumns.includes(sortBy) ? sortBy : 'id';
+    const sortDirection = validSortOrders.includes(sortOrder.toUpperCase()) ? sortOrder.toUpperCase() : 'DESC';
+
+    return ` ORDER BY ${sortColumn} ${sortDirection}`;
   }
 }
 

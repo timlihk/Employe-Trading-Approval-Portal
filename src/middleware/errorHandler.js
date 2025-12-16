@@ -87,7 +87,7 @@ const sendErrorProd = (err, req, res) => {
       <head>
           <meta charset="UTF-8">
           <title>Error - Trading Compliance Portal</title>
-          <link rel="stylesheet" href="/styles-modern.css">
+          <link rel="stylesheet" href="/styles-modern.min.css">
       </head>
       <body>
           <div class="container">
@@ -121,7 +121,7 @@ const sendErrorProd = (err, req, res) => {
     <head>
         <meta charset="UTF-8">
         <title>Error - Trading Compliance Portal</title>
-        <link rel="stylesheet" href="/styles-modern.css">
+        <link rel="stylesheet" href="/styles-modern.min.css">
     </head>
     <body>
         <div class="container">
