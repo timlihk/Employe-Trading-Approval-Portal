@@ -3166,3 +3166,78 @@ textarea.form-control {
   display: block;
   padding: 8px 0;
 }
+
+/* Collapsible Help Sections */
+.help-checkbox {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+/* Style the label as a button */
+.help-toggle {
+  color: #0066cc;
+  cursor: pointer;
+  font-size: 0.875rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  text-decoration: none;
+  border: none;
+  background: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s;
+  user-select: none;
+}
+
+.help-toggle:hover {
+  background-color: #f0f0f0;
+  text-decoration: underline;
+  color: #0052a3;
+}
+
+.help-toggle::before {
+  content: '▶';
+  font-size: 0.75rem;
+  transition: transform 0.2s;
+  display: inline-block;
+}
+
+/* Toggle text visibility */
+.toggle-text-hide {
+  display: none;
+}
+
+.help-checkbox:checked + .help-toggle .toggle-text-show {
+  display: none;
+}
+
+.help-checkbox:checked + .help-toggle .toggle-text-hide {
+  display: inline;
+}
+
+/* When checkbox is checked, rotate arrow */
+.help-checkbox:checked + .help-toggle::before {
+  transform: rotate(90deg);
+}
+
+.help-content {
+  margin-top: 0.5rem;
+  padding: 0.75rem;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  overflow: hidden;
+  height: 0;
+  opacity: 0;
+  transition: height 0.3s ease-out, opacity 0.3s ease-out;
+}
+
+/* Show content when checkbox is checked */
+.help-checkbox:checked ~ .help-content {
+  height: auto;
+  opacity: 1;
+  padding: 0.75rem;
+}
