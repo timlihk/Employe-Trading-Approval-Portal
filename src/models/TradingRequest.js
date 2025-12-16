@@ -102,15 +102,15 @@ class TradingRequest extends BaseModel {
     return this.getByUuid(uuid);
   }
 
-  static escalate(uuid, escalationReason) {
+  static escalate(uuid, escalationReason, status = 'pending') {
     return new Promise((resolve, reject) => {
       const sql = `
-        UPDATE trading_requests 
-        SET escalated = true, escalation_reason = $1, escalated_at = CURRENT_TIMESTAMP
+        UPDATE trading_requests
+        SET escalated = true, escalation_reason = $1, escalated_at = CURRENT_TIMESTAMP, status = $3
         WHERE uuid = $2
       `;
-      
-      this.run(sql, [escalationReason, uuid]).then(result => {
+
+      this.run(sql, [escalationReason, uuid, status]).then(result => {
         resolve({ changes: result.changes });
       }).catch(err => {
         reject(err);
@@ -140,21 +140,6 @@ class TradingRequest extends BaseModel {
     });
   }
 
-  static escalate(id, escalationReason) {
-    return new Promise((resolve, reject) => {
-      const sql = `
-        UPDATE trading_requests 
-        SET escalated = true, escalation_reason = $1, escalated_at = CURRENT_TIMESTAMP, status = 'pending'
-        WHERE id = $2
-      `;
-      
-      this.run(sql, [escalationReason, id]).then(result => {
-        resolve({ changes: result.changes });
-      }).catch(err => {
-        reject(err);
-      });
-    });
-  }
 
   static getUniqueTeamMembers() {
     return new Promise((resolve, reject) => {
