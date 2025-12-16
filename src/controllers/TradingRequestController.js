@@ -113,7 +113,7 @@ class TradingRequestController {
                     }
                   </span>
                 </div>${instrumentCurrency !== 'USD' ? `
-                <div class="d-flex justify-content-between p-3 rounded" style="background: #e7f3ff; border: 1px solid #b3d9ff;">
+                <div class="d-flex justify-content-between p-3 rounded alert-info">
                   <span class="font-weight-600">Exchange Rate:</span>
                   <span>1 ${instrumentCurrency} = $${exchangeRate.toFixed(4)} USD</span>
                 </div>` : ''}
@@ -134,9 +134,9 @@ class TradingRequestController {
                 
                 <div class="mb-4">
                   <label class="d-flex align-items-start gap-2 cursor-pointer">
-                    <input type="checkbox" name="compliance_declaration" value="confirmed" required 
-                           style="margin-top: 5px; width: 20px; height: 20px;">
-                    <span style="flex: 1; line-height: 1.6;">
+                    <input type="checkbox" name="compliance_declaration" value="confirmed" required
+                           class="icon-sm">
+                    <span class="flex-1 line-height-1-6">
                       <strong>Declaration:</strong><br><br>
                       I have read the Company's Personal Dealing Policy and believe that the above transaction(s) comply with its requirements. I declare that: (i) I will not buy or sell the investment(s) listed above on a day in which the Company has a pending "buy" or "sell" order in the same investment(s) until that order is executed or withdrawn; (ii) I will not buy or sell the investment(s) listed above within one trading day before (where I am aware of a forthcoming client transaction) or after trading in those investment(s) on behalf of a client unless the client order(s) have been fully executed and any conflicts of interest have been removed; (iii) I will not buy or sell the investment(s) listed above within one trading day before (where I am aware of a forthcoming recommendation) or after a recommendation on those investment(s) is made or proposed by the Company unless the client order(s) have been fully executed and any conflicts of interest have been removed; and (iv) the requested investment(s) will not result in a misuse of inside information or in any conflict of interest or impropriety with regards to any client.<br><br>
                       
@@ -273,35 +273,35 @@ class TradingRequestController {
             <h3 class="card-title heading">Trading Request Details</h3>
           </div>
           <div class="card-body p-6">
-            <div style="display: grid; gap: var(--spacing-4);">
-              <div style="display: flex; justify-content: space-between; padding: var(--spacing-3); background: var(--gs-neutral-100); border-radius: var(--radius);">
-                <span style="font-weight: 600;">Request ID:</span>
-                <span style="font-family: monospace;">${getDisplayId(request)}</span>
+            <div class="confirmation-grid">
+              <div class="confirmation-item">
+                <span class="confirmation-label">Request ID:</span>
+                <span class="confirmation-value text-monospace">${getDisplayId(request)}</span>
               </div>
-              <div style="display: flex; justify-content: space-between; padding: var(--spacing-3); background: var(--gs-neutral-100); border-radius: var(--radius);">
-                <span style="font-weight: 600;">Stock:</span>
+              <div class="confirmation-item">
+                <span class="confirmation-label">Stock:</span>
                 <span>${request.stock_name} (<strong>${request.ticker}</strong>)</span>
               </div>
-              <div style="display: flex; justify-content: space-between; padding: var(--spacing-3); background: var(--gs-neutral-100); border-radius: var(--radius);">
-                <span style="font-weight: 600;">Action:</span>
-                <span style="text-transform: uppercase; font-weight: 600; color: ${request.trading_type === 'buy' ? '#28a745' : '#dc3545'};">${request.trading_type}</span>
+              <div class="confirmation-item">
+                <span class="confirmation-label">Action:</span>
+                <span class="${request.trading_type === 'buy' ? 'confirmation-status-buy' : 'confirmation-status-sell'}">${request.trading_type}</span>
               </div>
-              <div style="display: flex; justify-content: space-between; padding: var(--spacing-3); background: var(--gs-neutral-100); border-radius: var(--radius);">
-                <span style="font-weight: 600;">Shares:</span>
-                <span style="font-weight: 600;">${parseInt(request.shares).toLocaleString()}</span>
+              <div class="confirmation-item">
+                <span class="confirmation-label">Shares:</span>
+                <span class="confirmation-value">${parseInt(request.shares).toLocaleString()}</span>
               </div>
-              <div style="display: flex; justify-content: space-between; padding: var(--spacing-3); background: var(--gs-neutral-100); border-radius: var(--radius);">
-                <span style="font-weight: 600;">Estimated Total:</span>
-                <span style="font-weight: 600;">$${(request.total_value_usd || request.total_value || 0).toLocaleString('en-US', {minimumFractionDigits: 2})} USD</span>
+              <div class="confirmation-item">
+                <span class="confirmation-label">Estimated Total:</span>
+                <span class="confirmation-value">$${(request.total_value_usd || request.total_value || 0).toLocaleString('en-US', {minimumFractionDigits: 2})} USD</span>
               </div>
-              <div style="display: flex; justify-content: space-between; padding: var(--spacing-3); background: var(--gs-neutral-100); border-radius: var(--radius);">
-                <span style="font-weight: 600;">Status:</span>
-                <span style="color: ${statusColor}; font-weight: 600;">${statusText}</span>
+              <div class="confirmation-item">
+                <span class="confirmation-label">Status:</span>
+                <span class="${request.status === 'approved' ? 'status-approved' : request.status === 'rejected' ? 'status-rejected' : 'status-pending'}">${statusText}</span>
               </div>
               ${request.rejection_reason ? `
-              <div style="padding: var(--spacing-3); background: #f8d7da; border: 1px solid #f5c6cb; border-radius: var(--radius);">
-                <span style="font-weight: 600; color: #721c24;">Rejection Reason:</span>
-                <p style="margin: var(--spacing-1) 0 0 0; color: #721c24;">${request.rejection_reason}</p>
+              <div class="alert-danger">
+                <span class="text-danger">Rejection Reason:</span>
+                <p class="mt-1 mb-0 text-danger">${request.rejection_reason}</p>
               </div>` : ''}
             </div>
           </div>
@@ -314,14 +314,14 @@ class TradingRequestController {
           </div>
           <div class="card-body p-0">
             <div class="p-6 pb-0">
-              <p style="margin-bottom: var(--spacing-4); color: var(--gs-neutral-700);">
+              <p class="mb-4 text-gray-600">
                 If you have a valid business reason for this trade, you can escalate this request for admin review.
               </p>
             </div>
             <form method="post" action="/submit-escalation">
               ${req.csrfInput()}
               <input type="hidden" name="requestId" value="${request.uuid}">
-              <div style="padding: 0 var(--spacing-6) var(--spacing-4) var(--spacing-6);">
+              <div class="px-6 pb-4">
                 <textarea name="escalation_reason" required rows="4" 
                          placeholder="Please provide a detailed business justification for this trade..." 
                          class="form-control resize-vertical"></textarea>

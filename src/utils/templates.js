@@ -152,7 +152,7 @@ function generateNotificationBanner(query) {
   const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
 
   return `
-        <div class="border rounded p-4 mb-6" style="background: ${bgColor}; border-color: ${borderColor}; color: ${textColor};">
+        <div class="border rounded p-4 mb-6 ${type === 'success' ? 'alert-success' : type === 'error' ? 'alert-error' : 'alert-info'}">
             <strong>${icon} ${message}</strong>
         </div>`;
 }

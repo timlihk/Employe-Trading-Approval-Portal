@@ -176,7 +176,7 @@ class EmployeeController {
                     <input type="radio" name="trading_type" value="buy" ${prefilledType === 'buy' ? 'checked' : ''}>
                     <span class="text-success font-weight-600">BUY</span>
                   </label>
-                  <label class="radio-option" style="margin-left: 2rem;">
+                  <label class="radio-option ml-4">
                     <input type="radio" name="trading_type" value="sell" ${prefilledType === 'sell' ? 'checked' : ''}>
                     <span class="text-danger font-weight-600">SELL</span>
                   </label>
@@ -727,7 +727,7 @@ function generateSortingControls(baseUrl, currentSortBy, currentSortOrder, query
         `<input type="hidden" name="${key}" value="${value || ''}">`
       ).join('')}
       
-      <span class="font-weight-600" style="color: var(--gs-neutral-700);">Sort by:</span>
+      <span class="font-weight-600 text-gray-600">Sort by:</span>
       <select name="sort_by" class="form-control-sm py-2">
         <option value="created_at" ${currentSortBy === 'created_at' ? 'selected' : ''}>Date</option>
         <option value="ticker" ${currentSortBy === 'ticker' ? 'selected' : ''}>Ticker</option>
