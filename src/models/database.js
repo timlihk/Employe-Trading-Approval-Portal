@@ -1,4 +1,5 @@
 const { Pool } = require('pg');
+const { metrics } = require('../utils/metrics');
 
 class Database {
   constructor() {
@@ -16,6 +17,7 @@ class Database {
     }
     
     this.init();
+    metrics.database.connectionStatus = this.pool ? 'connected' : 'disconnected';
   }
 
   async init() {
@@ -146,8 +148,19 @@ class Database {
     if (!this.pool) {
       throw new Error('Database not available - PostgreSQL connection not established');
     }
-    const result = await this.pool.query(sql, params);
-    return result.rows;
+    metrics.database.queryCount++;
+    const startTime = Date.now();
+    try {
+      const result = await this.pool.query(sql, params);
+      const duration = Date.now() - startTime;
+      if (duration > 1000) { // Slow query threshold: 1 second
+        metrics.database.slowQueryCount++;
+      }
+      return result.rows;
+    } catch (error) {
+      metrics.database.errorCount++;
+      throw error;
+    }
   }
 
   // PostgreSQL run method for INSERT/UPDATE/DELETE
@@ -155,14 +168,26 @@ class Database {
     if (!this.pool) {
       throw new Error('Database not available - PostgreSQL connection not established');
     }
-    // For INSERT, return UUID instead of numeric ID
-    if (sql.toLowerCase().includes('insert')) {
-      sql += ' RETURNING uuid';
+    metrics.database.queryCount++;
+    const startTime = Date.now();
+    try {
+      // For INSERT, return UUID instead of numeric ID
+      if (sql.toLowerCase().includes('insert')) {
+        sql += ' RETURNING uuid';
+      }
       const result = await this.pool.query(sql, params);
-      return { uuid: result.rows[0]?.uuid, changes: result.rowCount };
-    } else {
-      const result = await this.pool.query(sql, params);
-      return { uuid: null, changes: result.rowCount };
+      const duration = Date.now() - startTime;
+      if (duration > 1000) { // Slow query threshold: 1 second
+        metrics.database.slowQueryCount++;
+      }
+      if (sql.toLowerCase().includes('insert')) {
+        return { uuid: result.rows[0]?.uuid, changes: result.rowCount };
+      } else {
+        return { uuid: null, changes: result.rowCount };
+      }
+    } catch (error) {
+      metrics.database.errorCount++;
+      throw error;
     }
   }
 
@@ -171,8 +196,19 @@ class Database {
     if (!this.pool) {
       throw new Error('Database not available - PostgreSQL connection not established');
     }
-    const result = await this.pool.query(sql, params);
-    return result.rows[0] || null;
+    metrics.database.queryCount++;
+    const startTime = Date.now();
+    try {
+      const result = await this.pool.query(sql, params);
+      const duration = Date.now() - startTime;
+      if (duration > 1000) { // Slow query threshold: 1 second
+        metrics.database.slowQueryCount++;
+      }
+      return result.rows[0] || null;
+    } catch (error) {
+      metrics.database.errorCount++;
+      throw error;
+    }
   }
 
   // Get the pool for direct usage if needed

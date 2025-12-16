@@ -9,6 +9,7 @@ const pgSessionFactory = require('connect-pg-simple');
 
 // Security and logging utilities
 const { logger, addRequestId, logRequest, logSecurityEvent } = require('./utils/logger');
+const { metrics } = require('./utils/metrics');
 const { generalLimiter, authLimiter, adminActionLimiter } = require('./middleware/security');
 const { globalErrorHandler, handleNotFound, catchAsync, AppError } = require('./middleware/errorHandler');
 const { validateTradingRequest, validateAdminAuth } = require('./middleware/validation');
@@ -96,40 +97,6 @@ function getBaseUrl(req) {
   return process.env.FRONTEND_URL || 'http://localhost:3001';
 }
 
-function createMetrics() {
-  return { 
-    startTime: Date.now(), 
-    requests: 0, 
-    errors: 0,
-    latencyBuckets: {
-      under50ms: 0,
-      under200ms: 0, 
-      under1000ms: 0,
-      over1000ms: 0
-    },
-    externalApis: {
-      tickerValidation: {
-        cacheHits: 0,
-        cacheMisses: 0,
-        apiCalls: 0,
-        apiErrors: 0,
-        circuitBreakerOpens: 0
-      },
-      currencyExchange: {
-        cacheHits: 0,
-        cacheMisses: 0,
-        apiCalls: 0,
-        apiErrors: 0,
-        circuitBreakerOpens: 0
-      }
-    },
-    sessionStore: {
-      fallbackEvents: 0,
-      connectionErrors: 0
-    }
-  };
-}
-const metrics = createMetrics();
 
 // Middleware functions
 function requireAdmin(req, res, next) {
@@ -422,6 +389,7 @@ app.get('/metrics', async (req, res) => {
       }
     },
     sessionStore: metrics.sessionStore,
+    database: metrics.database,
     startedAt: new Date(metrics.startTime).toISOString(),
     now: new Date(now).toISOString()
   });

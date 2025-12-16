@@ -6,14 +6,17 @@ class TradingRequest extends BaseModel {
     return 'trading_requests';
   }
   static async create(requestData) {
+    let sql;
+    let params;
+
     try {
-      const { 
-        employee_email, 
-        stock_name, 
-        ticker, 
-        shares, 
-        share_price, 
-        total_value, 
+      const {
+        employee_email,
+        stock_name,
+        ticker,
+        shares,
+        share_price,
+        total_value,
         currency = 'USD',
         share_price_usd,
         total_value_usd,
@@ -22,51 +25,51 @@ class TradingRequest extends BaseModel {
         estimated_value, // For server-side simple requests
         instrument_type = 'equity', // Default to equity if not specified
       } = requestData;
-      
+
       // Generate UUID for the new trading request
       const uuid = uuidv4();
-      
+
       // Handle both old complex format and new simple format
       const finalSharePrice = share_price || (estimated_value ? (estimated_value / shares) : null);
       const finalTotalValue = total_value || estimated_value;
-      
+
       // UUID-only: No need for numeric ID
-      const sql = `
+      sql = `
         INSERT INTO trading_requests (
-          uuid, employee_email, stock_name, ticker, shares, 
-          share_price, total_value, currency, share_price_usd, 
-          total_value_usd, exchange_rate, trading_type, status, 
+          uuid, employee_email, stock_name, ticker, shares,
+          share_price, total_value, currency, share_price_usd,
+          total_value_usd, exchange_rate, trading_type, status,
           rejection_reason, processed_at
         )
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
         RETURNING uuid
       `;
-      
-      const params = [
+
+      params = [
         uuid,
-        employee_email.toLowerCase(), stock_name, ticker, shares, 
+        employee_email.toLowerCase(), stock_name, ticker, shares,
         finalSharePrice, finalTotalValue, currency, share_price_usd || finalSharePrice,
         total_value_usd || finalTotalValue, exchange_rate || 1, trading_type,
         requestData.status || 'pending',
         requestData.rejection_reason || null,
         requestData.processed_at || new Date().toISOString()
       ];
-      
+
       // Use query() instead of run() to avoid double RETURNING clause
       const result = await this.query(sql, params);
-      
+
       // PostgreSQL returns array of rows, get the first one
       const insertedRow = Array.isArray(result) ? result[0] : result.rows?.[0];
-      
+
       if (!insertedRow) {
         throw new Error('Failed to create trading request - no result returned');
       }
-      
-      return { 
+
+      return {
         uuid: insertedRow.uuid,
-        ...requestData 
+        ...requestData
       };
-      
+
     } catch (error) {
       console.error('TradingRequest.create error:', {
         message: error.message,
