@@ -178,41 +178,21 @@ class AuditLog extends BaseModel {
     const params = [];
     let paramIndex = initialParamIndex;
 
-    if (filters.userEmail) {
-      conditions.push(`LOWER(user_email) = $${paramIndex}`);
-      params.push(filters.userEmail.toLowerCase());
-      paramIndex++;
-    }
+    const addCondition = (field, value, operator = '=', transform = null) => {
+      if (value !== undefined && value !== null && value !== '') {
+        let conditionValue = transform ? transform(value) : value;
+        conditions.push(`${field} ${operator} $${paramIndex}`);
+        params.push(conditionValue);
+        paramIndex++;
+      }
+    };
 
-    if (filters.userType) {
-      conditions.push(`user_type = $${paramIndex}`);
-      params.push(filters.userType);
-      paramIndex++;
-    }
-
-    if (filters.action) {
-      conditions.push(`action = $${paramIndex}`);
-      params.push(filters.action);
-      paramIndex++;
-    }
-
-    if (filters.targetType) {
-      conditions.push(`target_type = $${paramIndex}`);
-      params.push(filters.targetType);
-      paramIndex++;
-    }
-
-    if (filters.startDate) {
-      conditions.push(`DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Hong_Kong') >= $${paramIndex}`);
-      params.push(filters.startDate);
-      paramIndex++;
-    }
-
-    if (filters.endDate) {
-      conditions.push(`DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Hong_Kong') <= $${paramIndex}`);
-      params.push(filters.endDate);
-      paramIndex++;
-    }
+    addCondition('LOWER(user_email)', filters.userEmail, '=', (v) => v.toLowerCase());
+    addCondition('user_type', filters.userType);
+    addCondition('action', filters.action);
+    addCondition('target_type', filters.targetType);
+    addCondition(`DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Hong_Kong')`, filters.startDate, '>=');
+    addCondition(`DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Hong_Kong')`, filters.endDate, '<=');
 
     return { conditions, params, paramIndex };
   }

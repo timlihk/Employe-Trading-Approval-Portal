@@ -230,84 +230,171 @@ class TradingRequestService {
   }
 
   /**
+   * Validates ticker or ISIN format and fetches market data
+   * @private
+   */
+  async _validateAndFetchTicker(ticker) {
+    const validation = await this.validateTickerOrISIN(ticker.toUpperCase());
+    if (!validation.isValid) {
+      const instrumentType = validation.instrument_type === 'bond' ? 'ISIN' : 'ticker';
+      throw new AppError(`Invalid ${instrumentType}: ${ticker}. ${validation.error}`, 400);
+    }
+    return validation;
+  }
+
+  /**
+   * Calculates estimated values for a trading request
+   * @private
+   */
+  _calculateEstimatedValues(validation, shares) {
+    const instrumentType = validation.instrument_type || 'equity';
+    const sharePrice = instrumentType === 'bond' ? 1 : (validation.regularMarketPrice || validation.price || 100);
+    const estimatedValue = sharePrice * parseInt(shares);
+
+    return {
+      instrumentType,
+      sharePrice,
+      estimatedValue,
+      instrumentName: validation.longName || validation.name || `${instrumentType} ${validation.ticker || 'UNKNOWN'}`,
+      currency: validation.currency || 'USD'
+    };
+  }
+
+  /**
+   * Converts currency to USD if needed
+   * @private
+   */
+  async _convertToUSDIfNeeded(amount, currency, shares) {
+    if (currency === 'USD') {
+      return {
+        usdAmount: amount,
+        totalValueUSD: amount * parseInt(shares),
+        exchangeRate: 1
+      };
+    }
+
+    const conversion = await CurrencyService.convertToUSD(amount, currency);
+    return {
+      usdAmount: conversion.usdAmount,
+      totalValueUSD: conversion.usdAmount * parseInt(shares),
+      exchangeRate: conversion.exchangeRate
+    };
+  }
+
+  /**
+   * Determines initial status and rejection reason based on restricted list
+   * @private
+   */
+  _determineInitialStatus(isRestricted, ticker, instrumentType, tradingType) {
+    if (isRestricted) {
+      const instType = instrumentType === 'bond' ? 'bond' : 'stock';
+      return {
+        initialStatus: 'rejected',
+        rejectionReason: `${ticker.toUpperCase()} is on the restricted trading list. This ${instType} request has been automatically rejected. You may escalate with a business justification if needed.`
+      };
+    }
+
+    return {
+      initialStatus: 'approved',
+      rejectionReason: null
+    };
+  }
+
+  /**
+   * Creates trading request data object
+   * @private
+   */
+  _createTradingRequestData(requestData, employeeEmail, values, validation) {
+    const { ticker, shares, trading_type } = requestData;
+    const { instrumentName, sharePrice, estimatedValue, currency, instrumentType } = values;
+
+    return {
+      employee_email: employeeEmail.toLowerCase(),
+      stock_name: instrumentName,
+      ticker: ticker.toUpperCase(),
+      shares: parseInt(shares),
+      share_price: sharePrice,
+      total_value: estimatedValue,
+      currency,
+      share_price_usd: values.sharePriceUSD || sharePrice,
+      total_value_usd: values.totalValueUSD || estimatedValue,
+      exchange_rate: values.exchangeRate || 1,
+      trading_type: trading_type.toLowerCase(),
+      instrument_type: instrumentType,
+      status: values.initialStatus,
+      rejection_reason: values.rejectionReason,
+      processed_at: new Date().toISOString()
+    };
+  }
+
+  /**
+   * Logs trading request creation activity
+   * @private
+   */
+  async _logTradingRequestCreation(employeeEmail, request, ticker, shares, tradingType, instrumentType, isRestricted, ipAddress) {
+    const logAction = isRestricted ? 'create_rejected_trading_request' : 'create_approved_trading_request';
+    const unitType = instrumentType === 'bond' ? 'units' : 'shares';
+    const instType = instrumentType === 'bond' ? 'bond' : 'stock';
+    const logDetails = isRestricted
+      ? `Created ${tradingType} request for ${shares} ${unitType} of ${ticker.toUpperCase()} - AUTOMATICALLY REJECTED (restricted ${instType})`
+      : `Created ${tradingType} request for ${shares} ${unitType} of ${ticker.toUpperCase()} - AUTOMATICALLY APPROVED`;
+
+    if (database.getPool()) {
+      try {
+        await this.logActivity(
+          employeeEmail,
+          'employee',
+          logAction,
+          'trading_request',
+          request.uuid,
+          logDetails,
+          ipAddress
+        );
+      } catch (error) {
+        logger.warn('Could not log audit activity', { error: error.message });
+      }
+    }
+  }
+
+  /**
    * Create a trading request with validation
    */
   async createTradingRequest(requestData, employeeEmail, ipAddress = null) {
     const { ticker, shares, trading_type } = requestData;
-    
-    try {
-      // Validate ticker or ISIN
-      const validation = await this.validateTickerOrISIN(ticker.toUpperCase());
-      if (!validation.isValid) {
-        const instrumentType = validation.instrument_type === 'bond' ? 'ISIN' : 'ticker';
-        throw new AppError(`Invalid ${instrumentType}: ${ticker}. ${validation.error}`, 400);
-      }
 
-      // Check if instrument is restricted
+    try {
+      // Step 1: Validate ticker/ISIN
+      const validation = await this._validateAndFetchTicker(ticker);
+
+      // Step 2: Check if instrument is restricted
       const isRestricted = await this.checkRestrictedStatus(ticker.toUpperCase());
 
-      // Calculate estimated values
-      // For bonds, assume unit price = $1 USD (face value). For stocks, use market price
-      const instrumentType = validation.instrument_type || 'equity';
-      const sharePrice = instrumentType === 'bond' ? 1 : (validation.regularMarketPrice || validation.price || 100);
-      const estimatedValue = sharePrice * parseInt(shares);
-      
-      // Convert to USD if needed
-      const currency = validation.currency || 'USD';
-      const instrumentName = validation.longName || validation.name || `${instrumentType} ${ticker.toUpperCase()}`;
-      let sharePriceUSD = sharePrice;
-      let totalValueUSD = estimatedValue;
-      let exchangeRate = 1;
-      
-      if (currency !== 'USD') {
-        const conversion = await CurrencyService.convertToUSD(sharePrice, currency);
-        sharePriceUSD = conversion.usdAmount;
-        totalValueUSD = sharePriceUSD * parseInt(shares);
-        exchangeRate = conversion.exchangeRate;
-        
+      // Step 3: Calculate estimated values
+      const values = this._calculateEstimatedValues(validation, shares);
+
+      // Step 4: Convert to USD if needed
+      const conversion = await this._convertToUSDIfNeeded(values.sharePrice, values.currency, shares);
+      values.sharePriceUSD = conversion.usdAmount;
+      values.totalValueUSD = conversion.totalValueUSD;
+      values.exchangeRate = conversion.exchangeRate;
+
+      if (values.currency !== 'USD') {
         logger.info('Foreign currency converted to USD', {
           ticker: ticker.toUpperCase(),
-          originalCurrency: currency,
-          originalPrice: sharePrice,
-          usdPrice: sharePriceUSD,
-          exchangeRate: exchangeRate
+          originalCurrency: values.currency,
+          originalPrice: values.sharePrice,
+          usdPrice: values.sharePriceUSD,
+          exchangeRate: values.exchangeRate
         });
       }
-      
-      // Determine initial status and rejection reason based on restricted list
-      let initialStatus = 'pending';
-      let rejectionReason = null;
-      
-      if (isRestricted) {
-        // Automatically reject restricted instruments
-        initialStatus = 'rejected';
-        const instType = instrumentType === 'bond' ? 'bond' : 'stock';
-        rejectionReason = `${ticker.toUpperCase()} is on the restricted trading list. This ${instType} request has been automatically rejected. You may escalate with a business justification if needed.`;
-      } else {
-        // Automatically approve non-restricted instruments
-        initialStatus = 'approved';
-      }
-      
-      // Create trading request with automatic status
-      const tradingRequestData = {
-        employee_email: employeeEmail.toLowerCase(),
-        stock_name: instrumentName,
-        ticker: ticker.toUpperCase(),
-        shares: parseInt(shares),
-        share_price: sharePrice,
-        total_value: estimatedValue,
-        currency: currency,
-        share_price_usd: sharePriceUSD,
-        total_value_usd: totalValueUSD,
-        exchange_rate: exchangeRate,
-        trading_type: trading_type.toLowerCase(),
-        instrument_type: instrumentType,
-        estimated_value: totalValueUSD, // Use USD value for estimated_value
-        status: initialStatus,
-        rejection_reason: rejectionReason,
-        processed_at: new Date().toISOString()
-      };
 
+      // Step 5: Determine initial status
+      const statusResult = this._determineInitialStatus(isRestricted, ticker, values.instrumentType, trading_type);
+
+      // Step 6: Create trading request data
+      const tradingRequestData = this._createTradingRequestData(requestData, employeeEmail, { ...values, ...statusResult }, validation);
+
+      // Step 7: Save to database
       let request;
       if (!database.getPool()) {
         // Use mock data service for local testing
@@ -316,30 +403,8 @@ class TradingRequestService {
         request = await TradingRequest.create(tradingRequestData);
       }
 
-      // Log the creation with appropriate action
-      const logAction = isRestricted ? 'create_rejected_trading_request' : 'create_approved_trading_request';
-      const unitType = instrumentType === 'bond' ? 'units' : 'shares';
-      const instType = instrumentType === 'bond' ? 'bond' : 'stock';
-      const logDetails = isRestricted 
-        ? `Created ${trading_type} request for ${shares} ${unitType} of ${ticker.toUpperCase()} - AUTOMATICALLY REJECTED (restricted ${instType})`
-        : `Created ${trading_type} request for ${shares} ${unitType} of ${ticker.toUpperCase()} - AUTOMATICALLY APPROVED`;
-        
-      // Log activity if database is available
-      if (database.getPool()) {
-        try {
-          await AuditLog.logActivity(
-            employeeEmail,
-            'employee',
-            logAction,
-            'trading_request',
-            request.uuid,
-            logDetails,
-            ipAddress
-          );
-        } catch (error) {
-          logger.warn('Could not log audit activity', { error: error.message });
-        }
-      }
+      // Step 8: Log activity
+      await this._logTradingRequestCreation(employeeEmail, request, ticker, shares, trading_type, values.instrumentType, isRestricted, ipAddress);
 
       logger.info('Trading request created with automatic processing', {
         requestId: request.uuid,
@@ -347,11 +412,11 @@ class TradingRequestService {
         ticker: ticker.toUpperCase(),
         shares,
         trading_type,
-        originalValue: estimatedValue,
-        originalCurrency: currency,
-        estimatedValueUSD: totalValueUSD,
-        exchangeRate: exchangeRate,
-        status: initialStatus,
+        originalValue: values.estimatedValue,
+        originalCurrency: values.currency,
+        estimatedValueUSD: values.totalValueUSD,
+        exchangeRate: values.exchangeRate,
+        status: statusResult.initialStatus,
         isRestricted
       });
 
@@ -360,20 +425,20 @@ class TradingRequestService {
         tickerInfo: validation,
         isRestricted,
         autoProcessed: true,
-        instrumentType
+        instrumentType: values.instrumentType
       };
-      
+
     } catch (error) {
       if (error instanceof AppError) {
         throw error;
       }
-      
+
       logger.error('Error creating trading request', {
         employee: employeeEmail,
         ticker,
         error: error.message
       });
-      
+
       throw new AppError('Unable to create trading request', 500);
     }
   }
