@@ -3072,3 +3072,97 @@ textarea.form-control {
 .ml-4 {
   margin-left: var(--spacing-4);
 }
+
+/* Text alignment */
+.text-center {
+  text-align: center;
+}
+
+.text-left {
+  text-align: left;
+}
+
+.text-right {
+  text-align: right;
+}
+
+/* Font weight utilities */
+.font-weight-600 {
+  font-weight: 600;
+}
+
+/* Font size utilities */
+.text-xs {
+  font-size: 12px;
+}
+
+.text-sm {
+  font-size: 14px;
+}
+
+/* Width and overflow utilities */
+.max-w-200 {
+  max-width: 200px;
+}
+
+.break-word {
+  word-break: break-word;
+}
+
+/* Display utilities */
+.d-inline {
+  display: inline;
+}
+
+.d-inline-block {
+  display: inline-block;
+}
+
+/* Table cell styling */
+.td-center {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.td-nowrap {
+  white-space: nowrap;
+}
+
+/* Form control sizes (admin) */
+.form-control-xs {
+  padding: 6px 10px;
+  font-size: 14px;
+  border-radius: 4px;
+}
+
+.btn-xs {
+  padding: 6px 15px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Sort controls */
+.sort-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  flex-wrap: wrap;
+  font-size: 14px;
+}
+
+.sort-controls-sm {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 14px;
+}
+
+/* Table header links */
+.th-link {
+  text-decoration: none;
+  color: inherit;
+  font-weight: 600;
+  display: block;
+  padding: 8px 0;
+}

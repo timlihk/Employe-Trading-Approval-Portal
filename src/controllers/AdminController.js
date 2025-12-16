@@ -506,11 +506,11 @@ class AdminController {
     // Build table rows
     const stockRows = restrictedStocks.map(stock => `
       <tr>
-        <td style="text-align: center; font-weight: 600;">${stock.ticker}</td>
+        <td class="td-center font-weight-600">${stock.ticker}</td>
         <td>${stock.company_name}</td>
-        <td style="text-align: center;">${formatHongKongTime(new Date(stock.created_at))}</td>
-        <td style="text-align: center;">
-          <form method="post" action="/admin-remove-stock" style="display: inline;">\n            ${req.csrfInput()}
+        <td class="td-center">${formatHongKongTime(new Date(stock.created_at))}</td>
+        <td class="td-center">
+          <form method="post" action="/admin-remove-stock" class="d-inline">\n            ${req.csrfInput()}
             <input type="hidden" name="ticker" value="${stock.ticker}">
             <button type="submit" class="btn btn-danger btn-sm">Remove</button>
           </form>
@@ -525,16 +525,16 @@ class AdminController {
       
       return `
         <tr>
-          <td style="text-align: center;">${formatHongKongTime(new Date(change.created_at), true)}</td>
-          <td style="text-align: center; font-weight: 600;">${change.ticker}</td>
+          <td class="td-center">${formatHongKongTime(new Date(change.created_at), true)}</td>
+          <td class="td-center font-weight-600">${change.ticker}</td>
           <td>${change.company_name}</td>
-          <td style="text-align: center;">
-            <span style="color: ${actionColor}; font-weight: 600;">
+          <td class="td-center">
+            <span style="color: ${actionColor};" class="font-weight-600">
               ${actionIcon} ${change.action.toUpperCase()}
             </span>
           </td>
-          <td style="text-align: center;">${change.admin_email}</td>
-          <td style="text-align: center;">${change.reason || 'N/A'}</td>
+          <td class="td-center">${change.admin_email}</td>
+          <td class="td-center">${change.reason || 'N/A'}</td>
         </tr>
       `;
     }).join('');
@@ -938,7 +938,7 @@ csvContent += `"${sanitizeCsv(getDisplayId(request))}","${sanitizeCsv(createdDat
           <div class="card-body">
             <div class="d-flex justify-content-between align-items-center">
               <div>
-                <span class="badge ${schedulerStatus.isRunning ? 'badge-success' : 'badge-warning'}" style="font-size: 14px;">
+                <span class="badge ${schedulerStatus.isRunning ? 'badge-success' : 'badge-warning'} badge-sm">
                   ${schedulerStatus.isRunning ? '✅ Scheduler Active' : '⚠️ Scheduler Inactive'}
                 </span>
                 ${schedulerStatus.nextRun ? `
@@ -966,7 +966,7 @@ csvContent += `"${sanitizeCsv(getDisplayId(request))}","${sanitizeCsv(createdDat
               <a href="/admin-backup-database-sql" class="btn btn-primary text-decoration-none">
                 📄 Download SQL Backup
               </a>
-              <form method="post" action="/admin-store-backup" style="display: inline;">
+              <form method="post" action="/admin-store-backup" class="d-inline">
                 ${req.csrfInput()}
                 <button type="submit" class="btn btn-success">
                   💾 Create & Store on Server
@@ -1156,7 +1156,7 @@ csvContent += `"${sanitizeCsv(getDisplayId(request))}","${sanitizeCsv(createdDat
             </div>
             
             <div class="mt-4 text-center">
-              <form method="post" action="/admin-trigger-backup" style="display: inline;">
+              <form method="post" action="/admin-trigger-backup" class="d-inline">
                 ${req.csrfInput()}
                 <button type="submit" class="btn btn-primary">
                   🔄 Trigger Manual Backup Now
@@ -1277,7 +1277,7 @@ csvContent += `"${sanitizeCsv(getDisplayId(request))}","${sanitizeCsv(createdDat
         <a href="/admin-dashboard" class="btn btn-secondary text-decoration-none">
           ← Cancel (Go Back)
         </a>
-        <form method="post" action="/admin-clear-database" style="display: inline;">\n          ${req.csrfInput()}
+        <form method="post" action="/admin-clear-database" class="d-inline">\n          ${req.csrfInput()}
           <button type="submit" class="btn btn-danger">
             🗑️ YES, PERMANENTLY DELETE ALL DATA
           </button>
@@ -1389,16 +1389,16 @@ csvContent += `"${sanitizeCsv(createdDate)}","${sanitizeCsv(createdTime)}","${sa
     // Build audit log rows
     const auditRows = auditLogs.map(log => `
       <tr>
-        <td style="text-align: center;">${formatHongKongTime(new Date(log.created_at), true)}</td>
+        <td class="td-center">${formatHongKongTime(new Date(log.created_at), true)}</td>
         <td>${log.user_email}</td>
-        <td style="text-align: center;">
+        <td class="td-center">
           <span class="badge ${log.user_type === 'admin' ? 'badge-danger' : 'badge-info'}">${log.user_type.toUpperCase()}</span>
         </td>
         <td>${log.action}</td>
-        <td style="text-align: center;">${log.target_type}</td>
-        <td style="text-align: center;">${log.target_id || 'N/A'}</td>
-        <td style="max-width: 200px; word-break: break-word;">${log.details || 'N/A'}</td>
-        <td style="text-align: center; font-family: monospace; font-size: 12px;">${log.ip_address || 'N/A'}</td>
+        <td class="td-center">${log.target_type}</td>
+        <td class="td-center">${log.target_id || 'N/A'}</td>
+        <td class="max-w-200 break-word">${log.details || 'N/A'}</td>
+        <td class="td-center text-monospace text-xs">${log.ip_address || 'N/A'}</td>
       </tr>
     `).join('');
 
@@ -1455,18 +1455,18 @@ csvContent += `"${sanitizeCsv(createdDate)}","${sanitizeCsv(createdTime)}","${sa
             <table class="table table-zebra table-hover table-sticky">
               <thead>
                 <tr>
-                  <th style="text-align: center;">Date & Time</th>
+                  <th class="text-center">Date & Time</th>
                   <th>User Email</th>
-                  <th style="text-align: center;">Type</th>
+                  <th class="text-center">Type</th>
                   <th>Action</th>
-                  <th style="text-align: center;">Target</th>
-                  <th style="text-align: center;">Target ID</th>
+                  <th class="text-center">Target</th>
+                  <th class="text-center">Target ID</th>
                   <th>Details</th>
-                  <th style="text-align: center;">IP Address</th>
+                  <th class="text-center">IP Address</th>
                 </tr>
               </thead>
               <tbody>
-                ${auditRows || '<tr><td colspan="8" style="text-align: center; color: var(--gs-neutral-600);">No audit logs found</td></tr>'}
+                ${auditRows || '<tr><td colspan="8" class="text-center text-gray-600">No audit logs found</td></tr>'}
               </tbody>
             </table>
           </div>
@@ -1544,8 +1544,8 @@ function generateSortableHeader(sortBy, displayName, baseUrl, currentSortBy, cur
   
   return `
     <th>
-      <a href="${baseUrl}?${paramString}" 
-         style="text-decoration: none; color: inherit; font-weight: 600; display: block; padding: 8px 0;"
+      <a href="${baseUrl}?${paramString}"
+         class="th-link"
          onmouseover="this.style.color='#0066cc'" 
          onmouseout="this.style.color='inherit'">
         ${displayName}${sortIcon}
@@ -1561,23 +1561,23 @@ function generateRestrictedStocksSortingControls(baseUrl, currentSortBy, current
   delete cleanParams.sort_order;
   
   return `
-    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 14px;">
-      <span style="font-weight: 600; color: var(--gs-neutral-700);">Sort by:</span>
-      <form method="get" action="${baseUrl}" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+    <div class="sort-controls-sm">
+      <span class="text-gray-600 font-weight-600">Sort by:</span>
+      <form method="get" action="${baseUrl}" class="sort-controls-sm">
         ${Object.entries(cleanParams).map(([key, value]) => 
           `<input type="hidden" name="${key}" value="${value || ''}">`
         ).join('')}
         
-        <select name="sort_by" style="padding: 6px 10px; border: 1px solid var(--gs-neutral-300); border-radius: 4px; font-size: 14px;">
+        <select name="sort_by" class="form-control-xs" style="border: 1px solid var(--gs-neutral-300);">
           <option value="ticker" ${currentSortBy === 'ticker' ? 'selected' : ''}>Ticker</option>
           <option value="company_name" ${currentSortBy === 'company_name' ? 'selected' : ''}>Company Name</option>
           <option value="created_at" ${currentSortBy === 'created_at' ? 'selected' : ''}>Date Added</option>
         </select>
-        <select name="sort_order" style="padding: 6px 10px; border: 1px solid var(--gs-neutral-300); border-radius: 4px; font-size: 14px;">
+        <select name="sort_order" class="form-control-xs" style="border: 1px solid var(--gs-neutral-300);">
           <option value="ASC" ${currentSortOrder === 'ASC' ? 'selected' : ''}>↑ Ascending</option>
           <option value="DESC" ${currentSortOrder === 'DESC' ? 'selected' : ''}>↓ Descending</option>
         </select>
-        <button type="submit" class="btn btn-primary btn-sm" style="padding: 6px 15px; font-size: 14px;">
+        <button type="submit" class="btn btn-primary btn-xs">
           Apply Sort
         </button>
       </form>
@@ -1592,22 +1592,22 @@ function generateSortingControls(baseUrl, currentSortBy, currentSortOrder, query
   delete cleanParams.sort_order;
   
   return `
-    <form method="get" action="${baseUrl}" style="display: flex; align-items: center; gap: var(--spacing-3); flex-wrap: wrap;">
-      ${Object.entries(cleanParams).map(([key, value]) => 
+    <form method="get" action="${baseUrl}" class="sort-controls">
+      ${Object.entries(cleanParams).map(([key, value]) =>
         `<input type="hidden" name="${key}" value="${value || ''}">`
       ).join('')}
-      
-      <span style="font-weight: 600; color: var(--gs-neutral-700);">Sort by:</span>
-      <select name="sort_by" style="padding: 6px 10px; border: 1px solid var(--gs-neutral-300); border-radius: var(--radius);">
+
+      <span class="font-weight-600 text-gray-600">Sort by:</span>
+      <select name="sort_by" class="form-control-xs" style="border: 1px solid var(--gs-neutral-300);">
         <option value="created_at" ${currentSortBy === 'created_at' ? 'selected' : ''}>Date</option>
         <option value="ticker" ${currentSortBy === 'ticker' ? 'selected' : ''}>Ticker</option>
         <option value="employee_email" ${currentSortBy === 'employee_email' ? 'selected' : ''}>Employee</option>
       </select>
-      <select name="sort_order" style="padding: 6px 10px; border: 1px solid var(--gs-neutral-300); border-radius: var(--radius);">
+      <select name="sort_order" class="form-control-xs" style="border: 1px solid var(--gs-neutral-300);">
         <option value="DESC" ${currentSortOrder === 'DESC' ? 'selected' : ''}>↓ Descending</option>
         <option value="ASC" ${currentSortOrder === 'ASC' ? 'selected' : ''}>↑ Ascending</option>
       </select>
-      <button type="submit" class="btn btn-primary btn-sm" style="padding: 6px 15px; font-size: var(--font-size-sm);">
+      <button type="submit" class="btn btn-primary btn-xs">
         Apply Sort
       </button>
     </form>
