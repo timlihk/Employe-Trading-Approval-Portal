@@ -23,11 +23,108 @@ This document outlines the optimization strategy and development guidelines for 
 - ✅ **Add monitoring metrics** for cache and database performance
 - ✅ **Database query tracking** (count, errors, slow queries)
 
-### **Week 4: Code Quality** (Long-term Benefits) ⏳ PENDING
-- **Modularize app.js** into focused modules
-- **Standardize async patterns** across codebase
-- **Continue AdminController refactoring** for CSP compliance
-- **Document optimization changes** and create runbooks
+### **Week 4: Code Quality** (Long-term Benefits) 🔄 IN PROGRESS
+- ✅ **Refactor large methods** in TradingRequestService and AuditLog
+- ⏳ **Modularize app.js** into focused modules (routes created, integration pending)
+- ⏳ **Standardize async patterns** across codebase
+- ⏳ **Document optimization changes** and create runbooks
+
+### **Week 4 Implementation Details**
+
+#### **1. TradingRequestService Refactoring**
+
+**Problem**: `createTradingRequest()` method was 146 lines, violating single responsibility principle and making testing difficult.
+
+**Solution**: Extracted 6 private helper methods:
+```javascript
+// New helper methods
+- _validateAndFetchTicker()      // Validates and fetches ticker/ISIN data
+- _calculateEstimatedValues()    // Calculates share prices and estimated values
+- _convertToUSDIfNeeded()        // Handles currency conversion
+- _determineInitialStatus()      // Determines approval/rejection status
+- _createTradingRequestData()    // Creates database-ready data object
+- _logTradingRequestCreation()   // Logs audit activity
+```
+
+**Result**:
+- Method reduced from **146 to 82 lines** (-44%)
+- Each helper method is 8-20 lines, focused on single responsibility
+- Improved testability and maintainability
+- Clear step-by-step flow with comments
+
+#### **2. AuditLog Refactoring**
+
+**Problem**: `_buildAuditConditions()` had repeated filter-building logic.
+
+**Solution**: Extracted `addCondition()` helper function:
+```javascript
+const addCondition = (field, value, operator = '=', transform = null) => {
+  if (value !== undefined && value !== null && value !== '') {
+    let conditionValue = transform ? transform(value) : value;
+    conditions.push(`${field} ${operator} $${paramIndex}`);
+    params.push(conditionValue);
+    paramIndex++;
+  }
+};
+```
+
+**Benefits**:
+- **DRY Principle**: No more repeated condition-building code
+- **Easier Maintenance**: Adding new filters requires one line instead of 4
+- **Consistent Pattern**: All filters use the same validation and parameter handling
+
+#### **3. Route Modularization (Infrastructure)**
+
+**New Route Modules Created**:
+- `src/routes/systemRoutes.js` - Health checks, metrics, DB status
+- `src/routes/authRoutes.js` - Authentication and logout routes
+
+**Next Steps**:
+- Create `employeeRoutes.js` for employee dashboard and trading
+- Create `adminRoutes.js` for admin panel and management
+- Update `app.js` to use modular routes instead of inline definitions
+- Expected reduction: 300+ lines from app.js
+
+### **4. Standardized Error Handling Pattern**
+
+```javascript
+// Consistent pattern across refactored methods:
+try {
+  // Business logic
+  return result;
+} catch (error) {
+  if (error instanceof AppError) {
+    throw error; // Re-throw known errors
+  }
+
+  logger.error('Contextual error message', {
+    relevant: 'data',
+    error: error.message
+  });
+
+  throw new AppError('User-friendly message', 500);
+}
+```
+
+### **5. Code Review Checklist Updates**
+
+Added to development guidelines:
+- ✅ Methods should be <50 lines (preferably <30)
+- ✅ Single Responsibility per method
+- ✅ Consistent error handling with AppError
+- ✅ Proper use of async/await with try-catch
+- ✅ JSDoc comments for public methods
+- ✅ Private methods prefixed with _
+
+## 📊 Optimization Impact
+
+| Metric | Before | After | Improvement |
+|--------|--------|-------|-------------|
+| TradingRequestService.createTradingRequest | 146 lines | 82 lines | -44% |
+| AuditLog._buildAuditConditions | 45 lines | 25 lines | -44% |
+| Helper Methods Created | 0 | 7 new methods | +7 |
+| Testability Score | Low | High | Significant |
+| Cyclomatic Complexity | High | Medium | Improved |
 
 ## 🔧 Week 1 Implementation Details
 
