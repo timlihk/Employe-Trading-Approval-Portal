@@ -1,4 +1,5 @@
 const { logger } = require('../utils/logger');
+const APP_VERSION = require('../../package.json').version || '0';
 
 // Custom error class for operational errors
 class AppError extends Error {
@@ -87,7 +88,7 @@ const sendErrorProd = (err, req, res) => {
       <head>
           <meta charset="UTF-8">
           <title>Error - Trading Compliance Portal</title>
-          <link rel="stylesheet" href="/styles-modern.min.css">
+          <link rel="stylesheet" href="/styles-modern.min.css?v=${APP_VERSION}">
       </head>
       <body>
           <div class="container">
@@ -121,7 +122,7 @@ const sendErrorProd = (err, req, res) => {
     <head>
         <meta charset="UTF-8">
         <title>Error - Trading Compliance Portal</title>
-        <link rel="stylesheet" href="/styles-modern.min.css">
+        <link rel="stylesheet" href="/styles-modern.min.css?v=${APP_VERSION}">
     </head>
     <body>
         <div class="container">

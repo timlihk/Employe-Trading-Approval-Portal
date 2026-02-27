@@ -1,6 +1,6 @@
 // HTML Template utilities to eliminate duplicate HTML across routes
 
-const APP_VERSION = require('../../package.json').version;
+const APP_VERSION = require('../../package.json').version || '0';
 
 function renderBasePage(title, subtitle, content, navigation = '') {
   return `
