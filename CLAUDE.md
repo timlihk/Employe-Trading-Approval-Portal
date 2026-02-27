@@ -152,7 +152,7 @@ Exempt from `requireBrokerageSetup`: brokerage CRUD routes, confirm-accounts, lo
 - Forms: `form-group`, `form-label`, `form-input`, `form-select`
 - Buttons: `btn`, `btn-primary`, `btn-danger`, `btn-secondary`
 - Utility: `mb-6`, `mt-2`, `p-6`, `text-center`, `text-muted`, `font-sm`
-- Filter grid: `grid-filters` (compact `minmax(120px, 1fr)` for inline filter rows)
+- Filter grid: `grid-filters` (6-column `repeat(6, 1fr)` for inline filter rows, inputs auto-fill with `width: 100%`)
 
 ### Template helpers (src/utils/templates.js)
 - `renderBasePage(title, subtitle, content, navigation)`
@@ -269,10 +269,10 @@ throw new AppError('User-friendly message', 400);
 
 ## Development Notes
 
-- **Version**: 3.3.0 (February 2026)
+- **Version**: 3.3.1 (February 2026)
 - **Node.js**: >=20.0.0
 - **Testing**: Jest 30 with unit and integration tests (`npm test`)
-- **CSS**: `styles-modern.css` (3000+ lines) minified to `styles-modern.min.css`
+- **CSS**: `styles-modern.css` (3000+ lines) minified to `styles-modern.min.css` (cache-busted via `?v=${APP_VERSION}` from package.json)
 - **Compliance**: Full audit trail, data export, regulatory compliance
 - **Performance**: LRU caching, database indexes, circuit breakers, sargable queries, session-cached middleware, SharePoint ID caching
 

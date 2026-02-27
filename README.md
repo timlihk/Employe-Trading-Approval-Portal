@@ -293,6 +293,7 @@ See [SECURITY.md](./SECURITY.md) for full security policy and [SECURITY_SETUP.md
 
 | Version | Highlights |
 |---------|------------|
+| v3.3.1 | Industry-standard Major Third type scale, responsive mobile typography, dynamic CSS cache busting, dead code cleanup |
 | v3.3.0 | Announcement email script, compact filter UI, comprehensive documentation refresh |
 | v3.2.0 | 30-day short-term trading detection with auto-escalation, SharePoint historical data migration, UI refinements |
 | v3.1.0 | SharePoint file proxy, employee-first folder structure, SharePoint diagnostics, performance caching, user guides |
@@ -305,4 +306,4 @@ See [SECURITY.md](./SECURITY.md) for full security policy and [SECURITY_SETUP.md
 
 ---
 
-*Last Updated: February 2026 — Version 3.3.0*
+*Last Updated: February 2026 — Version 3.3.1*
