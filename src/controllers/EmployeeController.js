@@ -131,7 +131,7 @@ class EmployeeController {
     const statementCard = `
       <div class="card mt-6">
         <div class="card-header">
-          <h3 class="card-title heading">Monthly Trading Statements</h3>
+          <h3 class="card-title">Monthly Trading Statements</h3>
         </div>
         <div class="card-body">
           <div class="mb-4">
@@ -145,7 +145,7 @@ class EmployeeController {
       ${banner}
       <div class="card">
         <div class="card-header">
-          <h3 class="card-title heading">Submit Trading Request</h3>
+          <h3 class="card-title">Submit Trading Request</h3>
         </div>
         <div class="card-body p-6">
           <form method="post" action="/preview-trade" id="tradingForm">
@@ -296,7 +296,7 @@ class EmployeeController {
       ${contextBanner}
       <div class="card mb-6">
         <div class="card-header">
-          <h3 class="card-title heading">${editAccount ? 'Edit Brokerage Account' : 'Add Brokerage Account'}</h3>
+          <h3 class="card-title">${editAccount ? 'Edit Brokerage Account' : 'Add Brokerage Account'}</h3>
         </div>
         <div class="card-body p-6">
           <form method="post" action="${editAccount ? '/employee-edit-brokerage' : '/employee-add-brokerage'}">
@@ -326,7 +326,7 @@ class EmployeeController {
 
       <div class="card">
         <div class="card-header">
-          <h3 class="card-title heading">Your Brokerage Accounts</h3>
+          <h3 class="card-title">Your Brokerage Accounts</h3>
         </div>
         <div class="card-body ${accounts.length === 0 ? '' : 'p-0'}">
           ${accounts.length > 0 ? `
@@ -457,7 +457,7 @@ class EmployeeController {
       ${banner}
       <div class="card">
         <div class="card-header">
-          <h3 class="card-title heading">Upload Trading Statement</h3>
+          <h3 class="card-title">Upload Trading Statement</h3>
         </div>
         <div class="card-body p-6">
           <form method="post" action="/employee-upload-statement" enctype="multipart/form-data">
@@ -672,7 +672,7 @@ class EmployeeController {
       <!-- Filters Card -->
       <div class="card mb-6">
         <div class="card-header">
-          <h3 class="card-title heading">Filter Requests</h3>
+          <h3 class="card-title">Filter Requests</h3>
         </div>
         <div class="card-body p-6">
           <form method="get" action="/employee-history">
@@ -731,13 +731,13 @@ class EmployeeController {
       <!-- Results Card -->
       <div class="card">
         <div class="card-header">
-          <h3 class="card-title heading text-xl">Trading Request History</h3>
+          <h3 class="card-title text-xl">Trading Request History</h3>
           <p class="mt-2 m-0 text-muted text-sm">${pagination ? `${pagination.total} total, showing ${requests.length}` : `${requests.length} requests`} · Page ${pagination?.page || 1} of ${pagination?.pages || 1}</p>
         </div>
         <div class="card-body p-0">
           ${requests.length > 0 ? `
             <div class="table-responsive">
-              <table class="table table-zebra table-hover table-sticky">
+              <table class="modern-table table-zebra table-sticky">
                 <thead>
                   <tr>
                     <th class="th-sortable" ${currentSortBy === 'created_at' ? `aria-sort="${currentSortOrder === 'ASC' ? 'ascending' : 'descending'}"` : ''}>
@@ -814,7 +814,7 @@ class EmployeeController {
           <a href="/employee-dashboard" class="btn btn-secondary text-decoration-none w-full-mobile focus-ring">
             ← Back to Dashboard
           </a>
-          <a href="/employee-export-history?${new URLSearchParams(req.query).toString()}" class="btn btn-outline text-decoration-none w-full-mobile focus-ring hover-lift">
+          <a href="/employee-export-history?${new URLSearchParams(req.query).toString()}" class="btn btn-outline text-decoration-none w-full-mobile focus-ring">
             Export History (CSV)
           </a>
         </div>

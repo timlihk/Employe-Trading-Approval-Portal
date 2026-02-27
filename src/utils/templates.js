@@ -42,10 +42,10 @@ function renderBasePage(title, subtitle, content, navigation = '') {
 
 function renderAdminPage(title, content) {
   const navigation = `
-    <nav class="nav container">
-        <a href="/admin-dashboard" class="nav-link ${title === 'Admin Dashboard' || title === 'Administrator Dashboard' ? 'active' : ''}">Dashboard</a>
-        <a href="/admin-restricted-stocks" class="nav-link ${title === 'Restricted Stocks Management' ? 'active' : ''}">Restricted Stocks</a>
-        <a href="/admin-requests" class="nav-link ${title === 'Trading Requests' ? 'active' : ''}">Trading Requests</a>
+    <nav class="nav container" aria-label="Admin navigation">
+        <a href="/admin-dashboard" class="nav-link ${title === 'Administrator Dashboard' || title === 'Backup Management' || title === 'Backup Scheduler Status' || title === 'Confirm Database Reset' || title === 'Audit Log' ? 'active' : ''}">Dashboard</a>
+        <a href="/admin-restricted-stocks" class="nav-link ${title === 'Restricted Stocks' ? 'active' : ''}">Restricted Stocks</a>
+        <a href="/admin-requests" class="nav-link ${title === 'Trading Requests' || title === 'Reject Trading Request' ? 'active' : ''}">Trading Requests</a>
         <a href="/admin-statements" class="nav-link ${title === 'Statement Requests' || title === 'Statement Scheduler' ? 'active' : ''}">Statements</a>
         <a href="/admin-logout" class="nav-link">Logout</a>
     </nav>`;
@@ -55,8 +55,8 @@ function renderAdminPage(title, content) {
 
 function renderEmployeePage(title, content, employeeName = '', employeeEmail = '') {
   const navigation = `
-    <nav class="nav container">
-        <a href="/employee-dashboard" class="nav-link ${title === 'Employee Dashboard' ? 'active' : ''}">Dashboard</a>
+    <nav class="nav container" aria-label="Employee navigation">
+        <a href="/employee-dashboard" class="nav-link ${title === 'Employee Dashboard' || title === 'Trading Request Preview' || title === 'Trading Request Result' ? 'active' : ''}">Dashboard</a>
         <a href="/employee-history" class="nav-link ${title === 'Trading History' || title === 'Request History' ? 'active' : ''}">My History</a>
         <a href="/employee-brokerage-accounts" class="nav-link ${title === 'Brokerage Accounts' ? 'active' : ''}">Accounts</a>
         <a href="/employee-logout" class="nav-link">Logout</a>

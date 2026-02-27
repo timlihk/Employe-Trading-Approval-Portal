@@ -246,39 +246,6 @@ hr {
   color: var(--color-text-muted);
 }
 
-/* Legacy header support */
-header {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
-  padding: var(--space-4) 0;
-  margin-bottom: var(--space-8);
-}
-
-.header-content {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 var(--space-6);
-}
-
-header h1 {
-  font-size: var(--font-xl);
-  font-weight: 700;
-  color: var(--color-accent);
-  margin: 0;
-}
-
-.header-subtitle {
-  font-size: var(--font-sm);
-  color: var(--color-text-muted);
-  margin-top: var(--space-1);
-}
-
 /* Navigation */
 nav, .nav {
   display: flex;
@@ -361,11 +328,6 @@ nav, .nav {
   font-weight: 600;
   color: var(--color-text);
   margin: 0;
-}
-
-.card-title.heading {
-  font-size: var(--font-md);
-  font-weight: 600;
 }
 
 .card-body {
@@ -1444,6 +1406,7 @@ select.brokerage-select:has(option[value="__new__"]:checked) ~ .new-brokerage-fi
 .text-decoration-none { text-decoration: none; }
 .font-sm { font-size: var(--font-sm); }
 .font-weight-600 { font-weight: 600; }
+.font-weight-bold { font-weight: 700; }
 .line-height-1-6 { line-height: 1.6; }
 
 /* Colors */
@@ -1481,7 +1444,6 @@ select.brokerage-select:has(option[value="__new__"]:checked) ~ .new-brokerage-fi
 
 /* Misc */
 .break-word { word-break: break-word; }
-.no-break { white-space: nowrap; }
 .icon-sm { width: 18px; height: 18px; flex-shrink: 0; margin-top: 2px; }
 .link { color: var(--color-accent); text-decoration: none; }
 .link:hover { text-decoration: underline; }
@@ -1489,9 +1451,7 @@ select.brokerage-select:has(option[value="__new__"]:checked) ~ .new-brokerage-fi
 .opacity-75 { opacity: 0.75; }
 .box-shadow { box-shadow: var(--shadow); }
 .hover-shadow:hover { box-shadow: var(--shadow-md); }
-.hover-lift:hover { /* no transform lift in redesign */ }
 .readonly { opacity: 0.7; }
-.caption { font-size: var(--font-xs); color: var(--color-text-muted); }
 .center-content { display: flex; align-items: center; justify-content: center; }
 .display-id { font-family: var(--font-mono); font-weight: 600; color: var(--color-accent); }
 

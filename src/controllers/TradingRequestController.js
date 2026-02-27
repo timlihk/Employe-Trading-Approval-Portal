@@ -74,7 +74,7 @@ class TradingRequestController {
 
           <div class="card">
             <div class="card-header">
-              <h3 class="card-title heading">Trading Request Details</h3>
+              <h3 class="card-title">Trading Request Details</h3>
             </div>
             <div class="card-body p-6">
               <div class="grid gap-4">
@@ -123,7 +123,7 @@ class TradingRequestController {
 
           <div class="card mt-6">
             <div class="card-header">
-              <h3 class="card-title heading">Compliance Declaration</h3>
+              <h3 class="card-title">Compliance Declaration</h3>
             </div>
             <div class="card-body p-6">
               <form method="post" action="/submit-trade">
@@ -266,7 +266,7 @@ class TradingRequestController {
 
         <div class="card">
           <div class="card-header">
-            <h3 class="card-title heading">Trading Request Details</h3>
+            <h3 class="card-title">Trading Request Details</h3>
           </div>
           <div class="card-body p-6">
             <div class="confirmation-grid">
@@ -306,7 +306,7 @@ class TradingRequestController {
         ${request.status === 'rejected' ? `
         <div class="card mt-6">
           <div class="card-header">
-            <h3 class="card-title heading">Request Escalation</h3>
+            <h3 class="card-title">Request Escalation</h3>
           </div>
           <div class="card-body p-0">
             <div class="p-6 pb-0">

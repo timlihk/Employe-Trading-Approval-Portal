@@ -355,7 +355,7 @@ class AdminController {
               <div class="btn-group btn-group-mobile">
                 <button type="submit" class="btn btn-primary w-full-mobile focus-ring">Apply Filters</button>
                 <a href="/admin-requests" class="btn btn-secondary text-decoration-none w-full-mobile focus-ring">Clear Filters</a>
-                <a href="/admin-export-trading-requests" class="btn btn-outline text-decoration-none w-full-mobile focus-ring hover-lift">Export CSV</a>
+                <a href="/admin-export-trading-requests" class="btn btn-outline text-decoration-none w-full-mobile focus-ring">Export CSV</a>
               </div>
             </div>
           </form>
@@ -371,7 +371,7 @@ class AdminController {
         <div class="card-body p-0">
           ${allRequests.length > 0 ? `
             <div class="table-responsive">
-              <table class="table table-zebra table-hover table-sticky">
+              <table class="modern-table table-zebra table-sticky">
                 <thead>
                   <tr>
                     <th>Request ID</th>
@@ -415,6 +415,7 @@ class AdminController {
             </div>
           `}
         </div>
+      </div>
     `;
 
     const html = renderAdminPage('Trading Requests', requestsContent);
@@ -593,7 +594,7 @@ class AdminController {
       ${banner}
       <div class="card">
         <div class="card-header">
-          <h3 class="card-title heading">Add Restricted Stock</h3>
+          <h3 class="card-title">Add Restricted Stock</h3>
         </div>
         <div class="card-body p-6">
           <form method="post" action="/admin-add-stock">\n            ${req.csrfInput()}
@@ -611,7 +612,7 @@ class AdminController {
 
       <div class="card mt-6">
         <div class="card-header">
-          <h3 class="card-title heading text-xl">Restricted Instruments List</h3>
+          <h3 class="card-title text-xl">Restricted Instruments List</h3>
           <p class="mt-2 m-0 text-muted text-sm">${restrictedStocks.length} instruments restricted</p>
           ${restrictedStocks.length > 0 ? `
             <div class="mt-4">
@@ -622,7 +623,7 @@ class AdminController {
         <div class="card-body p-0">
           ${restrictedStocks.length > 0 ? `
             <div class="table-responsive">
-              <table class="table table-zebra table-hover table-sticky">
+              <table class="modern-table table-zebra table-sticky">
                 <thead>
                   <tr>
                     ${generateSortableHeader('ticker', 'Ticker', '/admin-restricted-stocks', sort_by, sort_order, req.query)}
@@ -642,13 +643,13 @@ class AdminController {
 
       <div class="card mt-6">
         <div class="card-header">
-          <h3 class="card-title heading text-xl">Recent Changes</h3>
+          <h3 class="card-title text-xl">Recent Changes</h3>
           <p class="mt-2 m-0 text-muted text-sm">Last 20 modifications</p>
         </div>
         <div class="card-body p-0">
           ${changelog.length > 0 ? `
             <div class="table-responsive">
-              <table class="table table-zebra table-hover table-sticky">
+              <table class="modern-table table-zebra table-sticky">
                 <thead>
                   <tr>
                     <th>Date/Time</th>
@@ -983,7 +984,7 @@ csvContent += `"${sanitizeCsv(getDisplayId(request))}","${sanitizeCsv(createdDat
         
         <div class="card mb-4">
           <div class="card-header">
-            <h3 class="card-title heading">Automatic Backup Status</h3>
+            <h3 class="card-title">Automatic Backup Status</h3>
           </div>
           <div class="card-body">
             <div class="d-flex justify-content-between align-items-center">
@@ -1006,7 +1007,7 @@ csvContent += `"${sanitizeCsv(getDisplayId(request))}","${sanitizeCsv(createdDat
         
         <div class="card mb-4">
           <div class="card-header">
-            <h3 class="card-title heading">Manual Backup Options</h3>
+            <h3 class="card-title">Manual Backup Options</h3>
           </div>
           <div class="card-body">
             <div class="d-flex gap-3 flex-wrap justify-center">
@@ -1043,7 +1044,7 @@ csvContent += `"${sanitizeCsv(getDisplayId(request))}","${sanitizeCsv(createdDat
         
         <div class="card">
           <div class="card-header">
-            <h3 class="card-title heading">Stored Backups on Server</h3>
+            <h3 class="card-title">Stored Backups on Server</h3>
           </div>
           <div class="card-body">
             ${backups.length === 0 ? `
@@ -1177,7 +1178,7 @@ csvContent += `"${sanitizeCsv(getDisplayId(request))}","${sanitizeCsv(createdDat
       <div class="container">
         <div class="card">
           <div class="card-header">
-            <h3 class="card-title heading">Automatic Backup Scheduler</h3>
+            <h3 class="card-title">Automatic Backup Scheduler</h3>
           </div>
           <div class="card-body">
             <div class="alert ${status.isRunning ? 'alert-success' : 'alert-warning'}">
@@ -1458,7 +1459,7 @@ csvContent += `"${sanitizeCsv(createdDate)}","${sanitizeCsv(createdTime)}","${sa
     const auditContent = `
       <div class="card">
         <div class="card-header">
-          <h3 class="card-title heading">Filter Audit Logs</h3>
+          <h3 class="card-title">Filter Audit Logs</h3>
         </div>
         <div class="card-body p-6">
           <form method="get" action="/admin-audit-log">
@@ -1491,7 +1492,7 @@ csvContent += `"${sanitizeCsv(createdDate)}","${sanitizeCsv(createdTime)}","${sa
               <div class="btn-group btn-group-mobile">
                 <button type="submit" class="btn btn-primary w-full-mobile">Apply Filters</button>
                 <a href="/admin-audit-log" class="btn btn-secondary text-decoration-none w-full-mobile">Clear Filters</a>
-                <a href="/admin-export-audit-log" class="btn btn-outline text-decoration-none w-full-mobile hover-lift">Export CSV</a>
+                <a href="/admin-export-audit-log" class="btn btn-outline text-decoration-none w-full-mobile">Export CSV</a>
               </div>
             </div>
           </form>
@@ -1500,12 +1501,12 @@ csvContent += `"${sanitizeCsv(createdDate)}","${sanitizeCsv(createdTime)}","${sa
 
       <div class="card mt-6">
         <div class="card-header">
-          <h3 class="card-title heading text-xl">Audit Log Results</h3>
+          <h3 class="card-title text-xl">Audit Log Results</h3>
           <p class="mt-2 m-0 text-muted text-sm">${auditLogs.length} entries found</p>
         </div>
         <div class="card-body p-0">
           <div class="table-responsive">
-            <table class="table table-zebra table-hover table-sticky">
+            <table class="modern-table table-zebra table-sticky">
               <thead>
                 <tr>
                   <th class="text-center">Date & Time</th>
