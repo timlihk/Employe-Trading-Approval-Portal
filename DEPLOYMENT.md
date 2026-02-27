@@ -141,6 +141,32 @@ node scripts/migrate-pretrade-approvals.js --flag-short-term
 
 The migration script resolves company names to tickers via Yahoo Finance search API with a manual mapping table for edge cases (typos, non-US exchanges, private companies).
 
+### Announcement Emails
+
+Send one-time announcement email to all employees (fetched from Azure AD):
+
+```bash
+# Preview recipients (no emails sent)
+railway run node scripts/send-announcement.js --dry-run
+
+# Send to all employees
+railway run node scripts/send-announcement.js
+```
+
+Requires `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_TENANT_ID`, and `STATEMENT_SENDER_EMAIL`.
+
+Edit the HTML template and subject in `scripts/send-announcement.js` before sending.
+
+### Custom Domain Setup
+
+To use a custom domain (e.g., `pa-approval.inspirationcap.com`):
+
+1. **DNS**: Add a CNAME record pointing your subdomain to the Railway-provided domain
+2. **Railway**: Add the custom domain in Service → Settings → Networking → Custom Domain
+3. **SSL**: Railway provisions a certificate automatically
+4. **Environment**: Update `FRONTEND_URL`, `REDIRECT_URI`, and `POST_LOGOUT_REDIRECT_URI` in Railway variables
+5. **Azure AD**: Update the redirect URI in your Azure AD app registration
+
 ## Monitoring
 
 Railway provides:

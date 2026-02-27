@@ -227,6 +227,8 @@ All tables use UUID primary keys and TIMESTAMPTZ columns for proper timezone han
 | `scripts/migrate-pretrade-approvals.js` | Import historical pre-trade approvals from SharePoint/Microsoft Forms |
 | `scripts/migrate-pretrade-approvals.js --dry-run` | Preview migration without inserting |
 | `scripts/migrate-pretrade-approvals.js --flag-short-term` | Retroactively flag 30-day holding rule violations |
+| `scripts/send-announcement.js` | Send announcement email to all employees via Graph API |
+| `scripts/send-announcement.js --dry-run` | Preview recipients without sending |
 
 ## Local Development
 
@@ -291,6 +293,7 @@ See [SECURITY.md](./SECURITY.md) for full security policy and [SECURITY_SETUP.md
 
 | Version | Highlights |
 |---------|------------|
+| v3.3.0 | Announcement email script, compact filter UI, comprehensive documentation refresh |
 | v3.2.0 | 30-day short-term trading detection with auto-escalation, SharePoint historical data migration, UI refinements |
 | v3.1.0 | SharePoint file proxy, employee-first folder structure, SharePoint diagnostics, performance caching, user guides |
 | v3.0.0 | Brokerage accounts, employee onboarding, statement collection, automated backups, UI redesign, database performance |
@@ -302,4 +305,4 @@ See [SECURITY.md](./SECURITY.md) for full security policy and [SECURITY_SETUP.md
 
 ---
 
-*Last Updated: February 2026 — Version 3.2.0*
+*Last Updated: February 2026 — Version 3.3.0*

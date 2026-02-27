@@ -690,9 +690,9 @@ class EmployeeController {
         <div class="card-header">
           <h3 class="card-title">Filter Requests</h3>
         </div>
-        <div class="card-body p-6">
+        <div class="card-body p-4">
           <form method="get" action="/employee-history">
-            <div class="grid grid-auto gap-4 grid-mobile-stack">
+            <div class="grid grid-filters gap-2 grid-mobile-stack">
               <div>
                 <label class="form-label">Start Date:</label>
                 <input type="date" name="start_date" value="${start_date || ''}" 
@@ -734,7 +734,7 @@ class EmployeeController {
                 </select>
               </div>
             </div>
-            <div class="mt-6 text-center">
+            <div class="mt-4 text-center">
               <div class="btn-group btn-group-mobile">
                 <button type="submit" class="btn btn-primary w-full-mobile">Apply Filters</button>
                 <a href="/employee-history" class="btn btn-secondary text-decoration-none w-full-mobile">Clear Filters</a>

@@ -85,7 +85,9 @@ npm run test:coverage       # Coverage report
 | Delayed auto-approve | `setTimeout` 30-60 min random delay for escalated trades | Creates both escalation and approval audit records |
 | Historical data migration | SharePoint Forms import with Yahoo Finance ticker resolution | 96 historical records migrated with manual mapping table |
 | Retroactive flagging | `--flag-short-term` mode scans historical trades for 30-day violations | 18 historical trades flagged for compliance |
-| Typography scaling | Reduced all font size tokens by ~1px globally | More compact, professional appearance |
+| Typography scaling | Increased all font size tokens by ~2px globally | Better readability across screens |
+| Compact filter grid | `grid-filters` class with `minmax(120px, 1fr)` + reduced gaps | All 6 history filters fit in single row |
+| Announcement emails | One-time script to email all employees via Graph API | Onboarding communication with dry-run support |
 
 ### Architecture Decisions
 
@@ -101,6 +103,7 @@ npm run test:coverage       # Coverage report
 | File proxy over direct URLs | `/statement-file/:uuid` — auth-checked, no SharePoint login needed for viewing |
 | setTimeout over job queue | 30-60 min auto-approve delay — short enough for in-memory timer, trade stays `pending` if server restarts |
 | Yahoo Finance for ticker resolution | Migration script resolves company names → tickers via search API + manual mapping fallback |
+| Compact filter grid | `grid-filters` with `minmax(120px)` — fits 6 filters in one row without horizontal scroll |
 
 ## Project Structure
 
@@ -117,4 +120,4 @@ See [CLAUDE.md](./CLAUDE.md) for full project structure and architecture details
 
 ---
 
-*Last Updated: February 2026 — Version 3.2.0*
+*Last Updated: February 2026 — Version 3.3.0*

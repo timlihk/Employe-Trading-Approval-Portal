@@ -152,6 +152,7 @@ Exempt from `requireBrokerageSetup`: brokerage CRUD routes, confirm-accounts, lo
 - Forms: `form-group`, `form-label`, `form-input`, `form-select`
 - Buttons: `btn`, `btn-primary`, `btn-danger`, `btn-secondary`
 - Utility: `mb-6`, `mt-2`, `p-6`, `text-center`, `text-muted`, `font-sm`
+- Filter grid: `grid-filters` (compact `minmax(120px, 1fr)` for inline filter rows)
 
 ### Template helpers (src/utils/templates.js)
 - `renderBasePage(title, subtitle, content, navigation)`
@@ -164,6 +165,13 @@ Exempt from `requireBrokerageSetup`: brokerage CRUD routes, confirm-accounts, lo
 
 ### Notification messages (via query params)
 Success (`?message=`): `stock_added`, `stock_removed`, `request_approved`, `request_rejected`, `escalation_submitted`, `statement_uploaded`, `accounts_confirmed`, `database_cleared`, `statement_emails_sent`, `statement_email_resent`, `admin_logged_out`
+
+### Announcement Emails
+One-time script `scripts/send-announcement.js` sends HTML email to all employees via Graph API:
+- Uses `GraphAPIService.getEmployees()` and `GraphAPIService.sendEmail()`
+- Supports `--dry-run` to preview recipients
+- Run via `railway run node scripts/send-announcement.js`
+- Requires `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_TENANT_ID`, `STATEMENT_SENDER_EMAIL`
 
 ### 30-Day Short-Term Trading Detection
 When an employee submits a trade, the system checks for opposite-direction trades on the same ticker within 30 days:
@@ -261,7 +269,7 @@ throw new AppError('User-friendly message', 400);
 
 ## Development Notes
 
-- **Version**: 3.2.0 (February 2026)
+- **Version**: 3.3.0 (February 2026)
 - **Node.js**: >=20.0.0
 - **Testing**: Jest 30 with unit and integration tests (`npm test`)
 - **CSS**: `styles-modern.css` (3000+ lines) minified to `styles-modern.min.css`
