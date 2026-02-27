@@ -660,10 +660,7 @@ class EmployeeController {
             $${parseFloat(request.total_value_usd || request.total_value || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}
           </td>
           <td class="text-center">
-            <span class="status-dot ${request.status === 'approved' ? 'status-dot-success' : request.status === 'rejected' ? 'status-dot-danger' : 'status-dot-warning'}"></span>
-            <span class="badge ${request.status === 'approved' ? 'badge-success' : request.status === 'rejected' ? 'badge-danger' : 'badge-warning'}">
-              ${request.status.toUpperCase()}
-            </span>
+            <span class="status-${request.status}">${request.status.toUpperCase()}</span>
           </td>
           <td class="text-center">
             ${request.status === 'rejected' && request.rejection_reason ? 
