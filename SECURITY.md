@@ -127,6 +127,8 @@ Key security events to monitor in logs:
 | `SESSION_STORE_FALLBACK_TO_MEMORY` | PostgreSQL session store failed |
 | `SESSION_STORE_STRICT_MODE_EXIT` | App exited due to strict session mode |
 | `statement_sharepoint_upload_failed` | SharePoint upload error (audit log) |
+| `create_escalated_trading_request` | Trade auto-escalated (30-day holding rule) |
+| `auto_approve_escalated_request` | Escalated trade auto-approved after review period |
 
 ## Recommendations
 
@@ -144,6 +146,7 @@ Key security events to monitor in logs:
 - IP address tracking for forensics
 - Data retention: all records retained permanently
 - Database backups with SharePoint off-site storage
+- **30-day holding period enforcement**: SFC FMCC compliance — opposite-direction trades within 30 days auto-escalated with full audit trail (escalation record + delayed approval record)
 
 ## Vulnerability Reporting
 

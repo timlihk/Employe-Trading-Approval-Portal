@@ -72,7 +72,7 @@ src/
 │   ├── EmployeeProfile.js              # Onboarding + monthly confirmation
 │   └── StatementRequest.js             # Monthly statement tracking
 ├── services/
-│   ├── TradingRequestService.js        # Core trading logic (validation, approval)
+│   ├── TradingRequestService.js        # Core trading logic (validation, approval, 30-day detection)
 │   ├── AdminService.js                 # Admin authentication
 │   ├── BackupService.js                # SQL backup generation
 │   ├── CurrencyService.js              # Exchange rate fetching + caching
@@ -101,7 +101,7 @@ src/
 ### Tables
 | Table | Key columns |
 |-------|-------------|
-| `trading_requests` | uuid, employee_email, ticker, shares, trading_type, status, instrument_type |
+| `trading_requests` | uuid, employee_email, ticker, shares, trading_type, status, instrument_type, escalated, escalation_reason |
 | `restricted_stocks` | uuid, ticker, company_name, instrument_type |
 | `restricted_stock_changelog` | uuid, ticker, action (added/removed), admin_email |
 | `audit_logs` | uuid, user_email, user_type, action, target_type, details |
@@ -164,6 +164,19 @@ Exempt from `requireBrokerageSetup`: brokerage CRUD routes, confirm-accounts, lo
 
 ### Notification messages (via query params)
 Success (`?message=`): `stock_added`, `stock_removed`, `request_approved`, `request_rejected`, `escalation_submitted`, `statement_uploaded`, `accounts_confirmed`, `database_cleared`, `statement_emails_sent`, `statement_email_resent`, `admin_logged_out`
+
+### 30-Day Short-Term Trading Detection
+When an employee submits a trade, the system checks for opposite-direction trades on the same ticker within 30 days:
+- **Restricted stock** → rejected (highest priority, unchanged)
+- **Short-term trade detected** → `status='pending'`, `escalated=true`, auto-approved after random 30–60 min delay via `setTimeout`
+- **Normal trade** → approved immediately
+
+Key methods:
+- `TradingRequest.findRecentOppositeTradesByEmployee(email, ticker, type, days)` — query for opposite trades
+- `TradingRequest.autoApprove(uuid)` — conditional update (only if still `pending`)
+- `TradingRequestService._determineInitialStatus(isRestricted, ticker, instrumentType, tradingType, shortTermTrades)` — returns `{ initialStatus, rejectionReason, autoEscalate, escalationReason }`
+
+Audit trail: `create_escalated_trading_request` → (30-60 min) → `auto_approve_escalated_request`
 
 Error (`?error=`): `authentication_required`, `invalid_credentials`, `invalid_ticker`, `stock_already_exists`, `ticker_required`, `add_failed`, `export_failed`
 
@@ -241,12 +254,14 @@ throw new AppError('User-friendly message', 400);
 8. **SharePoint library name** — Graph API returns display name "Documents", not URL path "Shared Documents". `getSharePointDriveId()` does flexible matching (exact, case-insensitive, URL-based)
 9. **requireBrokerageSetup** caches result in `req.session._brokerageCheck` for 5 min — must `delete req.session._brokerageCheck` when accounts change
 10. **SharePoint site/drive IDs** are cached in static fields — persist until server restart
+11. **Auto-approve setTimeout** — if server restarts, escalated trades stay `pending` and require manual admin approval
+12. **Section-toggle collapsible** — use `help-toggle section-toggle` class for heading-style collapsible sections (vs small helper text style)
 
 ---
 
 ## Development Notes
 
-- **Version**: 3.1.0 (February 2026)
+- **Version**: 3.2.0 (February 2026)
 - **Node.js**: >=20.0.0
 - **Testing**: Jest 30 with unit and integration tests (`npm test`)
 - **CSS**: `styles-modern.css` (3000+ lines) minified to `styles-modern.min.css`

@@ -11,6 +11,8 @@ A comprehensive enterprise-grade employee pre-trading approval system with Micro
 - **Automatic Processing**: Real-time approval/rejection based on restricted instruments list
 - **Currency Conversion**: Automatic USD conversion for international stocks with live exchange rates
 - **Escalation System**: Business justification workflow for declined trades with admin priority review
+- **30-Day Holding Rule**: Auto-escalation when trading the same ticker in opposite direction within 30 days (SFC FMCC compliance), with delayed auto-approval after 30–60 minute review period
+- **Historical Data Migration**: Import pre-trade approvals from SharePoint/Microsoft Forms with automatic ticker resolution
 
 ### Brokerage Account Management
 - **Self-Service Registry**: Employees register their brokerage accounts (firm name + account number)
@@ -218,6 +220,14 @@ All tables use UUID primary keys and TIMESTAMPTZ columns for proper timezone han
 
 15 migration files in `/migrations/` run automatically on startup. The `run-migrations.js` runner executes them in order and handles idempotent re-runs gracefully.
 
+### Scripts
+
+| Script | Description |
+|--------|-------------|
+| `scripts/migrate-pretrade-approvals.js` | Import historical pre-trade approvals from SharePoint/Microsoft Forms |
+| `scripts/migrate-pretrade-approvals.js --dry-run` | Preview migration without inserting |
+| `scripts/migrate-pretrade-approvals.js --flag-short-term` | Retroactively flag 30-day holding rule violations |
+
 ## Local Development
 
 ```bash
@@ -281,6 +291,7 @@ See [SECURITY.md](./SECURITY.md) for full security policy and [SECURITY_SETUP.md
 
 | Version | Highlights |
 |---------|------------|
+| v3.2.0 | 30-day short-term trading detection with auto-escalation, SharePoint historical data migration, UI refinements |
 | v3.1.0 | SharePoint file proxy, employee-first folder structure, SharePoint diagnostics, performance caching, user guides |
 | v3.0.0 | Brokerage accounts, employee onboarding, statement collection, automated backups, UI redesign, database performance |
 | v2.5.0 | Code quality refactoring, CSS minification, testing framework |
@@ -291,4 +302,4 @@ See [SECURITY.md](./SECURITY.md) for full security policy and [SECURITY_SETUP.md
 
 ---
 
-*Last Updated: February 2026 — Version 3.1.0*
+*Last Updated: February 2026 — Version 3.2.0*

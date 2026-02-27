@@ -81,6 +81,11 @@ npm run test:coverage       # Coverage report
 | Composite DB indexes | `(employee_email, status)`, `(period, employee)` on statement_requests | Faster filtered queries |
 | SQL-side date checks | `isConfirmationCurrent()` uses SQL interval comparison | Eliminates extra row fetch + JS date math |
 | File proxy endpoint | `/statement-file/:uuid` serves files via Graph API | Direct file viewing without SharePoint UI |
+| 30-day short-term detection | Auto-escalate opposite-direction trades within 30 days | SFC FMCC holding period compliance |
+| Delayed auto-approve | `setTimeout` 30-60 min random delay for escalated trades | Creates both escalation and approval audit records |
+| Historical data migration | SharePoint Forms import with Yahoo Finance ticker resolution | 96 historical records migrated with manual mapping table |
+| Retroactive flagging | `--flag-short-term` mode scans historical trades for 30-day violations | 18 historical trades flagged for compliance |
+| Typography scaling | Reduced all font size tokens by ~1px globally | More compact, professional appearance |
 
 ### Architecture Decisions
 
@@ -94,6 +99,8 @@ npm run test:coverage       # Coverage report
 | Lazy profile creation | Employee profiles created on first confirmation, no bulk migration needed |
 | Employee-first SharePoint folders | `{employee}/{period}/` — easy per-person auditing and offboarding |
 | File proxy over direct URLs | `/statement-file/:uuid` — auth-checked, no SharePoint login needed for viewing |
+| setTimeout over job queue | 30-60 min auto-approve delay — short enough for in-memory timer, trade stays `pending` if server restarts |
+| Yahoo Finance for ticker resolution | Migration script resolves company names → tickers via search API + manual mapping fallback |
 
 ## Project Structure
 
@@ -110,4 +117,4 @@ See [CLAUDE.md](./CLAUDE.md) for full project structure and architecture details
 
 ---
 
-*Last Updated: February 2026 — Version 3.1.0*
+*Last Updated: February 2026 — Version 3.2.0*

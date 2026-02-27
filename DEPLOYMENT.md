@@ -123,6 +123,24 @@ LOG_LEVEL=info                     # debug/info/warn/error
 - **Manual backup**: Admin dashboard → Download database backup
 - **Health check**: `/health` endpoint reports database status
 
+### Data Migration (Historical Records)
+
+Import historical pre-trade approvals from SharePoint/Microsoft Forms:
+
+```bash
+# Preview what will be imported (no database changes)
+node scripts/migrate-pretrade-approvals.js --dry-run
+
+# Run the migration
+node scripts/migrate-pretrade-approvals.js
+
+# Retroactively flag 30-day holding rule violations on imported records
+node scripts/migrate-pretrade-approvals.js --flag-short-term --dry-run
+node scripts/migrate-pretrade-approvals.js --flag-short-term
+```
+
+The migration script resolves company names to tickers via Yahoo Finance search API with a manual mapping table for edge cases (typos, non-US exchanges, private companies).
+
 ## Monitoring
 
 Railway provides:
