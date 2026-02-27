@@ -51,9 +51,11 @@ const htmlBody = `
 
     <p><strong>Monthly Statement Uploads</strong></p>
     <ul>
-      <li>You will receive a monthly email requesting your brokerage account statements</li>
+      <li>On the <strong>7th of every month</strong>, you will receive an email requesting your brokerage account statements for the previous month</li>
       <li>Upload directly through the portal or via the secure link in the email</li>
       <li>Supported formats: PDF, PNG, JPG, CSV, XLSX (max 10 MB)</li>
+      <li>If not uploaded, a <strong>daily reminder</strong> will be sent</li>
+      <li>After 3 reminders without a response, the matter will be <strong>escalated to the COO</strong></li>
       <li>All statements are <strong>stored securely in SharePoint</strong> and are only accessible to the COO and the Compliance team</li>
     </ul>
 
