@@ -1411,6 +1411,7 @@ select.brokerage-select:has(option[value="__new__"]:checked) ~ .new-brokerage-fi
 .grid { display: grid; }
 .grid-auto { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
 .grid-filters { grid-template-columns: repeat(6, 1fr); }
+.grid-filters .form-control-sm { width: 100%; box-sizing: border-box; }
 .grid-mobile-stack { /* handled in responsive */ }
 
 /* Gap */
