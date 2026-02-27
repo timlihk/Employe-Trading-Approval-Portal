@@ -200,6 +200,42 @@ class StatementRequest extends BaseModel {
     const sql = `SELECT * FROM statement_requests WHERE uuid = $1 LIMIT 1`;
     return await this.get(sql, [uuid]);
   }
+
+  /**
+   * Get all pending/overdue statement requests for a specific employee.
+   * Used by the employee dashboard to show upload links.
+   */
+  static async getByEmployee(email) {
+    if (!email) return [];
+    const sql = `
+      SELECT * FROM statement_requests
+      WHERE employee_email = $1
+      ORDER BY
+        CASE status
+          WHEN 'overdue' THEN 1
+          WHEN 'pending' THEN 2
+          WHEN 'uploaded' THEN 3
+          WHEN 'skipped' THEN 4
+        END,
+        period_year DESC, period_month DESC
+    `;
+    return await this.query(sql, [email.toLowerCase()]);
+  }
+
+  /**
+   * Get all pending/overdue requests that need reminder emails.
+   * Returns requests where email was sent but statement not yet uploaded.
+   */
+  static async getPendingForReminders() {
+    const sql = `
+      SELECT * FROM statement_requests
+      WHERE status IN ('pending', 'overdue')
+        AND email_sent_at IS NOT NULL
+        AND uploaded_at IS NULL
+      ORDER BY deadline_at ASC
+    `;
+    return await this.query(sql, []);
+  }
 }
 
 module.exports = StatementRequest;

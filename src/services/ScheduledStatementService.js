@@ -3,12 +3,15 @@ const { logger } = require('../utils/logger');
 
 class ScheduledStatementService {
   static cronJob = null;
+  static reminderCronJob = null;
   static isRunning = false;
   static schedule = null;
+  static reminderSchedule = '0 0 9 * * *'; // Daily at 9 AM HKT
 
   /**
-   * Initialize the monthly statement request scheduler.
-   * Default: 7th of every month at 9 AM Hong Kong time (allows time for month-end statements).
+   * Initialize the monthly statement request scheduler and daily reminder scheduler.
+   * Monthly: 7th of every month at 9 AM HKT (initial emails).
+   * Daily: Every day at 9 AM HKT (reminders for those who haven't uploaded).
    */
   static initialize(schedule = null) {
     const cronSchedule = schedule || process.env.STATEMENT_REQUEST_SCHEDULE || '0 0 9 7 * *';
@@ -21,6 +24,7 @@ class ScheduledStatementService {
     this.stop();
     this.schedule = cronSchedule;
 
+    // Monthly job: send initial statement request emails
     this.cronJob = cron.schedule(cronSchedule, async () => {
       await this.executeScheduledRequest();
     }, {
@@ -28,8 +32,17 @@ class ScheduledStatementService {
       timezone: 'Asia/Hong_Kong'
     });
 
+    // Daily job: send reminders to those who haven't uploaded
+    this.reminderCronJob = cron.schedule(this.reminderSchedule, async () => {
+      await this.executeDailyReminders();
+    }, {
+      scheduled: true,
+      timezone: 'Asia/Hong_Kong'
+    });
+
     this.isRunning = true;
     logger.info(`Statement request scheduler initialized: ${cronSchedule}`);
+    logger.info(`Daily reminder scheduler initialized: ${this.reminderSchedule}`);
     logger.info(`Next statement request run: ${this.getNextScheduledTime(cronSchedule)}`);
     return true;
   }
@@ -53,6 +66,33 @@ class ScheduledStatementService {
   }
 
   /**
+   * Execute daily reminder emails for pending/overdue statement requests.
+   * Skips the 7th of the month (already handled by the monthly job).
+   */
+  static async executeDailyReminders() {
+    const today = new Date();
+    const dayOfMonth = today.getDate();
+
+    // Parse the monthly schedule to find which day it runs on
+    const parts = (this.schedule || '').split(' ');
+    const monthlyDay = parseInt(parts[3]);
+    if (dayOfMonth === monthlyDay) {
+      logger.info('Skipping daily reminders — monthly job runs today');
+      return;
+    }
+
+    logger.info('Starting daily statement reminder check...');
+    try {
+      const StatementRequestService = require('./StatementRequestService');
+      await StatementRequestService.markOverdueRequests();
+      const sent = await StatementRequestService.sendReminders();
+      logger.info(`Daily reminder check completed: ${sent} reminders sent`);
+    } catch (error) {
+      logger.error('Daily reminder check failed:', error.message);
+    }
+  }
+
+  /**
    * Manual trigger (for admin UI).
    */
   static async triggerManual() {
@@ -68,6 +108,10 @@ class ScheduledStatementService {
       this.cronJob.stop();
       this.cronJob = null;
     }
+    if (this.reminderCronJob) {
+      this.reminderCronJob.stop();
+      this.reminderCronJob = null;
+    }
     this.isRunning = false;
   }
 
@@ -78,6 +122,7 @@ class ScheduledStatementService {
     return {
       isRunning: this.isRunning,
       schedule: this.schedule,
+      reminderSchedule: this.reminderSchedule,
       timezone: 'Asia/Hong_Kong',
       nextRun: this.isRunning ? this.getNextScheduledTime(this.schedule) : null
     };

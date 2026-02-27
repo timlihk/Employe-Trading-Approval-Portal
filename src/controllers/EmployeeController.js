@@ -1,4 +1,5 @@
 const TradingRequestService = require('../services/TradingRequestService');
+const StatementRequest = require('../models/StatementRequest');
 const { catchAsync } = require('../middleware/errorHandler');
 const { renderEmployeePage, generateNotificationBanner } = require('../utils/templates');
 const { getDisplayId } = require('../utils/formatters');
@@ -26,6 +27,84 @@ class EmployeeController {
     const prefilledTicker = ticker ? decodeURIComponent(ticker) : '';
     const prefilledShares = shares ? decodeURIComponent(shares) : '';
     const prefilledType = trading_type ? decodeURIComponent(trading_type) : 'buy';
+
+    // Fetch statement requests for this employee
+    const employeeEmail = req.session.employee.email;
+    let statementRequests = [];
+    try {
+      statementRequests = await StatementRequest.getByEmployee(employeeEmail);
+    } catch (err) {
+      // Non-critical — dashboard still works without statements
+    }
+
+    const pendingStatements = statementRequests.filter(r => r.status === 'pending' || r.status === 'overdue');
+    const uploadedStatements = statementRequests.filter(r => r.status === 'uploaded');
+
+    // Build pending statement rows
+    const pendingRows = pendingStatements.map(r => {
+      const monthName = new Date(r.period_year, r.period_month - 1).toLocaleString('en-US', { month: 'long' });
+      const deadlineStr = r.deadline_at
+        ? new Date(r.deadline_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+        : 'N/A';
+      const isOverdue = r.status === 'overdue' || (r.deadline_at && new Date(r.deadline_at) < new Date());
+      return `<tr>
+        <td><span class="font-weight-600">${monthName} ${r.period_year}</span></td>
+        <td>${deadlineStr}${isOverdue ? ' <span class="table-status overdue">Overdue</span>' : ''}</td>
+        <td><a href="/upload-statement/${r.upload_token}" class="btn btn-sm btn-primary">Upload</a></td>
+      </tr>`;
+    }).join('');
+
+    // Build uploaded statement rows (show last 6)
+    const recentUploaded = uploadedStatements.slice(0, 6);
+    const uploadedRows = recentUploaded.map(r => {
+      const monthName = new Date(r.period_year, r.period_month - 1).toLocaleString('en-US', { month: 'long' });
+      const uploadedDate = r.uploaded_at
+        ? new Date(r.uploaded_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+        : '-';
+      return `<tr>
+        <td><span class="font-weight-600">${monthName} ${r.period_year}</span></td>
+        <td class="text-sm">${r.original_filename || '-'}</td>
+        <td class="table-date">${uploadedDate}</td>
+        <td><span class="table-status uploaded">Uploaded</span></td>
+      </tr>`;
+    }).join('');
+
+    // Statement card content
+    let statementCardContent = '';
+    if (pendingStatements.length > 0) {
+      statementCardContent += `
+        <h4 class="mb-3">Pending Uploads</h4>
+        <div class="table-container">
+          <table class="modern-table">
+            <thead><tr><th>Period</th><th>Deadline</th><th>Action</th></tr></thead>
+            <tbody>${pendingRows}</tbody>
+          </table>
+        </div>`;
+    }
+    if (recentUploaded.length > 0) {
+      statementCardContent += `
+        ${pendingStatements.length > 0 ? '<hr class="my-4">' : ''}
+        <h4 class="mb-3">Recent Uploads</h4>
+        <div class="table-container">
+          <table class="modern-table">
+            <thead><tr><th>Period</th><th>File</th><th>Uploaded</th><th>Status</th></tr></thead>
+            <tbody>${uploadedRows}</tbody>
+          </table>
+        </div>`;
+    }
+    if (statementRequests.length === 0) {
+      statementCardContent = '<p class="text-muted text-center p-4">No statement requests at this time.</p>';
+    }
+
+    const statementCard = `
+      <div class="card mt-6">
+        <div class="card-header">
+          <h3 class="card-title heading">Monthly Trading Statements</h3>
+        </div>
+        <div class="card-body">
+          ${statementCardContent}
+        </div>
+      </div>`;
 
     const dashboardContent = `
       ${banner}
@@ -55,8 +134,8 @@ class EmployeeController {
             <div class="grid grid-auto gap-4 grid-mobile-stack">
               <div>
                 <label class="form-label">Stock Ticker or Bond ISIN</label>
-                <input type="text" name="ticker" value="${prefilledTicker}" required 
-                       placeholder="e.g., AAPL, MSFT or US1234567890" 
+                <input type="text" name="ticker" value="${prefilledTicker}" required
+                       placeholder="e.g., AAPL, MSFT or US1234567890"
                        class="form-control text-uppercase"
                        maxlength="20" pattern="[A-Za-z0-9.-]+">
                 <div class="collapsible-help">
@@ -74,7 +153,7 @@ class EmployeeController {
                   </div>
                 </div>
               </div>
-              
+
               <div>
                 <label class="form-label">Number of Shares/Units</label>
                 <input type="number" name="shares" value="${prefilledShares}" required min="1" max="1000000"
@@ -91,7 +170,7 @@ class EmployeeController {
                   </div>
                 </div>
               </div>
-              
+
               <div>
                 <label class="form-label">Trading Type</label>
                 <div class="d-flex gap-6">
@@ -106,7 +185,7 @@ class EmployeeController {
                 </div>
               </div>
             </div>
-            
+
             <div class="mt-6 text-center">
               <button type="submit" class="btn btn-primary w-full-mobile">
                 Preview Trading Request
@@ -115,6 +194,7 @@ class EmployeeController {
           </form>
         </div>
       </div>
+      ${statementCard}
     `;
 
     const html = renderEmployeePage('Employee Dashboard', dashboardContent, req.session.employee.name, req.session.employee.email);

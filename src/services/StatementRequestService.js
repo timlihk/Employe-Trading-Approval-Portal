@@ -279,24 +279,26 @@ class StatementRequestService {
   }
 
   /**
-   * Send reminder emails for pending requests approaching deadline.
+   * Send daily reminder emails for all pending/overdue requests that haven't been uploaded.
+   * No cap on reminder count — sends daily until the employee uploads.
    */
   async sendReminders() {
-    const pendingRequests = await StatementRequest.getOverdueRequests();
+    const pendingRequests = await StatementRequest.getPendingForReminders();
     let sent = 0;
 
     for (const request of pendingRequests) {
-      if (request.reminder_count >= 3) continue; // Max 3 reminders
-
       try {
         const period = { year: request.period_year, month: request.period_month };
-        await this.sendStatementRequestEmail(
+        await this.sendReminderEmail(
           { email: request.employee_email, name: request.employee_name },
           request.upload_token,
           period
         );
         await StatementRequest.incrementReminderCount(request.uuid);
         sent++;
+
+        // Small delay between emails
+        await new Promise(resolve => setTimeout(resolve, 100));
       } catch (error) {
         logger.error(`Failed to send reminder to ${request.employee_email}:`, error.message);
       }
@@ -306,6 +308,37 @@ class StatementRequestService {
       logger.info(`Sent ${sent} statement reminder emails`);
     }
     return sent;
+  }
+
+  /**
+   * Send a reminder email (distinct subject from initial request).
+   */
+  async sendReminderEmail(employee, uploadToken, period) {
+    const frontendUrl = process.env.FRONTEND_URL || `http://localhost:${process.env.PORT || 3000}`;
+    const uploadUrl = `${frontendUrl}/upload-statement/${uploadToken}`;
+
+    const monthName = new Date(period.year, period.month - 1).toLocaleString('en-US', { month: 'long' });
+    const subject = `Reminder: Trading Statement Required — ${monthName} ${period.year}`;
+
+    const htmlBody = this.generateEmailBody(
+      employee.name || employee.email,
+      uploadUrl,
+      { ...period, monthName },
+      new Date() // deadline already set in DB
+    );
+
+    try {
+      await GraphAPIService.sendEmail(employee.email, subject, htmlBody);
+
+      await AuditLog.logActivity(
+        'system', 'admin', 'statement_reminder_sent',
+        'statement_request', null,
+        `Reminder email sent to ${employee.email} for ${monthName} ${period.year}`
+      );
+    } catch (error) {
+      logger.error(`Failed to send reminder email to ${employee.email}:`, error.message);
+      throw error;
+    }
   }
 }
 

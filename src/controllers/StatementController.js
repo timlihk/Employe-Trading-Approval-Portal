@@ -287,6 +287,10 @@ class StatementController {
               <span class="scheduler-label">Next Run</span>
               <span class="scheduler-value">${status.nextRun || 'N/A'}</span>
             </div>
+            <div class="scheduler-row">
+              <span class="scheduler-label">Daily Reminders</span>
+              <span class="scheduler-value">${status.reminderSchedule || 'Every day at 9 AM HKT'}</span>
+            </div>
           </div>
 
           <div class="config-hint">
