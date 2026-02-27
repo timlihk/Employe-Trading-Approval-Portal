@@ -50,9 +50,9 @@ STATEMENT_REQUEST_SCHEDULE=0 0 9 7 * *
 STATEMENT_UPLOAD_DEADLINE_DAYS=14
 AZURE_AD_EMPLOYEE_GROUP_ID=<group-id>
 SHAREPOINT_SITE_URL=https://company.sharepoint.com/sites/compliance
-SHAREPOINT_LIBRARY_NAME=Documents
-SHAREPOINT_FOLDER_PATH=Trading Statements
-SHAREPOINT_BACKUP_FOLDER_PATH=Database_Backups
+SHAREPOINT_LIBRARY_NAME=Documents                         # Display name (not "Shared Documents")
+SHAREPOINT_FOLDER_PATH=Trading_Approval                    # Statements: {path}/{employee}/{YYYY-MM}/
+SHAREPOINT_BACKUP_FOLDER_PATH=Trading_Approval/Database_Backups  # Backups: {path}/{YYYY-MM}/
 ```
 
 ### Optional: Backups & Strict Mode

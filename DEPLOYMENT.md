@@ -67,9 +67,21 @@ AZURE_AD_EMPLOYEE_GROUP_ID=<group-id>
 
 ```bash
 SHAREPOINT_SITE_URL=https://company.sharepoint.com/sites/compliance
-SHAREPOINT_LIBRARY_NAME=Documents
-SHAREPOINT_FOLDER_PATH=Trading Statements
-SHAREPOINT_BACKUP_FOLDER_PATH=Database_Backups
+SHAREPOINT_LIBRARY_NAME=Documents                         # Display name (not "Shared Documents")
+SHAREPOINT_FOLDER_PATH=Trading_Approval                    # Statements: {path}/{employee}/{YYYY-MM}/
+SHAREPOINT_BACKUP_FOLDER_PATH=Trading_Approval/Database_Backups  # Backups: {path}/{YYYY-MM}/
+```
+
+**SharePoint folder structure (auto-created):**
+```
+Documents/
+  Trading_Approval/
+    john.doe/
+      2026-01/
+        brokerage_timestamp_statement.pdf
+    Database_Backups/
+      2026-02/
+        db_backup_2026-02-27T09-00-00.sql
 ```
 
 ### Optional: Backups
@@ -136,6 +148,12 @@ Application provides:
 - Verify redirect URI matches exactly (including trailing slash)
 - Check Azure AD app registration is configured correctly
 - Ensure client secret hasn't expired
+
+### SharePoint upload/download not working
+- Use admin "Test SharePoint Connection" button (Scheduler Settings page) for step-by-step diagnostics
+- `SHAREPOINT_LIBRARY_NAME` must match the library's **display name** (usually "Documents", not "Shared Documents")
+- Verify Azure AD app has `Sites.ReadWrite.All` application permission
+- Check logs for specific Graph API error messages
 
 ### Backups not working
 - Verify SharePoint variables are set if using SharePoint upload

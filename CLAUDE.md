@@ -10,7 +10,7 @@
 - **Frontend**: Server-side rendering with template strings (no React/Vue/JS)
 - **Authentication**: Microsoft 365 SSO (optional) + email-based demo mode
 - **Email**: Microsoft Graph API for statement request emails
-- **Storage**: SharePoint REST API for statements and backups
+- **Storage**: SharePoint REST API for statements and backups (with proxy file access via `/statement-file/:uuid`)
 - **Scheduling**: node-cron for automated backups and statement requests
 - **Deployment**: Railway (NOT Vercel — stateful, long-running processes)
 
@@ -188,7 +188,9 @@ Error (`?error=`): `authentication_required`, `invalid_credentials`, `invalid_ti
 - `STATEMENT_UPLOAD_DEADLINE_DAYS` — default: 14
 - `BACKUP_SCHEDULE` — cron (default: `0 0 * * * *` hourly)
 - `DISABLE_SCHEDULED_BACKUPS` / `DISABLE_STATEMENT_REQUESTS` — set `true` to disable
-- `SHAREPOINT_SITE_URL`, `SHAREPOINT_LIBRARY_NAME`, `SHAREPOINT_FOLDER_PATH`, `SHAREPOINT_BACKUP_FOLDER_PATH`
+- `SHAREPOINT_SITE_URL`, `SHAREPOINT_LIBRARY_NAME` — SharePoint site and document library
+- `SHAREPOINT_FOLDER_PATH` — statement upload root (employee/period subfolders created automatically)
+- `SHAREPOINT_BACKUP_FOLDER_PATH` — database backup root (monthly subfolders created automatically)
 
 ### Deployment
 - `NODE_ENV`, `PORT`, `LOG_LEVEL`, `FRONTEND_URL`
@@ -236,16 +238,19 @@ throw new AppError('User-friendly message', 400);
 5. **Functional indexes with AT TIME ZONE** are STABLE not IMMUTABLE — incompatible with TIMESTAMPTZ columns (dropped in migration 014)
 6. **Session store** falls back to memory if PostgreSQL unavailable — set `SESSION_STORE_NO_FALLBACK=true` in production
 7. **Railway port** — app defaults to PORT=3001, Railway sets PORT dynamically via env var
+8. **SharePoint library name** — Graph API returns display name "Documents", not URL path "Shared Documents". `getSharePointDriveId()` does flexible matching (exact, case-insensitive, URL-based)
+9. **requireBrokerageSetup** caches result in `req.session._brokerageCheck` for 5 min — must `delete req.session._brokerageCheck` when accounts change
+10. **SharePoint site/drive IDs** are cached in static fields — persist until server restart
 
 ---
 
 ## Development Notes
 
-- **Version**: 3.0.0 (February 2026)
+- **Version**: 3.1.0 (February 2026)
 - **Node.js**: >=20.0.0
 - **Testing**: Jest 30 with unit and integration tests (`npm test`)
 - **CSS**: `styles-modern.css` (3000+ lines) minified to `styles-modern.min.css`
 - **Compliance**: Full audit trail, data export, regulatory compliance
-- **Performance**: LRU caching, database indexes, circuit breakers, sargable queries
+- **Performance**: LRU caching, database indexes, circuit breakers, sargable queries, session-cached middleware, SharePoint ID caching
 
 **Remember**: This is a compliance-focused financial application. Security and audit requirements take precedence over convenience features. No inline JavaScript. No inline styles.

@@ -22,9 +22,11 @@ A comprehensive enterprise-grade employee pre-trading approval system with Micro
 - **Scheduled Email Requests**: Automatic emails on configurable schedule (default: 7th of each month)
 - **Token-Based Upload**: Employees receive secure upload links via email
 - **Self-Service Upload**: Upload trading statements with brokerage account selection
-- **SharePoint Integration**: Uploaded statements stored in SharePoint document library
+- **SharePoint Integration**: Statements stored in employee-first folder structure (`{employee}/{YYYY-MM}/`)
+- **Secure File Viewing**: Files served via authenticated proxy — no direct SharePoint access needed
 - **Deadline Tracking**: Configurable deadlines with automated daily reminder emails
 - **Admin Dashboard**: View upload status per employee, resend emails, manual trigger
+- **SharePoint Diagnostics**: Admin "Test SharePoint Connection" for step-by-step connectivity checks
 
 ### Automated Database Backups
 - **Scheduled Backups**: Configurable schedule via cron (default: hourly)
@@ -67,7 +69,7 @@ Middleware (Security, validation, upload)
 - **Authentication**: Microsoft 365 OAuth 2.0 (optional) + admin credentials
 - **Frontend**: Server-side rendering, pure HTML/CSS (no JavaScript — strict CSP)
 - **Email**: Microsoft Graph API for statement request emails
-- **Storage**: SharePoint REST API for statements and backups
+- **Storage**: SharePoint REST API for statements and backups (with proxy file access)
 - **Scheduling**: node-cron for backups and statement requests
 - **Deployment**: Railway with Docker, auto-scaling
 
@@ -115,9 +117,9 @@ AZURE_AD_EMPLOYEE_GROUP_ID=<azure-ad-group-id>        # Filter employees by grou
 
 ```bash
 SHAREPOINT_SITE_URL=https://company.sharepoint.com/sites/compliance
-SHAREPOINT_LIBRARY_NAME=Documents
-SHAREPOINT_FOLDER_PATH=Trading Statements
-SHAREPOINT_BACKUP_FOLDER_PATH=Database_Backups
+SHAREPOINT_LIBRARY_NAME=Documents                         # Library display name
+SHAREPOINT_FOLDER_PATH=Trading_Approval                    # Statement folder (employee/{YYYY-MM}/ subfolders)
+SHAREPOINT_BACKUP_FOLDER_PATH=Trading_Approval/Database_Backups  # Backup folder ({YYYY-MM}/ subfolders)
 ```
 
 ### Scheduled Backups
@@ -173,6 +175,7 @@ DISABLE_STATEMENT_REQUESTS=true       # Disable statement feature
 |--------|------|-------------|
 | GET | `/employee-upload-statement` | Upload form |
 | POST | `/employee-upload-statement` | Submit statement file |
+| GET | `/statement-file/:uuid` | View uploaded file (proxy via SharePoint) |
 
 ### Admin Management
 | Method | Path | Description |
@@ -186,6 +189,7 @@ DISABLE_STATEMENT_REQUESTS=true       # Disable statement feature
 | POST | `/admin-remove-stock` | Remove restricted instrument |
 | POST | `/admin-approve-request` | Approve trading request |
 | POST | `/admin-reject-request` | Reject trading request |
+| POST | `/admin-test-sharepoint` | Test SharePoint connectivity |
 | GET | `/admin-backup-database` | Download database backup |
 
 ### System
@@ -277,6 +281,7 @@ See [SECURITY.md](./SECURITY.md) for full security policy and [SECURITY_SETUP.md
 
 | Version | Highlights |
 |---------|------------|
+| v3.1.0 | SharePoint file proxy, employee-first folder structure, SharePoint diagnostics, performance caching, user guides |
 | v3.0.0 | Brokerage accounts, employee onboarding, statement collection, automated backups, UI redesign, database performance |
 | v2.5.0 | Code quality refactoring, CSS minification, testing framework |
 | v2.4.0 | CSP hardening, security improvements |
@@ -286,4 +291,4 @@ See [SECURITY.md](./SECURITY.md) for full security policy and [SECURITY_SETUP.md
 
 ---
 
-*Last Updated: February 2026 — Version 3.0.0*
+*Last Updated: February 2026 — Version 3.1.0*

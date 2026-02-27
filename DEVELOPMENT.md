@@ -76,6 +76,11 @@ npm run test:coverage       # Coverage report
 | Duplicate removal | Removed duplicate `escalate()` method | Cleaner codebase |
 | Application metrics | `/metrics` endpoint with DB/cache/error stats | Operational visibility |
 | UI redesign | Full CSS overhaul with consolidated stylesheet | Professional, consistent UI |
+| Session-cached middleware | `requireBrokerageSetup` cached 5 min, single combined query | 2 fewer DB queries per page load |
+| SharePoint ID caching | Site ID and drive ID cached in memory | Eliminates Graph API calls per upload/download |
+| Composite DB indexes | `(employee_email, status)`, `(period, employee)` on statement_requests | Faster filtered queries |
+| SQL-side date checks | `isConfirmationCurrent()` uses SQL interval comparison | Eliminates extra row fetch + JS date math |
+| File proxy endpoint | `/statement-file/:uuid` serves files via Graph API | Direct file viewing without SharePoint UI |
 
 ### Architecture Decisions
 
@@ -87,6 +92,8 @@ npm run test:coverage       # Coverage report
 | UUID primary keys | Non-guessable, merge-safe, no sequential enumeration |
 | Server-side rendering | CSP compliance, no build step, works everywhere |
 | Lazy profile creation | Employee profiles created on first confirmation, no bulk migration needed |
+| Employee-first SharePoint folders | `{employee}/{period}/` — easy per-person auditing and offboarding |
+| File proxy over direct URLs | `/statement-file/:uuid` — auth-checked, no SharePoint login needed for viewing |
 
 ## Project Structure
 
@@ -103,4 +110,4 @@ See [CLAUDE.md](./CLAUDE.md) for full project structure and architecture details
 
 ---
 
-*Last Updated: February 2026 — Version 3.0.0*
+*Last Updated: February 2026 — Version 3.1.0*

@@ -100,6 +100,21 @@ All user actions logged to `audit_logs` table with:
 | `ADMIN_PASSWORD_HASH` | Bcrypt hash of admin password | Yes (prod) |
 | `DATABASE_URL` | PostgreSQL connection string | Yes |
 
+## File Access Security
+
+Statement files are served through an authenticated proxy (`/statement-file/:uuid`):
+- Files are **never** exposed via direct SharePoint URLs
+- Auth check: must be the owning employee or an admin
+- Files fetched server-side via Graph API and streamed to browser
+- Content-Disposition set to `inline` with original filename
+
+## Middleware Caching
+
+`requireBrokerageSetup` middleware caches its result in `req.session._brokerageCheck` for 5 minutes:
+- Cache is invalidated when accounts are added, removed, or confirmed
+- On cache miss: single combined SQL query (account count + confirmation check)
+- Graceful degradation: if check fails, request proceeds (no lockout)
+
 ## Monitoring Events
 
 Key security events to monitor in logs:
@@ -111,6 +126,7 @@ Key security events to monitor in logs:
 | `UNAUTHORIZED_EMPLOYEE_ACCESS` | Access attempt without employee session |
 | `SESSION_STORE_FALLBACK_TO_MEMORY` | PostgreSQL session store failed |
 | `SESSION_STORE_STRICT_MODE_EXIT` | App exited due to strict session mode |
+| `statement_sharepoint_upload_failed` | SharePoint upload error (audit log) |
 
 ## Recommendations
 
