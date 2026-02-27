@@ -9,7 +9,8 @@
  */
 function formatUuid(uuid) {
   if (!uuid) return 'N/A';
-  
+  uuid = String(uuid);
+
   // If it's a full UUID, show first 8 chars
   if (uuid.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
     return uuid.substring(0, 8).toUpperCase();

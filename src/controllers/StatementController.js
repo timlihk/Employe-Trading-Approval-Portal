@@ -5,7 +5,12 @@ const ScheduledStatementService = require('../services/ScheduledStatementService
 const GraphAPIService = require('../services/GraphAPIService');
 const AuditLog = require('../models/AuditLog');
 const { catchAsync } = require('../middleware/errorHandler');
-const { renderAdminPage, renderPublicPage, generateNotificationBanner, renderCard, renderTable } = require('../utils/templates');
+const { renderAdminPage, renderPublicPage, generateNotificationBanner } = require('../utils/templates');
+const renderInvalidLink = require('../templates/statement/invalidLink');
+const renderUploadForm = require('../templates/statement/uploadForm');
+const renderUploadComplete = require('../templates/statement/uploadComplete');
+const renderAdminDashboard = require('../templates/statement/adminDashboard');
+const renderScheduler = require('../templates/statement/scheduler');
 
 class StatementController {
 
@@ -23,19 +28,7 @@ class StatementController {
     const request = await StatementRequestService.validateUploadToken(token);
 
     if (!request) {
-      const content = `
-        <div class="upload-container">
-          <div class="card">
-            <div class="card-header">
-              <h3 class="card-title">Invalid or Expired Link</h3>
-            </div>
-            <div class="card-body text-center">
-              <p class="mb-4">This upload link is no longer valid. It may have expired or the statement has already been uploaded.</p>
-              <a href="/" class="btn btn-primary">Go to Portal</a>
-            </div>
-          </div>
-        </div>`;
-      return res.send(renderPublicPage('Upload Statement', content));
+      return res.send(renderPublicPage('Upload Statement', renderInvalidLink()));
     }
 
     const monthName = new Date(request.period_year, request.period_month - 1)
@@ -45,70 +38,21 @@ class StatementController {
       : 'N/A';
     const isOverdue = request.deadline_at && new Date(request.deadline_at) < new Date();
 
-    // Get registered brokerage accounts for this employee
     const accounts = await BrokerageAccount.getByEmployee(request.employee_email);
     const accountOptions = accounts.map(a =>
       `<option value="${a.firm_name} — ${a.account_number}">${a.firm_name} — ${a.account_number}</option>`
     ).join('');
 
-    const content = `
-        ${banner}
-        <div class="upload-container">
-          <div class="card">
-            <div class="card-header">
-              <h3 class="card-title">Upload Trading Statement</h3>
-            </div>
-            <div class="card-body">
-              <dl class="upload-meta">
-                <dt>Period</dt>
-                <dd>${monthName} ${request.period_year}</dd>
-                <dt>Employee</dt>
-                <dd>${request.employee_name || request.employee_email}</dd>
-                <dt>Deadline</dt>
-                <dd>${deadlineStr}${isOverdue ? ' <span class="table-status overdue">Overdue</span>' : ''}</dd>
-              </dl>
-
-              <form method="post" action="/upload-statement/${token}" enctype="multipart/form-data">
-                <div class="mb-6">
-                  <label class="form-label">Brokerage Account</label>
-                  <select name="brokerage_select" class="form-control brokerage-select">
-                    <option value="">Select account...</option>
-                    ${accountOptions}
-                    <option value="__new__">+ Other (type below)</option>
-                  </select>
-                </div>
-                <div class="mb-6 new-brokerage-field">
-                  <label class="form-label">Brokerage Name</label>
-                  <input type="text" name="brokerage_new" placeholder="e.g., Interactive Brokers — U12345678"
-                         class="form-control" maxlength="255">
-                </div>
-                <div class="mb-6">
-                  <label class="form-label">Statement File</label>
-                  <div class="file-input-wrapper">
-                    <input type="file" name="statement" required
-                           accept=".pdf,.png,.jpg,.jpeg,.csv,.xlsx">
-                    <span class="file-input-icon">&#128196;</span>
-                    <span class="file-input-text">Click to select a file</span>
-                    <span class="file-input-hint">PDF, PNG, JPG, CSV, XLSX — max 10 MB</span>
-                    <span class="file-input-selected">
-                      <span class="file-input-selected-icon">&#10003;</span>
-                      File selected — click to change
-                    </span>
-                  </div>
-                </div>
-                <div class="mb-6">
-                  <label class="form-label">Notes (optional)</label>
-                  <textarea name="notes" rows="3"
-                            placeholder="Any additional notes about this statement..."
-                            class="form-control resize-vertical"></textarea>
-                </div>
-                <button type="submit" class="btn btn-primary w-full">
-                  Upload Statement
-                </button>
-              </form>
-            </div>
-          </div>
-        </div>`;
+    const content = renderUploadForm({
+      banner,
+      token,
+      monthName,
+      periodYear: request.period_year,
+      employeeDisplay: request.employee_name || request.employee_email,
+      deadlineStr,
+      isOverdue,
+      accountOptions,
+    });
 
     res.send(renderPublicPage('Upload Trading Statement', content));
   });
@@ -126,7 +70,6 @@ class StatementController {
       return res.redirect(`/upload-statement/${token}?error=${encodeURIComponent('Please select a file to upload')}`);
     }
 
-    // Determine brokerage name
     let brokerageName = '';
     if (brokerage_select === '__new__' && brokerage_new && brokerage_new.trim()) {
       brokerageName = brokerage_new.trim();
@@ -136,21 +79,10 @@ class StatementController {
 
     try {
       const result = await StatementRequestService.processUpload(token, file, notes, brokerageName);
-
-      const content = `
-        <div class="upload-container">
-          <div class="card">
-            <div class="card-body">
-              <div class="upload-success">
-                <div class="upload-success-icon">&#10003;</div>
-                <h3>Statement Uploaded</h3>
-                <p class="mb-4">Your <strong>${result.period}</strong> trading statement has been received and securely stored.</p>
-                <p class="mb-6"><strong>File:</strong> ${result.originalFilename}</p>
-                <a href="/" class="btn btn-primary">Go to Portal</a>
-              </div>
-            </div>
-          </div>
-        </div>`;
+      const content = renderUploadComplete({
+        period: result.period,
+        originalFilename: result.originalFilename,
+      });
       res.send(renderPublicPage('Upload Complete', content));
     } catch (error) {
       return res.redirect(`/upload-statement/${token}?error=${encodeURIComponent(error.message)}`);
@@ -170,17 +102,15 @@ class StatementController {
 
     const banner = generateNotificationBanner(req.query);
 
-    // Default to previous month
     const now = new Date();
     const defaultDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const year = parseInt(req.query.year) || defaultDate.getFullYear();
     const month = parseInt(req.query.month) || (defaultDate.getMonth() + 1);
 
-    const { summary, requests, availablePeriods } = await StatementRequestService.getAdminDashboardData(year, month);
+    const { summary, requests } = await StatementRequestService.getAdminDashboardData(year, month);
 
     const monthName = new Date(year, month - 1).toLocaleString('en-US', { month: 'long' });
 
-    // Period selector options
     const periodOptions = [];
     for (let i = 0; i < 12; i++) {
       const d = new Date(now.getFullYear(), now.getMonth() - 1 - i, 1);
@@ -191,98 +121,16 @@ class StatementController {
       periodOptions.push(`<option value="${y}-${m}" ${selected}>${mName} ${y}</option>`);
     }
 
-    // Summary stats
-    const total = summary?.total || 0;
-    const uploaded = summary?.uploaded || 0;
-    const pending = summary?.pending || 0;
-    const overdue = summary?.overdue || 0;
-    const emailsSent = summary?.emails_sent || 0;
-
-    const summaryCard = renderCard(`${monthName} ${year}`, `
-      <div class="stats-grid">
-        <div class="stat-item">
-          <div class="stat-value">${total}</div>
-          <div class="stat-label">Total</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-value stat-info">${emailsSent}</div>
-          <div class="stat-label">Emails Sent</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-value stat-success">${uploaded}</div>
-          <div class="stat-label">Uploaded</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-value stat-warning">${pending}</div>
-          <div class="stat-label">Pending</div>
-        </div>
-        <div class="stat-item">
-          <div class="stat-value stat-danger">${overdue}</div>
-          <div class="stat-label">Overdue</div>
-        </div>
-      </div>
-    `);
-
-    // Requests table
-    const tableHeaders = ['Employee', 'Brokerage', 'Status', 'Email Sent', 'Uploaded', 'File', 'Actions'];
-    const tableRows = (requests || []).map(r => {
-      const emailSentDate = r.email_sent_at
-        ? new Date(r.email_sent_at).toLocaleDateString('en-GB')
-        : '-';
-      const uploadedDate = r.uploaded_at
-        ? new Date(r.uploaded_at).toLocaleDateString('en-GB')
-        : '-';
-      const fileInfo = r.original_filename || '-';
-      const fileLink = r.sharepoint_item_id
-        ? `<a href="/statement-file/${r.uuid}" target="_blank" rel="noopener">${fileInfo}</a>`
-        : fileInfo;
-
-      const resendForm = r.status !== 'uploaded'
-        ? `<form method="post" action="/admin-resend-statement-email" class="d-inline">
-             ${req.csrfInput()}
-             <input type="hidden" name="statement_request_uuid" value="${r.uuid}">
-             <button type="submit" class="btn btn-sm btn-secondary">Resend</button>
-           </form>`
-        : '';
-
-      return `<tr>
-        <td>
-          <span class="font-weight-600">${r.employee_name || r.employee_email}</span><br>
-          <span class="text-muted text-sm">${r.employee_email}</span>
-        </td>
-        <td class="text-sm">${r.brokerage_name || '-'}</td>
-        <td><span class="table-status ${r.status}">${r.status.toUpperCase()}</span></td>
-        <td class="table-date">${emailSentDate}</td>
-        <td class="table-date">${uploadedDate}</td>
-        <td class="text-sm">${fileLink}</td>
-        <td>${resendForm}</td>
-      </tr>`;
+    const content = renderAdminDashboard({
+      banner,
+      year,
+      month,
+      monthName,
+      periodOptions,
+      summary,
+      requests,
+      csrfInput: req.csrfInput(),
     });
-
-    const table = renderTable(tableHeaders, tableRows, 'No statement requests for this period. Use the button above to send requests.');
-
-    const content = `
-        ${banner}
-        <div class="action-bar">
-          <form method="post" action="/admin-trigger-statement-request">
-            ${req.csrfInput()}
-            <button type="submit" class="btn btn-primary">Send Monthly Emails Now</button>
-          </form>
-          <a href="/admin-statement-scheduler" class="btn btn-secondary">Scheduler Settings</a>
-        </div>
-
-        <form method="get" action="/admin-statements" class="period-selector">
-          <label class="form-label">Period:</label>
-          <select name="period" class="form-control">
-            ${periodOptions.join('')}
-          </select>
-          <input type="hidden" name="year" value="${year}">
-          <input type="hidden" name="month" value="${month}">
-          <button type="submit" class="btn btn-secondary">Go</button>
-        </form>
-
-        ${summaryCard}
-        ${table}`;
 
     res.send(renderAdminPage('Statement Requests', content));
   });
@@ -297,59 +145,11 @@ class StatementController {
     const banner = generateNotificationBanner(req.query);
     const status = ScheduledStatementService.getStatus();
 
-    const statusDot = status.isRunning
-      ? '<span class="status-indicator"><span class="status-dot status-dot-success"></span> Running</span>'
-      : '<span class="status-indicator"><span class="status-dot status-dot-danger"></span> Stopped</span>';
-
-    const content = `
-        ${banner}
-        ${renderCard('Statement Request Scheduler', `
-          <div class="scheduler-panel">
-            <div class="scheduler-row">
-              <span class="scheduler-label">Status</span>
-              <span class="scheduler-value">${statusDot}</span>
-            </div>
-            <div class="scheduler-row">
-              <span class="scheduler-label">Schedule</span>
-              <span class="scheduler-value">${status.schedule || 'Not configured'}</span>
-            </div>
-            <div class="scheduler-row">
-              <span class="scheduler-label">Timezone</span>
-              <span class="scheduler-value">${status.timezone}</span>
-            </div>
-            <div class="scheduler-row">
-              <span class="scheduler-label">Next Run</span>
-              <span class="scheduler-value">${status.nextRun || 'N/A'}</span>
-            </div>
-            <div class="scheduler-row">
-              <span class="scheduler-label">Daily Reminders</span>
-              <span class="scheduler-value">${status.reminderSchedule || 'Every day at 9 AM HKT'}</span>
-            </div>
-          </div>
-
-          <div class="config-hint">
-            <h4>Environment Variables</h4>
-            <p class="text-sm text-muted">
-              <code>STATEMENT_REQUEST_SCHEDULE</code> Cron schedule (default: 7th of month, 9 AM HKT)<br>
-              <code>STATEMENT_SENDER_EMAIL</code> Sender email address<br>
-              <code>STATEMENT_UPLOAD_DEADLINE_DAYS</code> Days until deadline (default: 14)<br>
-              <code>SHAREPOINT_SITE_URL</code> SharePoint site for file storage<br>
-              <code>DISABLE_STATEMENT_REQUESTS</code> Set to "true" to disable
-            </p>
-          </div>
-
-          <div class="action-bar">
-            <form method="post" action="/admin-trigger-statement-request">
-              ${req.csrfInput()}
-              <button type="submit" class="btn btn-primary">Trigger Manual Send</button>
-            </form>
-            <form method="post" action="/admin-test-sharepoint">
-              ${req.csrfInput()}
-              <button type="submit" class="btn btn-secondary">Test SharePoint Connection</button>
-            </form>
-          </div>
-        `)}
-        <a href="/admin-statements" class="btn btn-secondary mt-4">Back to Statements</a>`;
+    const content = renderScheduler({
+      banner,
+      status,
+      csrfInput: req.csrfInput(),
+    });
 
     res.send(renderAdminPage('Statement Scheduler', content));
   });
@@ -425,15 +225,6 @@ class StatementController {
       const results = await GraphAPIService.testSharePointConnection();
       const allOk = results.steps.every(s => s.status === 'ok');
 
-      const stepsHtml = results.steps.map(s => {
-        const icon = s.status === 'ok' ? '&#10003;' : '&#10007;';
-        const cls = s.status === 'ok' ? 'stat-success' : 'stat-danger';
-        return `<div class="scheduler-row">
-          <span class="scheduler-label"><span class="${cls}">${icon}</span> ${s.step}</span>
-          <span class="scheduler-value text-sm">${s.detail}</span>
-        </div>`;
-      }).join('');
-
       if (allOk) {
         res.redirect('/admin-statement-scheduler?message=' + encodeURIComponent('SharePoint connection successful — all checks passed'));
       } else {
@@ -458,7 +249,6 @@ class StatementController {
       return res.status(404).send('File not found');
     }
 
-    // Auth: must be the owning employee or an admin
     const isAdmin = req.session.admin;
     const isOwner = req.session.employee && req.session.employee.email.toLowerCase() === request.employee_email;
     if (!isAdmin && !isOwner) {

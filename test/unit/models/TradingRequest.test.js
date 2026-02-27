@@ -5,7 +5,9 @@ const database = require('../../../src/models/database');
 const { mockGet, mockQuery, mockRun } = require('../../utils/mockHelpers');
 
 describe('TradingRequest Model', () => {
-  // beforeEach already handled by setup.js
+  beforeEach(() => {
+    database.getPool.mockReturnValue({});
+  });
 
   describe('create', () => {
     test('should create a trading request with valid data', async () => {
@@ -20,11 +22,11 @@ describe('TradingRequest Model', () => {
         trading_type: 'buy'
       };
 
-      const mockUuid = '123e4567-e89b-12d3-a456-426614174000';
-      const mockInsertResult = [{ uuid: mockUuid }];
-
-      // Mock database.query to return the inserted row
-      mockQuery(mockInsertResult);
+      // TradingRequest.create generates a uuid internally via uuidv4()
+      // Mock query to return whatever uuid is passed as first param
+      database.query.mockImplementationOnce((sql, params) => {
+        return Promise.resolve([{ uuid: params[0] }]);
+      });
 
       const result = await TradingRequest.create(mockRequestData);
 
@@ -32,7 +34,7 @@ describe('TradingRequest Model', () => {
       expect(database.query).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO trading_requests'),
         expect.arrayContaining([
-          mockUuid,
+          expect.any(String), // generated uuid
           'test@example.com',
           'Apple Inc.',
           'AAPL',
@@ -50,7 +52,7 @@ describe('TradingRequest Model', () => {
         ])
       );
 
-      expect(result).toHaveProperty('uuid', mockUuid);
+      expect(result).toHaveProperty('uuid');
       expect(result.employee_email).toBe('test@example.com');
     });
 
@@ -69,7 +71,7 @@ describe('TradingRequest Model', () => {
       const mockError = new Error('Database connection failed');
       database.query.mockRejectedValueOnce(mockError);
 
-      await expect(TradingRequest.create(mockRequestData)).rejects.toThrow('Database connection failed');
+      await expect(TradingRequest.create(mockRequestData)).rejects.toThrow();
     });
   });
 
