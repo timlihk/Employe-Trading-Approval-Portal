@@ -33,7 +33,7 @@ NODE_ENV=production
 SESSION_SECRET=<generate: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))">
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD_HASH=<generate: node -e "require('bcryptjs').hash('your-password', 12, (e,h) => console.log(h))">
-FRONTEND_URL=https://your-app.up.railway.app
+FRONTEND_URL=https://pa-approval.inspirationcap.com
 ```
 
 `DATABASE_URL` is auto-provided by Railway — do not set manually.
@@ -44,8 +44,8 @@ FRONTEND_URL=https://your-app.up.railway.app
 AZURE_CLIENT_ID=<from-azure-portal>
 AZURE_CLIENT_SECRET=<from-azure-portal>
 AZURE_TENANT_ID=<from-azure-portal>
-REDIRECT_URI=https://your-app.up.railway.app/api/auth/microsoft/callback
-POST_LOGOUT_REDIRECT_URI=https://your-app.up.railway.app
+REDIRECT_URI=https://pa-approval.inspirationcap.com/api/auth/microsoft/callback
+POST_LOGOUT_REDIRECT_URI=https://pa-approval.inspirationcap.com
 ```
 
 Azure AD setup:
@@ -104,7 +104,7 @@ LOG_LEVEL=info                     # debug/info/warn/error
 
 1. Check deployment logs for successful startup
 2. Visit your app URL — landing page should load
-3. Test health endpoint: `https://your-app.up.railway.app/health`
+3. Test health endpoint: `https://pa-approval.inspirationcap.com/health`
 4. Log in as admin with configured credentials
 5. Test employee login (SSO or demo mode)
 

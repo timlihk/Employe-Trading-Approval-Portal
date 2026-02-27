@@ -24,7 +24,7 @@ ADMIN_USERNAME=<your-admin-username>
 ADMIN_PASSWORD_HASH=<bcrypt-hash>
 DATABASE_URL=<auto-provided-by-railway>
 NODE_ENV=production
-FRONTEND_URL=https://your-app.up.railway.app
+FRONTEND_URL=https://pa-approval.inspirationcap.com
 ```
 
 Generate bcrypt hash:
@@ -38,8 +38,8 @@ node -e "require('bcryptjs').hash('your-password', 12, (e,h) => console.log(h))"
 AZURE_CLIENT_ID=<from-azure-portal>
 AZURE_CLIENT_SECRET=<from-azure-portal>
 AZURE_TENANT_ID=<from-azure-portal>
-REDIRECT_URI=https://your-app.up.railway.app/api/auth/microsoft/callback
-POST_LOGOUT_REDIRECT_URI=https://your-app.up.railway.app
+REDIRECT_URI=https://pa-approval.inspirationcap.com/api/auth/microsoft/callback
+POST_LOGOUT_REDIRECT_URI=https://pa-approval.inspirationcap.com
 ```
 
 ### Optional: Statement Collection & SharePoint

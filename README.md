@@ -93,7 +93,7 @@ SESSION_SECRET=<generate-with: node -e "console.log(require('crypto').randomByte
 ADMIN_USERNAME=admin
 ADMIN_PASSWORD_HASH=<bcrypt-hash-of-password>
 DATABASE_URL=postgresql://...  # Auto-provided by Railway
-FRONTEND_URL=https://your-app.up.railway.app
+FRONTEND_URL=https://pa-approval.inspirationcap.com
 ```
 
 ### Microsoft 365 SSO (Optional)
@@ -102,8 +102,8 @@ FRONTEND_URL=https://your-app.up.railway.app
 AZURE_CLIENT_ID=<from-azure-portal>
 AZURE_CLIENT_SECRET=<from-azure-portal>
 AZURE_TENANT_ID=<from-azure-portal>
-REDIRECT_URI=https://your-app.up.railway.app/api/auth/microsoft/callback
-POST_LOGOUT_REDIRECT_URI=https://your-app.up.railway.app
+REDIRECT_URI=https://pa-approval.inspirationcap.com/api/auth/microsoft/callback
+POST_LOGOUT_REDIRECT_URI=https://pa-approval.inspirationcap.com
 ```
 
 ### Statement Collection (Optional — requires Microsoft 365)
