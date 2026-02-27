@@ -89,6 +89,10 @@ class StatementController {
                     <span class="file-input-icon">&#128196;</span>
                     <span class="file-input-text">Click to select a file</span>
                     <span class="file-input-hint">PDF, PNG, JPG, CSV, XLSX — max 10 MB</span>
+                    <span class="file-input-selected">
+                      <span class="file-input-selected-icon">&#10003;</span>
+                      File selected — click to change
+                    </span>
                   </div>
                 </div>
                 <div class="mb-6">

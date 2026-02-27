@@ -740,6 +740,14 @@ select.form-control {
 .help-checkbox:checked + .help-toggle .toggle-text-show { display: none; }
 .help-checkbox:checked + .help-toggle .toggle-text-hide { display: inline; }
 
+/* Guide screenshots */
+.guide-screenshot {
+  max-width: 100%;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  margin: var(--space-3) 0;
+}
+
 /* Brokerage toggle (CSS :has — replaces inline <style>) */
 select.brokerage-select:has(option[value="__new__"]:checked) ~ .new-brokerage-field {
   display: block;
@@ -776,7 +784,8 @@ select.brokerage-select:has(option[value="__new__"]:checked) ~ .new-brokerage-fi
 
 .file-input-icon,
 .file-input-text,
-.file-input-hint {
+.file-input-hint,
+.file-input-selected {
   pointer-events: none;
 }
 
@@ -797,6 +806,34 @@ select.brokerage-select:has(option[value="__new__"]:checked) ~ .new-brokerage-fi
   display: block;
   font-size: var(--font-xs);
   color: var(--color-text-muted);
+}
+
+/* File selected state: required file input becomes :valid when a file is chosen */
+.file-input-selected {
+  display: none;
+}
+
+.file-input-wrapper input[type="file"]:valid ~ .file-input-icon,
+.file-input-wrapper input[type="file"]:valid ~ .file-input-text,
+.file-input-wrapper input[type="file"]:valid ~ .file-input-hint {
+  display: none;
+}
+
+.file-input-wrapper input[type="file"]:valid ~ .file-input-selected {
+  display: block;
+  font-weight: 500;
+  color: var(--color-success, #16a34a);
+}
+
+.file-input-selected-icon {
+  font-size: var(--font-xl);
+  display: block;
+  margin-bottom: var(--space-2);
+}
+
+.file-input-wrapper:has(input[type="file"]:valid) {
+  border-color: var(--color-success, #16a34a);
+  background: color-mix(in srgb, var(--color-success, #16a34a) 5%, transparent);
 }
 
 .resize-vertical { resize: vertical; }
