@@ -2,6 +2,7 @@ const TradingRequestService = require('../services/TradingRequestService');
 const StatementRequestService = require('../services/StatementRequestService');
 const StatementRequest = require('../models/StatementRequest');
 const BrokerageAccount = require('../models/BrokerageAccount');
+const EmployeeProfile = require('../models/EmployeeProfile');
 const { catchAsync } = require('../middleware/errorHandler');
 const { renderEmployeePage, generateNotificationBanner } = require('../utils/templates');
 const { getDisplayId } = require('../utils/formatters');
@@ -229,7 +230,27 @@ class EmployeeController {
     }
 
     const banner = generateNotificationBanner(req.query);
-    const accounts = await BrokerageAccount.getByEmployee(req.session.employee.email);
+    const email = req.session.employee.email;
+    const accounts = await BrokerageAccount.getByEmployee(email);
+
+    // Detect onboarding / confirmation mode
+    const isConfirmed = await EmployeeProfile.isConfirmationCurrent(email);
+    const isSetupMode = accounts.length === 0;
+    const isConfirmMode = accounts.length > 0 && !isConfirmed;
+
+    // Contextual banner for setup or confirmation
+    let contextBanner = '';
+    if (isSetupMode) {
+      contextBanner = `
+        <div class="alert-warning alert" role="alert">
+          <strong>Welcome! Before you can submit trading requests or upload statements, you must register at least one brokerage account below.</strong>
+        </div>`;
+    } else if (isConfirmMode) {
+      contextBanner = `
+        <div class="alert-info alert" role="alert">
+          <strong>Please review your brokerage accounts below and confirm they are complete and up to date.</strong>
+        </div>`;
+    }
 
     // Editing an account?
     const editUuid = req.query.edit;
@@ -250,8 +271,29 @@ class EmployeeController {
       </tr>
     `).join('');
 
+    // Confirmation section — shown when accounts exist but not confirmed
+    const confirmationSection = isConfirmMode ? `
+      <div class="card mt-6">
+        <div class="card-body p-6 text-center">
+          <p class="mb-4">I confirm that the brokerage accounts listed above are complete and up to date.</p>
+          <form method="post" action="/employee-confirm-accounts">
+            ${req.csrfInput()}
+            <button type="submit" class="btn btn-primary">Confirm Accounts Are Up to Date</button>
+          </form>
+        </div>
+      </div>
+    ` : '';
+
+    // Only show back link when setup and confirmation are both done
+    const backLink = (!isSetupMode && !isConfirmMode) ? `
+      <div class="mt-4">
+        <a href="/employee-dashboard" class="btn btn-secondary">Back to Dashboard</a>
+      </div>
+    ` : '';
+
     const content = `
       ${banner}
+      ${contextBanner}
       <div class="card mb-6">
         <div class="card-header">
           <h3 class="card-title heading">${editAccount ? 'Edit Brokerage Account' : 'Add Brokerage Account'}</h3>
@@ -298,9 +340,8 @@ class EmployeeController {
         </div>
       </div>
 
-      <div class="mt-4">
-        <a href="/employee-dashboard" class="btn btn-secondary">Back to Dashboard</a>
-      </div>
+      ${confirmationSection}
+      ${backLink}
     `;
 
     res.send(renderEmployeePage('Brokerage Accounts', content, req.session.employee.name, req.session.employee.email));
@@ -353,6 +394,27 @@ class EmployeeController {
     const { uuid } = req.body;
     await BrokerageAccount.delete(uuid, req.session.employee.email);
     res.redirect('/employee-brokerage-accounts?message=' + encodeURIComponent('Account removed'));
+  });
+
+  /**
+   * POST /employee-confirm-accounts
+   * Confirm brokerage accounts are up to date (monthly confirmation).
+   */
+  confirmAccounts = catchAsync(async (req, res) => {
+    if (!req.session.employee || !req.session.employee.email) {
+      return res.redirect('/?error=authentication_required');
+    }
+
+    const email = req.session.employee.email;
+
+    // Must have at least one account to confirm
+    const accounts = await BrokerageAccount.getByEmployee(email);
+    if (!accounts || accounts.length === 0) {
+      return res.redirect('/employee-brokerage-accounts?error=' + encodeURIComponent('Please add at least one brokerage account before confirming'));
+    }
+
+    await EmployeeProfile.confirmAccounts(email);
+    res.redirect('/employee-dashboard?message=accounts_confirmed');
   });
 
   /**

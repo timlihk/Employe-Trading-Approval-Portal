@@ -115,6 +115,9 @@ function generateNotificationBanner(query) {
       case 'statement_uploaded':
         message = 'Trading statement uploaded successfully';
         break;
+      case 'accounts_confirmed':
+        message = 'Your brokerage accounts have been confirmed. Thank you!';
+        break;
       default:
         message = decodeURIComponent(query.message);
     }

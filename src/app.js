@@ -30,6 +30,8 @@ const TradingRequestService = require('./services/TradingRequestService');
 // Models
 const TradingRequest = require('./models/TradingRequest');
 const RestrictedStock = require('./models/RestrictedStock');
+const BrokerageAccount = require('./models/BrokerageAccount');
+const EmployeeProfile = require('./models/EmployeeProfile');
 const database = require('./models/database');
 
 // Initialize database on startup
@@ -127,6 +129,29 @@ function requireEmployee(req, res, next) {
     return res.redirect('/?error=authentication_required');
   }
   next();
+}
+
+async function requireBrokerageSetup(req, res, next) {
+  try {
+    const email = req.session.employee.email;
+
+    // Check 1: Does the employee have any brokerage accounts?
+    const accounts = await BrokerageAccount.getByEmployee(email);
+    if (!accounts || accounts.length === 0) {
+      return res.redirect('/employee-brokerage-accounts?setup=required');
+    }
+
+    // Check 2: Has the employee confirmed accounts within the last 30 days?
+    const isCurrent = await EmployeeProfile.isConfirmationCurrent(email);
+    if (!isCurrent) {
+      return res.redirect('/employee-brokerage-accounts?confirm=required');
+    }
+
+    next();
+  } catch (err) {
+    // Graceful degradation: if check fails, let the request through
+    next();
+  }
 }
 
 const app = express();
@@ -686,25 +711,29 @@ app.post('/upload-statement/:token', uploadStatement.single('statement'), Statem
 // EMPLOYEE ROUTES
 // ===========================================
 
-app.get('/employee-dashboard', requireEmployee, EmployeeController.getDashboard);
-app.get('/employee-history', requireEmployee, EmployeeController.getHistory);
-app.get('/employee-export-history', requireEmployee, EmployeeController.exportHistory);
-app.get('/escalate-form/:id', requireEmployee, EmployeeController.getEscalationForm);
+// Routes WITH brokerage setup enforcement
+app.get('/employee-dashboard', requireEmployee, requireBrokerageSetup, EmployeeController.getDashboard);
+app.get('/employee-history', requireEmployee, requireBrokerageSetup, EmployeeController.getHistory);
+app.get('/employee-export-history', requireEmployee, requireBrokerageSetup, EmployeeController.exportHistory);
+app.get('/escalate-form/:id', requireEmployee, requireBrokerageSetup, EmployeeController.getEscalationForm);
+app.get('/employee-upload-statement', requireEmployee, requireBrokerageSetup, EmployeeController.getUploadStatementPage);
+app.post('/employee-upload-statement', requireEmployee, requireBrokerageSetup, uploadStatement.single('statement'), verifyCsrfToken, EmployeeController.processStatementUpload);
+
+// Routes WITHOUT brokerage setup enforcement (brokerage CRUD + confirmation)
 app.get('/employee-brokerage-accounts', requireEmployee, EmployeeController.getBrokerageAccounts);
 app.post('/employee-add-brokerage', requireEmployee, verifyCsrfToken, EmployeeController.addBrokerage);
 app.post('/employee-edit-brokerage', requireEmployee, verifyCsrfToken, EmployeeController.editBrokerage);
 app.post('/employee-remove-brokerage', requireEmployee, verifyCsrfToken, EmployeeController.removeBrokerage);
-app.get('/employee-upload-statement', requireEmployee, EmployeeController.getUploadStatementPage);
-app.post('/employee-upload-statement', requireEmployee, uploadStatement.single('statement'), verifyCsrfToken, EmployeeController.processStatementUpload);
+app.post('/employee-confirm-accounts', requireEmployee, verifyCsrfToken, EmployeeController.confirmAccounts);
 
 // ===========================================
 // TRADING REQUEST ROUTES
 // ===========================================
 
-app.post('/preview-trade', requireEmployee, verifyCsrfToken, validateTradingRequest, TradingRequestController.previewTrade);
-app.post('/submit-trade', requireEmployee, verifyCsrfToken, validateTradingRequest, TradingRequestController.submitTrade);
-app.get('/trade-result/:requestId', requireEmployee, TradingRequestController.showTradeResult);
-app.post('/submit-escalation', requireEmployee, verifyCsrfToken, TradingRequestController.escalateRequest);
+app.post('/preview-trade', requireEmployee, requireBrokerageSetup, verifyCsrfToken, validateTradingRequest, TradingRequestController.previewTrade);
+app.post('/submit-trade', requireEmployee, requireBrokerageSetup, verifyCsrfToken, validateTradingRequest, TradingRequestController.submitTrade);
+app.get('/trade-result/:requestId', requireEmployee, requireBrokerageSetup, TradingRequestController.showTradeResult);
+app.post('/submit-escalation', requireEmployee, requireBrokerageSetup, verifyCsrfToken, TradingRequestController.escalateRequest);
 
 // ===========================================
 // ERROR HANDLING

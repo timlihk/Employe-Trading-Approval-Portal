@@ -159,6 +159,24 @@ SET session_replication_role = 'replica';
         sqlContent += '\n';
       }
 
+      // Backup employee_profiles table
+      const employeeProfiles = await database.query('SELECT * FROM employee_profiles ORDER BY created_at');
+      if (employeeProfiles.length > 0) {
+        sqlContent += '-- Employee Profiles\n';
+        sqlContent += 'DELETE FROM employee_profiles;\n';
+        for (const ep of employeeProfiles) {
+          const values = [
+            `'${ep.uuid}'`,
+            `'${ep.employee_email}'`,
+            ep.accounts_confirmed_at ? `'${ep.accounts_confirmed_at}'` : 'NULL',
+            `'${ep.created_at}'`,
+            ep.updated_at ? `'${ep.updated_at}'` : 'NULL'
+          ];
+          sqlContent += `INSERT INTO employee_profiles (uuid, employee_email, accounts_confirmed_at, created_at, updated_at) VALUES (${values.join(', ')});\n`;
+        }
+        sqlContent += '\n';
+      }
+
       sqlContent += "-- Re-enable foreign key checks\nSET session_replication_role = 'origin';\n";
 
       return {
