@@ -1,0 +1,138 @@
+/* ============================================================
+   Trading Compliance Portal — Redesigned Stylesheet
+   Inspiration Capital Management Limited
+   ============================================================ */
+
+/* ----------------------------------------------------------
+   1. DESIGN TOKENS
+   ---------------------------------------------------------- */
+
+:root {
+  /* Accent */
+  --color-accent: #2c5282;
+  --color-accent-hover: #1e3a5f;
+  --color-accent-light: rgba(44, 82, 130, 0.08);
+  --color-accent-subtle: #e8eef6;
+
+  /* Surfaces */
+  --color-bg: #f8f9fa;
+  --color-bg-secondary: #f1f3f5;
+  --color-bg-tertiary: #e9ecef;
+  --color-surface: #ffffff;
+
+  /* Borders */
+  --color-border: #dee2e6;
+  --color-border-light: #e9ecef;
+  --color-border-focus: #4a6fa5;
+
+  /* Text */
+  --color-text: #212529;
+  --color-text-secondary: #495057;
+  --color-text-muted: #868e96;
+  --color-text-inverse: #ffffff;
+
+  /* Semantic */
+  --color-success: #087f5b;
+  --color-success-bg: #ebfbee;
+  --color-success-border: #b2f2bb;
+  --color-success-hover: #066c4b;
+
+  --color-danger: #c92a2a;
+  --color-danger-bg: #fff5f5;
+  --color-danger-border: #ffc9c9;
+  --color-danger-hover: #a62020;
+
+  --color-warning: #e67700;
+  --color-warning-bg: #fff9db;
+  --color-warning-border: #ffe066;
+  --color-warning-hover: #bf5b00;
+
+  --color-info: #1864ab;
+  --color-info-bg: #e7f5ff;
+  --color-info-border: #a5d8ff;
+
+  /* Typography */
+  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
+  --font-sm: 0.875rem;
+  --font-base: 1rem;
+  --font-md: 1.25rem;
+  --font-lg: 1.5rem;
+  --font-xl: 2rem;
+
+  /* Spacing */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-8: 2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+
+  /* Radius */
+  --radius-sm: 4px;
+  --radius: 6px;
+  --radius-md: 8px;
+  --radius-lg: 10px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --shadow: 0 1px 3px rgba(0,0,0,0.08);
+  --shadow-md: 0 4px 8px rgba(0,0,0,0.08);
+
+  /* Transitions */
+  --transition: 0.15s ease;
+}
+
+/* ----------------------------------------------------------
+   1b. DARK MODE
+   ---------------------------------------------------------- */
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-accent: #6d8fc4;
+    --color-accent-hover: #8baad4;
+    --color-accent-light: rgba(109, 143, 196, 0.12);
+    --color-accent-subtle: #2a3a52;
+
+    --color-bg: #1a1b1e;
+    --color-bg-secondary: #25262b;
+    --color-bg-tertiary: #2c2e33;
+    --color-surface: #25262b;
+
+    --color-border: #373a40;
+    --color-border-light: #2c2e33;
+    --color-border-focus: #6d8fc4;
+
+    --color-text: #e9ecef;
+    --color-text-secondary: #adb5bd;
+    --color-text-muted: #868e96;
+    --color-text-inverse: #1a1b1e;
+
+    --color-success: #51cf66;
+    --color-success-bg: #0b2913;
+    --color-success-border: #1a5c2e;
+    --color-success-hover: #40c057;
+
+    --color-danger: #ff6b6b;
+    --color-danger-bg: #2d0f0f;
+    --color-danger-border: #5c1a1a;
+    --color-danger-hover: #fa5252;
+
+    --color-warning: #fcc419;
+    --color-warning-bg: #2d2400;
+    --color-warning-border: #5c4c00;
+    --color-warning-hover: #fab005;
+
+    --color-info: #74c0fc;
+    --color-info-bg: #0d2137;
+    --color-info-border: #1a4266;
+
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.2);
+    --shadow: 0 1px 3px rgba(0,0,0,0.25);
+    --shadow-md: 0 4px 8px rgba(0,0,0,0.3);
+  }
+}
+

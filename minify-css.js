@@ -41,11 +41,21 @@ function minifyCSS(css) {
 
 // Main execution
 if (require.main === module) {
-  const cssPath = path.join(__dirname, 'public', 'styles-modern.css');
+  const cssDir = path.join(__dirname, 'public', 'css');
   const outputPath = path.join(__dirname, 'public', 'styles-modern.min.css');
 
   try {
-    const css = fs.readFileSync(cssPath, 'utf8');
+    const cssFiles = fs.readdirSync(cssDir)
+      .filter(f => f.endsWith('.css'))
+      .sort()
+      .map(f => path.join(cssDir, f));
+
+    console.log(`   Reading ${cssFiles.length} CSS files from public/css/`);
+
+    const css = cssFiles
+      .map(f => fs.readFileSync(f, 'utf8'))
+      .join('\n');
+
     const minified = minifyCSS(css);
 
     fs.writeFileSync(outputPath, minified);

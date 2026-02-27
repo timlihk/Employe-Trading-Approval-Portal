@@ -12,6 +12,7 @@
     "dev": "node src/app.js",
     "migrate": "node run-migrations.js",
     "build": "echo 'No build step needed'",
+    "css:build": "node minify-css.js",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage"

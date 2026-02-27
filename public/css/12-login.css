@@ -1,0 +1,51 @@
+/* ----------------------------------------------------------
+   12. LOGIN PAGES
+   ---------------------------------------------------------- */
+
+.login-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60vh;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 400px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.login-brand {
+  padding: var(--space-8) var(--space-6);
+  text-align: center;
+  border-bottom: 1px solid var(--color-border-light);
+  background: var(--color-bg-secondary);
+}
+
+.login-title {
+  font-size: var(--font-md);
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0 0 var(--space-1);
+}
+
+.login-subtitle {
+  font-size: var(--font-sm);
+  color: var(--color-text-muted);
+  margin: 0;
+}
+
+.login-body {
+  padding: var(--space-6);
+}
+
+.login-footer {
+  padding: var(--space-4) var(--space-6);
+  text-align: center;
+  border-top: 1px solid var(--color-border-light);
+  font-size: var(--font-sm);
+}
+

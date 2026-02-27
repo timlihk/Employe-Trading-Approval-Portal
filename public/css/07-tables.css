@@ -1,0 +1,150 @@
+/* ----------------------------------------------------------
+   7. TABLES
+   ---------------------------------------------------------- */
+
+.table-container,
+.table-responsive {
+  overflow-x: auto;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.modern-table,
+.table,
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--font-sm);
+  background: var(--color-surface);
+}
+
+.modern-table thead,
+.table thead,
+.data-table thead {
+  background: var(--color-bg-secondary);
+  border-bottom: 2px solid var(--color-border);
+}
+
+.modern-table thead th,
+.table thead th,
+.data-table thead th {
+  font-size: var(--font-sm);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--color-bg-secondary);
+  white-space: nowrap;
+}
+
+.modern-table tbody tr,
+.table tbody tr,
+.data-table tbody tr {
+  border-bottom: 1px solid var(--color-border-light);
+  transition: background-color var(--transition);
+}
+
+.modern-table tbody tr:last-child,
+.table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.modern-table tbody tr:hover,
+.table tbody tr:hover,
+.data-table tbody tr:hover,
+.table-hover tbody tr:hover {
+  background: var(--color-accent-light);
+}
+
+.modern-table tbody td,
+.table tbody td,
+.data-table tbody td {
+  padding: var(--space-2) var(--space-3);
+  color: var(--color-text);
+  vertical-align: middle;
+}
+
+/* Remove nested border when table-container is inside a card */
+.card-body .table-container,
+.card-body .table-responsive {
+  border: none;
+  border-radius: 0;
+}
+
+/* Sortable table headers */
+.th-sortable a,
+.th-link {
+  color: var(--color-text-secondary);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.th-sortable a:hover {
+  color: var(--color-accent);
+}
+
+/* Table cell utilities */
+.table-date {
+  font-size: var(--font-sm);
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+/* Table status badges */
+.table-status {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.table-status.approved, .table-status.uploaded {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.table-status.rejected, .table-status.removed {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+.table-status.pending, .table-status.added {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+}
+
+.table-status.overdue {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+.table-status.skipped {
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-muted);
+}
+
+/* Legacy table aliases */
+.table-zebra tbody tr:nth-child(even) { background: var(--color-bg-secondary); }
+.table-sticky thead { position: sticky; top: 0; z-index: 10; }
+
+/* Pagination */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-4);
+  border-top: 1px solid var(--color-border-light);
+}
+

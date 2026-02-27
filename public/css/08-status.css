@@ -1,0 +1,71 @@
+/* ----------------------------------------------------------
+   8. STATUS INDICATORS
+   ---------------------------------------------------------- */
+
+/* Status dots */
+.status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  margin-right: var(--space-1);
+  vertical-align: middle;
+}
+
+.status-dot-success { background: var(--color-success); }
+.status-dot-danger { background: var(--color-danger); }
+.status-dot-warning { background: var(--color-warning); }
+
+.status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+/* Badges */
+.badge {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-sm);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.badge-success {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+}
+
+.badge-danger {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+}
+
+.badge-warning {
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+}
+
+.badge-info {
+  background: var(--color-info-bg);
+  color: var(--color-info);
+}
+
+.badge-secondary {
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-secondary);
+}
+
+.badge-sm {
+  padding: 0.1rem 0.35rem;
+  font-size: 0.625rem;
+}
+
+/* Status badges (alternative names) */
+.status-badge { display: inline-flex; align-items: center; }
+.status-approved { background: var(--color-success-bg); color: var(--color-success); padding: var(--space-1) var(--space-2); border-radius: var(--radius-sm); font-weight: 600; text-transform: uppercase; font-size: var(--font-sm); }
+.status-rejected { background: var(--color-danger-bg); color: var(--color-danger); padding: var(--space-1) var(--space-2); border-radius: var(--radius-sm); font-weight: 600; text-transform: uppercase; font-size: var(--font-sm); }
+.status-pending { background: var(--color-warning-bg); color: var(--color-warning); padding: var(--space-1) var(--space-2); border-radius: var(--radius-sm); font-weight: 600; text-transform: uppercase; font-size: var(--font-sm); }
+

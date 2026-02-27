@@ -1,0 +1,20 @@
+/* ----------------------------------------------------------
+   16. PRINT
+   ---------------------------------------------------------- */
+
+@media print {
+  .site-header, header, nav, .nav, .site-footer, .btn, .action-bar {
+    display: none;
+  }
+
+  .card {
+    border: 1px solid #000;
+    box-shadow: none;
+  }
+
+  body {
+    background: #fff;
+    color: #000;
+  }
+}
+
