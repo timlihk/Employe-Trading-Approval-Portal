@@ -1410,7 +1410,7 @@ select.brokerage-select:has(option[value="__new__"]:checked) ~ .new-brokerage-fi
 /* Grid */
 .grid { display: grid; }
 .grid-auto { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
-.grid-filters { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
+.grid-filters { grid-template-columns: repeat(6, 1fr); }
 .grid-mobile-stack { /* handled in responsive */ }
 
 /* Gap */
