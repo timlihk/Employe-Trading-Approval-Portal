@@ -69,7 +69,7 @@ Middleware (Security, validation, upload)
 - **Backend**: Node.js 20+ with Express.js 5
 - **Database**: PostgreSQL with UUID primary keys and TIMESTAMPTZ columns
 - **Authentication**: Microsoft 365 OAuth 2.0 (optional) + admin credentials
-- **Frontend**: Server-side rendering, pure HTML/CSS (no JavaScript — strict CSP)
+- **Frontend**: Server-side rendering with modular templates, pure HTML/CSS (no JavaScript — strict CSP)
 - **Email**: Microsoft Graph API for statement request emails
 - **Storage**: SharePoint REST API for statements and backups (with proxy file access)
 - **Scheduling**: node-cron for backups and statement requests
@@ -272,6 +272,7 @@ docker-compose up    # Starts PostgreSQL + app + nginx
 - **Sessions**: PostgreSQL-backed with secure cookies (HttpOnly, Secure, SameSite=lax)
 - **CSRF**: Cryptographic tokens on all POST forms with timing-safe comparison
 - **Rate Limiting**: Auth (5/15min), general (1000/15min), admin actions (10/min)
+- **HTML Escaping**: All user-controlled data escaped via `escapeHtml()` utility across all templates
 - **Input Validation**: express-validator with parameterized SQL queries throughout
 - **Audit Logging**: All actions logged with IP, session ID, and user agent
 - **Password Hashing**: bcrypt with configurable rounds for admin credentials
@@ -293,6 +294,8 @@ See [SECURITY.md](./SECURITY.md) for full security policy and [SECURITY_SETUP.md
 
 | Version | Highlights |
 |---------|------------|
+| v3.4.1 | XSS prevention with escapeHtml across all templates, instrument_type persistence fix |
+| v3.4.0 | CSS split into 16 modular files, 459 tests across 16 suites, controller template extraction (52% reduction) |
 | v3.3.1 | Industry-standard Major Third type scale, responsive mobile typography, dynamic CSS cache busting, dead code cleanup |
 | v3.3.0 | Announcement email script, compact filter UI, comprehensive documentation refresh |
 | v3.2.0 | 30-day short-term trading detection with auto-escalation, SharePoint historical data migration, UI refinements |
@@ -306,4 +309,4 @@ See [SECURITY.md](./SECURITY.md) for full security policy and [SECURITY_SETUP.md
 
 ---
 
-*Last Updated: February 2026 — Version 3.3.1*
+*Last Updated: February 2026 — Version 3.4.1*

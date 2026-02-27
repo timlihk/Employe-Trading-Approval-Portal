@@ -40,12 +40,14 @@ throw new AppError('Something went wrong', 500);
 
 ### Code Review Checklist
 - [ ] No inline styles or scripts (CSP compliance)
+- [ ] All user data escaped with `escapeHtml()` in templates
 - [ ] Parameterized SQL queries (no string interpolation)
 - [ ] Audit logging for admin/sensitive actions
 - [ ] CSRF token in all POST forms
 - [ ] Input validation via express-validator
 - [ ] Error handling with catchAsync/AppError
 - [ ] New tables added to database.js init() + migration file + BackupService
+- [ ] New page templates in `src/templates/` (not inline in controllers)
 
 ## Testing
 
@@ -56,9 +58,11 @@ npm run test:coverage       # Coverage report
 ```
 
 - Framework: Jest 30
+- **459 tests** across **16 suites** (models, services, middleware, utils)
 - Test files: `test/unit/` and `test/integration/`
-- Coverage threshold: 50% (lines, functions, branches, statements)
-- Mock database in `src/models/__mocks__/database.js`
+- Coverage thresholds: 48% statements/lines, 45% branches, 50% functions
+- Controllers and routes excluded from coverage (integration-test territory)
+- Mock database in `src/models/__mocks__/database.js` and `test/utils/mockHelpers.js`
 
 ## Optimization History
 
@@ -90,6 +94,11 @@ npm run test:coverage       # Coverage report
 | Announcement emails | One-time script to email all employees via Graph API | Onboarding communication with dry-run support |
 | Dynamic CSS cache bust | `?v=${APP_VERSION}` from package.json on all CSS links | No more stale stylesheets after deploys |
 | Dead code removal | Deleted `app-backup.js` (2,945 lines) | Cleaner codebase |
+| CSS modular split | Split `styles-modern.css` into 16 files under `public/css/` | Maintainable, organized CSS |
+| Test coverage expansion | 459 tests across 16 suites (models, services, middleware, utils) | Comprehensive regression safety |
+| Controller template extraction | 23 templates in `src/templates/`, controllers reduced 52% (3,691→1,778 lines) | Clean separation of concerns |
+| XSS prevention | `escapeHtml()` utility applied to ~66 interpolation points across all templates | Prevents HTML injection |
+| instrument_type persistence | Added to `TradingRequest.create()` INSERT statement | Bond/equity type now stored correctly |
 
 ### Architecture Decisions
 
@@ -108,6 +117,9 @@ npm run test:coverage       # Coverage report
 | Compact filter grid | `grid-filters` with `repeat(6, 1fr)` — fits 6 filters in one row without horizontal scroll |
 | Dynamic CSS versioning | `?v=${APP_VERSION}` auto-busts browser cache on every version bump — no manual cache buster updates |
 | Major Third type scale | 14/16/20/24/32px desktop, 14/16/18/20/24px mobile — matches Apple/Material/GitHub standards |
+| Modular CSS architecture | 16 numbered files (01-tokens through 16-print) concatenated by `minify-css.js` — edit individual files, build once |
+| Template extraction pattern | Controllers compute data → pass plain object to template → template returns HTML string. No `req`/`res` in templates |
+| escapeHtml everywhere | All user/DB values wrapped in `escapeHtml()` in templates. Pre-rendered HTML (banners, CSRF) left unescaped |
 
 ## Project Structure
 
@@ -124,4 +136,4 @@ See [CLAUDE.md](./CLAUDE.md) for full project structure and architecture details
 
 ---
 
-*Last Updated: February 2026 — Version 3.3.1*
+*Last Updated: February 2026 — Version 3.4.1*

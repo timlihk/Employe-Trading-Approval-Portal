@@ -225,6 +225,7 @@ Before going live:
 - [ ] `SESSION_STORE_NO_FALLBACK=true` for strict environments
 - [ ] Microsoft 365 redirect URIs match deployment URL
 - [ ] Rate limiting active (default configuration)
+- [ ] HTML escaping active (`escapeHtml()` applied in all templates)
 - [ ] Audit logging confirmed working
 - [ ] Backup schedule configured
 - [ ] Test complete employee workflow

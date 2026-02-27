@@ -82,12 +82,25 @@ src/
 │   ├── ScheduledStatementService.js    # Monthly statement email scheduler
 │   ├── StatementRequestService.js      # Statement workflow logic
 │   └── MockDataService.js              # Demo data generation
+├── templates/
+│   ├── admin/                          # Admin page templates (9 files)
+│   │   ├── auditLog.js, backupList.js, backupScheduler.js, clearDatabase.js
+│   │   ├── dashboard.js, login.js, rejectForm.js, requests.js, restrictedStocks.js
+│   ├── employee/                       # Employee page templates (5 files)
+│   │   ├── brokerageAccounts.js, dashboard.js, escalation.js, history.js, uploadStatement.js
+│   ├── trading/                        # Trading flow templates
+│   │   ├── preview.js, result.js
+│   ├── statement/                      # Statement templates
+│   │   ├── adminDashboard.js, invalidLink.js, scheduler.js, uploadComplete.js, uploadForm.js
+│   └── shared/                         # Shared template helpers
+│       ├── formatters.js               # formatHongKongTime, getSortDisplayName
+│       └── sorting.js                  # generateSortableHeader, generateSortingControls
 ├── routes/
 │   ├── authRoutes.js                   # Auth endpoint definitions
 │   └── systemRoutes.js                 # Health + metrics endpoints
 └── utils/
     ├── templates.js                    # HTML page rendering (base, admin, employee)
-    ├── formatters.js                   # Date/number formatting
+    ├── formatters.js                   # escapeHtml, formatUuid, getDisplayId
     ├── logger.js                       # Winston structured logging
     ├── metrics.js                      # Application metrics tracking
     ├── simpleCache.js                  # LRU cache with TTL
@@ -142,7 +155,10 @@ Exempt from `requireBrokerageSetup`: brokerage CRUD routes, confirm-accounts, lo
 
 ## UI Patterns
 
-### CSS classes (from styles-modern.css)
+### CSS files (public/css/ — 16 modular files)
+Numbered for load order: `01-tokens.css` through `16-print.css`. Run `npm run css:build` to concatenate and minify to `styles-modern.min.css`.
+
+### CSS classes
 - Alerts: `alert-success alert`, `alert-error alert`, `alert-info alert`, `alert-warning alert`
 - Status badges: `status-approved`, `status-rejected`, `status-pending`
 - Cards: `card`, `card-header`, `card-body`, `card-title`
@@ -222,6 +238,14 @@ Error (`?error=`): `authentication_required`, `invalid_credentials`, `invalid_ti
 
 ## Common Patterns
 
+### Adding a new page template
+1. Create template file in `src/templates/{section}/` (e.g., `src/templates/admin/newPage.js`)
+2. Export a function: `function renderNewPage(data) { return \`<html>...\`; }`
+3. Import `escapeHtml` from `../../utils/formatters` and escape ALL user-provided data
+4. Import template in the controller and call it: `const html = renderNewPage({ ... })`
+5. Pass result to `renderAdminPage(title, html)` or `renderEmployeePage(title, html, email)`
+6. Templates receive plain data objects — NEVER `req` or `res`
+
 ### Adding a new POST route
 1. Add CSRF token to form: `<input type="hidden" name="csrf_token" value="${req.session.csrfToken}">`
 2. Route: `app.post('/path', requireEmployee, verifyCsrfToken, Controller.method)`
@@ -267,13 +291,35 @@ throw new AppError('User-friendly message', 400);
 
 ---
 
+## Security: HTML Escaping
+
+All user-controlled data must be escaped before rendering in templates:
+
+```javascript
+const { escapeHtml } = require('../../utils/formatters');
+
+// In templates — escape all database/user values
+`<td>${escapeHtml(request.stock_name)}</td>`
+`<input value="${escapeHtml(editAccount.firm_name)}">`
+`<span title="${escapeHtml(request.rejection_reason)}">`
+
+// Do NOT escape:
+// - Pre-rendered HTML (banner, csrfInput)
+// - Output of getDisplayId(), formatHongKongTime() (safe by construction)
+// - System-generated UUIDs
+// - Values already URL-encoded via URLSearchParams
+```
+
+---
+
 ## Development Notes
 
-- **Version**: 3.3.1 (February 2026)
+- **Version**: 3.4.1 (February 2026)
 - **Node.js**: >=20.0.0
-- **Testing**: Jest 30 with unit and integration tests (`npm test`)
-- **CSS**: `styles-modern.css` (3000+ lines) minified to `styles-modern.min.css` (cache-busted via `?v=${APP_VERSION}` from package.json)
+- **Testing**: Jest 30 — 459 tests across 16 suites (`npm test`)
+- **CSS**: 16 modular files in `public/css/` → minified to `styles-modern.min.css` via `npm run css:build` (cache-busted via `?v=${APP_VERSION}`)
+- **Templates**: 23 template files in `src/templates/` (controllers reduced 52% from 3,691 to 1,778 lines)
 - **Compliance**: Full audit trail, data export, regulatory compliance
 - **Performance**: LRU caching, database indexes, circuit breakers, sargable queries, session-cached middleware, SharePoint ID caching
 
-**Remember**: This is a compliance-focused financial application. Security and audit requirements take precedence over convenience features. No inline JavaScript. No inline styles.
+**Remember**: This is a compliance-focused financial application. Security and audit requirements take precedence over convenience features. No inline JavaScript. No inline styles. Always escape user data with `escapeHtml()`.
