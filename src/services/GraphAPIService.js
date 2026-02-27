@@ -292,6 +292,62 @@ class GraphAPIService {
     logger.info(`Uploaded to SharePoint (chunked): ${fullPath} (${fileBuffer.length} bytes)`);
     return { itemId: result.id, webUrl: result.webUrl, name: result.name };
   }
+
+  /**
+   * Test SharePoint connectivity by resolving site ID and drive ID.
+   * Returns diagnostic info or throws with a descriptive error.
+   */
+  static async testSharePointConnection() {
+    const results = { steps: [] };
+
+    // Step 1: Check env vars
+    const siteUrl = process.env.SHAREPOINT_SITE_URL;
+    const libraryName = process.env.SHAREPOINT_LIBRARY_NAME || 'Documents';
+    if (!siteUrl) {
+      results.steps.push({ step: 'Config', status: 'fail', detail: 'SHAREPOINT_SITE_URL not set' });
+      return results;
+    }
+    results.steps.push({ step: 'Config', status: 'ok', detail: `Site: ${siteUrl}, Library: ${libraryName}` });
+
+    // Step 2: Acquire token
+    try {
+      await this.getAccessToken();
+      results.steps.push({ step: 'Auth', status: 'ok', detail: 'Access token acquired' });
+    } catch (error) {
+      results.steps.push({ step: 'Auth', status: 'fail', detail: error.message });
+      return results;
+    }
+
+    // Step 3: Resolve site
+    try {
+      const siteId = await this.getSharePointSiteId();
+      results.steps.push({ step: 'Site', status: 'ok', detail: `Site ID: ${siteId.substring(0, 40)}...` });
+    } catch (error) {
+      results.steps.push({ step: 'Site', status: 'fail', detail: error.message });
+      return results;
+    }
+
+    // Step 4: Resolve drive
+    try {
+      const driveId = await this.getSharePointDriveId();
+      results.steps.push({ step: 'Drive', status: 'ok', detail: `Drive ID: ${driveId.substring(0, 40)}...` });
+    } catch (error) {
+      results.steps.push({ step: 'Drive', status: 'fail', detail: error.message });
+      return results;
+    }
+
+    // Step 5: Test folder access
+    try {
+      const folderPath = process.env.SHAREPOINT_FOLDER_PATH || 'Trading Statements';
+      await this.ensureSharePointFolder(folderPath);
+      results.steps.push({ step: 'Folder', status: 'ok', detail: `Folder "${folderPath}" accessible` });
+    } catch (error) {
+      results.steps.push({ step: 'Folder', status: 'fail', detail: error.message });
+      return results;
+    }
+
+    return results;
+  }
 }
 
 module.exports = GraphAPIService;

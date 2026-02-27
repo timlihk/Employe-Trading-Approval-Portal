@@ -707,6 +707,7 @@ app.get('/admin-statements', requireAdmin, StatementController.getStatementsDash
 app.get('/admin-statement-scheduler', requireAdmin, StatementController.getSchedulerStatus);
 app.post('/admin-trigger-statement-request', requireAdmin, adminActionLimiter, verifyCsrfToken, StatementController.triggerStatementRequest);
 app.post('/admin-resend-statement-email', requireAdmin, adminActionLimiter, verifyCsrfToken, StatementController.resendEmail);
+app.post('/admin-test-sharepoint', requireAdmin, verifyCsrfToken, StatementController.testSharePoint);
 
 // ===========================================
 // STATEMENT UPLOAD ROUTES (token-authenticated, no session required)

@@ -270,7 +270,9 @@ class StatementRequestService {
         'statement_request', request.uuid,
         `SharePoint upload failed: ${error.message}`
       );
-      throw new AppError('Failed to upload file to SharePoint. Please try again.', 502);
+      // Surface the actual error so admins/users can diagnose the issue
+      const detail = error.message || 'Unknown error';
+      throw new AppError(`Failed to upload file to SharePoint: ${detail}`, 502);
     }
 
     // Update DB record

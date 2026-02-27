@@ -2,6 +2,7 @@ const StatementRequestService = require('../services/StatementRequestService');
 const StatementRequest = require('../models/StatementRequest');
 const BrokerageAccount = require('../models/BrokerageAccount');
 const ScheduledStatementService = require('../services/ScheduledStatementService');
+const GraphAPIService = require('../services/GraphAPIService');
 const AuditLog = require('../models/AuditLog');
 const { catchAsync } = require('../middleware/errorHandler');
 const { renderAdminPage, renderPublicPage, generateNotificationBanner, renderCard, renderTable } = require('../utils/templates');
@@ -337,10 +338,16 @@ class StatementController {
             </p>
           </div>
 
-          <form method="post" action="/admin-trigger-statement-request">
-            ${req.csrfInput()}
-            <button type="submit" class="btn btn-primary">Trigger Manual Send</button>
-          </form>
+          <div class="action-bar">
+            <form method="post" action="/admin-trigger-statement-request">
+              ${req.csrfInput()}
+              <button type="submit" class="btn btn-primary">Trigger Manual Send</button>
+            </form>
+            <form method="post" action="/admin-test-sharepoint">
+              ${req.csrfInput()}
+              <button type="submit" class="btn btn-secondary">Test SharePoint Connection</button>
+            </form>
+          </div>
         `)}
         <a href="/admin-statements" class="btn btn-secondary mt-4">Back to Statements</a>`;
 
@@ -404,6 +411,37 @@ class StatementController {
       res.redirect('/admin-statements?message=statement_email_resent');
     } catch (error) {
       res.redirect(`/admin-statements?error=${encodeURIComponent('Failed to resend: ' + error.message)}`);
+    }
+  });
+
+  /**
+   * POST /admin-test-sharepoint
+   * Test SharePoint connectivity and report diagnostic results.
+   */
+  testSharePoint = catchAsync(async (req, res) => {
+    if (!req.session.admin) return res.redirect('/admin-login');
+
+    try {
+      const results = await GraphAPIService.testSharePointConnection();
+      const allOk = results.steps.every(s => s.status === 'ok');
+
+      const stepsHtml = results.steps.map(s => {
+        const icon = s.status === 'ok' ? '&#10003;' : '&#10007;';
+        const cls = s.status === 'ok' ? 'stat-success' : 'stat-danger';
+        return `<div class="scheduler-row">
+          <span class="scheduler-label"><span class="${cls}">${icon}</span> ${s.step}</span>
+          <span class="scheduler-value text-sm">${s.detail}</span>
+        </div>`;
+      }).join('');
+
+      if (allOk) {
+        res.redirect('/admin-statement-scheduler?message=' + encodeURIComponent('SharePoint connection successful — all checks passed'));
+      } else {
+        const failedStep = results.steps.find(s => s.status === 'fail');
+        res.redirect('/admin-statement-scheduler?error=' + encodeURIComponent(`SharePoint test failed at "${failedStep.step}": ${failedStep.detail}`));
+      }
+    } catch (error) {
+      res.redirect('/admin-statement-scheduler?error=' + encodeURIComponent('SharePoint test error: ' + error.message));
     }
   });
 }
