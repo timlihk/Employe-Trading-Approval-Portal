@@ -140,6 +140,25 @@ SET session_replication_role = 'replica';
         sqlContent += '\n';
       }
 
+      // Backup brokerage_accounts table
+      const brokerageAccounts = await database.query('SELECT * FROM brokerage_accounts ORDER BY created_at');
+      if (brokerageAccounts.length > 0) {
+        sqlContent += '-- Brokerage Accounts\n';
+        sqlContent += 'DELETE FROM brokerage_accounts;\n';
+        for (const ba of brokerageAccounts) {
+          const values = [
+            `'${ba.uuid}'`,
+            `'${ba.employee_email}'`,
+            `'${ba.firm_name.replace(/'/g, "''")}'`,
+            `'${ba.account_number.replace(/'/g, "''")}'`,
+            `'${ba.created_at}'`,
+            ba.updated_at ? `'${ba.updated_at}'` : 'NULL'
+          ];
+          sqlContent += `INSERT INTO brokerage_accounts (uuid, employee_email, firm_name, account_number, created_at, updated_at) VALUES (${values.join(', ')});\n`;
+        }
+        sqlContent += '\n';
+      }
+
       sqlContent += "-- Re-enable foreign key checks\nSET session_replication_role = 'origin';\n";
 
       return {

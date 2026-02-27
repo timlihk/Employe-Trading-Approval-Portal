@@ -1,6 +1,7 @@
 const TradingRequestService = require('../services/TradingRequestService');
 const StatementRequestService = require('../services/StatementRequestService');
 const StatementRequest = require('../models/StatementRequest');
+const BrokerageAccount = require('../models/BrokerageAccount');
 const { catchAsync } = require('../middleware/errorHandler');
 const { renderEmployeePage, generateNotificationBanner } = require('../utils/templates');
 const { getDisplayId } = require('../utils/formatters');
@@ -29,17 +30,19 @@ class EmployeeController {
     const prefilledShares = shares ? decodeURIComponent(shares) : '';
     const prefilledType = trading_type ? decodeURIComponent(trading_type) : 'buy';
 
-    // Fetch statement requests for this employee
+    // Fetch brokerage accounts and statement requests for this employee
     const employeeEmail = req.session.employee.email;
+    let brokerageAccounts = [];
     let statementRequests = [];
     try {
+      brokerageAccounts = await BrokerageAccount.getByEmployee(employeeEmail);
       statementRequests = await StatementRequest.getByEmployee(employeeEmail);
     } catch (err) {
-      // Non-critical — dashboard still works without statements
+      // Non-critical — dashboard still works without these
     }
 
     const pendingStatements = statementRequests.filter(r => r.status === 'pending' || r.status === 'overdue');
-    const uploadedStatements = statementRequests.filter(r => r.status === 'uploaded');
+    const uploadedStatements = statementRequests.filter(r => r.status === 'uploaded').slice(0, 8);
 
     // Build pending statement rows
     const pendingRows = pendingStatements.map(r => {
@@ -56,9 +59,8 @@ class EmployeeController {
       </tr>`;
     }).join('');
 
-    // Build uploaded statement rows (show last 6)
-    const recentUploaded = uploadedStatements.slice(0, 6);
-    const uploadedRows = recentUploaded.map(r => {
+    // Build uploaded statement rows
+    const uploadedRows = uploadedStatements.map(r => {
       const monthName = new Date(r.period_year, r.period_month - 1).toLocaleString('en-US', { month: 'long' });
       const uploadedDate = r.uploaded_at
         ? new Date(r.uploaded_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -72,11 +74,38 @@ class EmployeeController {
       </tr>`;
     }).join('');
 
+    // Build brokerage accounts list
+    const accountRows = brokerageAccounts.map(a =>
+      `<tr>
+        <td class="font-weight-600">${a.firm_name}</td>
+        <td class="text-sm">${a.account_number}</td>
+        <td><a href="/employee-upload-statement?account=${a.uuid}" class="btn btn-sm btn-primary">Upload</a></td>
+      </tr>`
+    ).join('');
+
     // Statement card content
     let statementCardContent = '';
+
+    // Brokerage accounts section
+    if (brokerageAccounts.length > 0) {
+      statementCardContent += `
+        <h4 class="mb-3">Your Brokerage Accounts</h4>
+        <div class="table-container">
+          <table class="modern-table">
+            <thead><tr><th>Firm</th><th>Account #</th><th>Action</th></tr></thead>
+            <tbody>${accountRows}</tbody>
+          </table>
+        </div>`;
+    } else {
+      statementCardContent += `
+        <p class="text-muted mb-3">No brokerage accounts registered. Please add your accounts to start uploading statements.</p>`;
+    }
+
+    // Pending uploads from admin emails
     if (pendingStatements.length > 0) {
       statementCardContent += `
-        <h4 class="mb-3">Pending Uploads</h4>
+        <hr class="my-4">
+        <h4 class="mb-3">Pending Requests</h4>
         <div class="table-container">
           <table class="modern-table">
             <thead><tr><th>Period</th><th>Brokerage</th><th>Deadline</th><th>Action</th></tr></thead>
@@ -84,9 +113,11 @@ class EmployeeController {
           </table>
         </div>`;
     }
-    if (recentUploaded.length > 0) {
+
+    // Recent uploads
+    if (uploadedStatements.length > 0) {
       statementCardContent += `
-        ${pendingStatements.length > 0 ? '<hr class="my-4">' : ''}
+        <hr class="my-4">
         <h4 class="mb-3">Recent Uploads</h4>
         <div class="table-container">
           <table class="modern-table">
@@ -94,9 +125,6 @@ class EmployeeController {
             <tbody>${uploadedRows}</tbody>
           </table>
         </div>`;
-    }
-    if (statementRequests.length === 0) {
-      statementCardContent = '<p class="text-muted text-center p-4">No statement uploads yet.</p>';
     }
 
     const statementCard = `
@@ -106,7 +134,7 @@ class EmployeeController {
         </div>
         <div class="card-body">
           <div class="mb-4">
-            <a href="/employee-upload-statement" class="btn btn-primary">Upload Statement</a>
+            <a href="/employee-brokerage-accounts" class="btn btn-secondary">Manage Accounts</a>
           </div>
           ${statementCardContent}
         </div>
@@ -208,8 +236,144 @@ class EmployeeController {
   });
 
   /**
+   * GET /employee-brokerage-accounts
+   * Manage brokerage accounts (add, edit, remove).
+   */
+  getBrokerageAccounts = catchAsync(async (req, res) => {
+    if (!req.session.employee || !req.session.employee.email) {
+      return res.redirect('/?error=authentication_required');
+    }
+
+    const banner = generateNotificationBanner(req.query);
+    const accounts = await BrokerageAccount.getByEmployee(req.session.employee.email);
+
+    // Editing an account?
+    const editUuid = req.query.edit;
+    const editAccount = editUuid ? accounts.find(a => a.uuid === editUuid) : null;
+
+    const accountRows = accounts.map(a => `
+      <tr>
+        <td class="font-weight-600">${a.firm_name}</td>
+        <td>${a.account_number}</td>
+        <td>
+          <a href="/employee-brokerage-accounts?edit=${a.uuid}" class="btn btn-sm btn-secondary">Edit</a>
+          <form method="post" action="/employee-remove-brokerage" class="d-inline">
+            ${req.csrfInput()}
+            <input type="hidden" name="uuid" value="${a.uuid}">
+            <button type="submit" class="btn btn-sm btn-danger">Remove</button>
+          </form>
+        </td>
+      </tr>
+    `).join('');
+
+    const content = `
+      ${banner}
+      <div class="card mb-6">
+        <div class="card-header">
+          <h3 class="card-title heading">${editAccount ? 'Edit Brokerage Account' : 'Add Brokerage Account'}</h3>
+        </div>
+        <div class="card-body p-6">
+          <form method="post" action="${editAccount ? '/employee-edit-brokerage' : '/employee-add-brokerage'}">
+            ${req.csrfInput()}
+            ${editAccount ? `<input type="hidden" name="uuid" value="${editAccount.uuid}">` : ''}
+            <div class="grid grid-auto gap-4 grid-mobile-stack">
+              <div>
+                <label class="form-label">Firm Name</label>
+                <input type="text" name="firm_name" required placeholder="e.g., Interactive Brokers"
+                       value="${editAccount ? editAccount.firm_name : ''}"
+                       class="form-control" maxlength="255">
+              </div>
+              <div>
+                <label class="form-label">Account Number</label>
+                <input type="text" name="account_number" required placeholder="e.g., U12345678"
+                       value="${editAccount ? editAccount.account_number : ''}"
+                       class="form-control" maxlength="100">
+              </div>
+            </div>
+            <div class="mt-4">
+              <button type="submit" class="btn btn-primary">${editAccount ? 'Save Changes' : 'Add Account'}</button>
+              ${editAccount ? '<a href="/employee-brokerage-accounts" class="btn btn-secondary ml-2">Cancel</a>' : ''}
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title heading">Your Brokerage Accounts</h3>
+        </div>
+        <div class="card-body ${accounts.length === 0 ? '' : 'p-0'}">
+          ${accounts.length > 0 ? `
+            <div class="table-container">
+              <table class="modern-table">
+                <thead><tr><th>Firm</th><th>Account Number</th><th>Actions</th></tr></thead>
+                <tbody>${accountRows}</tbody>
+              </table>
+            </div>
+          ` : '<p class="text-muted text-center p-6">No brokerage accounts registered yet. Add one above to start uploading statements.</p>'}
+        </div>
+      </div>
+
+      <div class="mt-4">
+        <a href="/employee-dashboard" class="btn btn-secondary">Back to Dashboard</a>
+      </div>
+    `;
+
+    res.send(renderEmployeePage('Brokerage Accounts', content, req.session.employee.name, req.session.employee.email));
+  });
+
+  /**
+   * POST /employee-add-brokerage
+   */
+  addBrokerage = catchAsync(async (req, res) => {
+    if (!req.session.employee || !req.session.employee.email) {
+      return res.redirect('/?error=authentication_required');
+    }
+    const { firm_name, account_number } = req.body;
+    if (!firm_name || !account_number) {
+      return res.redirect('/employee-brokerage-accounts?error=' + encodeURIComponent('Firm name and account number are required'));
+    }
+    const result = await BrokerageAccount.create({
+      employee_email: req.session.employee.email,
+      firm_name,
+      account_number
+    });
+    if (!result) {
+      return res.redirect('/employee-brokerage-accounts?error=' + encodeURIComponent('This account already exists'));
+    }
+    res.redirect('/employee-brokerage-accounts?message=' + encodeURIComponent('Brokerage account added'));
+  });
+
+  /**
+   * POST /employee-edit-brokerage
+   */
+  editBrokerage = catchAsync(async (req, res) => {
+    if (!req.session.employee || !req.session.employee.email) {
+      return res.redirect('/?error=authentication_required');
+    }
+    const { uuid, firm_name, account_number } = req.body;
+    if (!uuid || !firm_name || !account_number) {
+      return res.redirect('/employee-brokerage-accounts?error=' + encodeURIComponent('All fields are required'));
+    }
+    await BrokerageAccount.update(uuid, req.session.employee.email, { firm_name, account_number });
+    res.redirect('/employee-brokerage-accounts?message=' + encodeURIComponent('Account updated'));
+  });
+
+  /**
+   * POST /employee-remove-brokerage
+   */
+  removeBrokerage = catchAsync(async (req, res) => {
+    if (!req.session.employee || !req.session.employee.email) {
+      return res.redirect('/?error=authentication_required');
+    }
+    const { uuid } = req.body;
+    await BrokerageAccount.delete(uuid, req.session.employee.email);
+    res.redirect('/employee-brokerage-accounts?message=' + encodeURIComponent('Account removed'));
+  });
+
+  /**
    * GET /employee-upload-statement
-   * Show the self-service statement upload form.
+   * Upload form — pre-selects account if ?account=uuid is provided.
    */
   getUploadStatementPage = catchAsync(async (req, res) => {
     if (!req.session.employee || !req.session.employee.email) {
@@ -218,9 +382,13 @@ class EmployeeController {
 
     const banner = generateNotificationBanner(req.query);
     const employeeEmail = req.session.employee.email;
+    const accounts = await BrokerageAccount.getByEmployee(employeeEmail);
 
-    // Get historical brokerages for dropdown
-    const brokerages = await StatementRequest.getDistinctBrokerages(employeeEmail);
+    if (accounts.length === 0) {
+      return res.redirect('/employee-brokerage-accounts?error=' + encodeURIComponent('Please add a brokerage account before uploading statements'));
+    }
+
+    const selectedAccountUuid = req.query.account || '';
 
     // Build month/year options (last 12 months)
     const now = new Date();
@@ -233,10 +401,11 @@ class EmployeeController {
       periodOptions.push(`<option value="${y}-${m}">${mName} ${y}</option>`);
     }
 
-    // Build brokerage options
-    const brokerageOptions = brokerages.map(b =>
-      `<option value="${b}">${b}</option>`
-    ).join('');
+    // Build account options
+    const accountOptions = accounts.map(a => {
+      const selected = a.uuid === selectedAccountUuid ? 'selected' : '';
+      return `<option value="${a.uuid}" ${selected}>${a.firm_name} — ${a.account_number}</option>`;
+    }).join('');
 
     const content = `
       ${banner}
@@ -250,33 +419,21 @@ class EmployeeController {
 
             <div class="grid grid-auto gap-4 grid-mobile-stack">
               <div>
+                <label class="form-label">Brokerage Account</label>
+                <select name="account_uuid" required class="form-control">
+                  <option value="">Select account...</option>
+                  ${accountOptions}
+                </select>
+              </div>
+
+              <div>
                 <label class="form-label">Statement Period</label>
                 <select name="period" required class="form-control">
                   <option value="">Select month...</option>
                   ${periodOptions.join('')}
                 </select>
               </div>
-
-              <div>
-                <label class="form-label">Brokerage</label>
-                <select name="brokerage_select" class="form-control" id="brokerage-select">
-                  <option value="">Select brokerage...</option>
-                  ${brokerageOptions}
-                  <option value="__new__">+ Add new brokerage</option>
-                </select>
-              </div>
             </div>
-
-            <div class="mt-4" id="new-brokerage-wrapper" style="display:none">
-              <label class="form-label">New Brokerage Name</label>
-              <input type="text" name="brokerage_new" placeholder="e.g., Interactive Brokers, Charles Schwab..."
-                     class="form-control" maxlength="255">
-            </div>
-
-            <style>
-              #brokerage-select:has(option[value="__new__"]:checked) ~ #new-brokerage-wrapper,
-              .show-new-brokerage { display: block !important; }
-            </style>
 
             <div class="mt-4">
               <label class="form-label">Statement File</label>
@@ -323,14 +480,16 @@ class EmployeeController {
     }
 
     const file = req.file;
-    const { period, brokerage_select, brokerage_new, notes } = req.body;
+    const { period, account_uuid, notes } = req.body;
 
     if (!file) {
       return res.redirect('/employee-upload-statement?error=' + encodeURIComponent('Please select a file to upload'));
     }
-
     if (!period) {
       return res.redirect('/employee-upload-statement?error=' + encodeURIComponent('Please select a statement period'));
+    }
+    if (!account_uuid) {
+      return res.redirect('/employee-upload-statement?error=' + encodeURIComponent('Please select a brokerage account'));
     }
 
     // Parse period "YYYY-M"
@@ -341,18 +500,13 @@ class EmployeeController {
       return res.redirect('/employee-upload-statement?error=' + encodeURIComponent('Invalid period selected'));
     }
 
-    // Determine brokerage name
-    let brokerageName = '';
-    if (brokerage_select === '__new__' && brokerage_new && brokerage_new.trim()) {
-      brokerageName = brokerage_new.trim();
-    } else if (brokerage_select && brokerage_select !== '__new__') {
-      brokerageName = brokerage_select;
+    // Look up the brokerage account
+    const account = await BrokerageAccount.findByUuid(account_uuid);
+    if (!account || account.employee_email !== req.session.employee.email.toLowerCase()) {
+      return res.redirect('/employee-upload-statement?error=' + encodeURIComponent('Invalid brokerage account'));
     }
 
-    if (!brokerageName) {
-      return res.redirect('/employee-upload-statement?error=' + encodeURIComponent('Please select or enter a brokerage name'));
-    }
-
+    const brokerageName = `${account.firm_name} — ${account.account_number}`;
     const employee = {
       email: req.session.employee.email,
       name: req.session.employee.name
@@ -369,7 +523,7 @@ class EmployeeController {
 
       res.redirect('/employee-dashboard?message=' + encodeURIComponent('Statement uploaded successfully'));
     } catch (error) {
-      res.redirect('/employee-upload-statement?error=' + encodeURIComponent(error.message));
+      res.redirect('/employee-upload-statement?account=' + account_uuid + '&error=' + encodeURIComponent(error.message));
     }
   });
 

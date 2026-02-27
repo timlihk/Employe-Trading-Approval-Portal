@@ -1,5 +1,6 @@
 const StatementRequestService = require('../services/StatementRequestService');
 const StatementRequest = require('../models/StatementRequest');
+const BrokerageAccount = require('../models/BrokerageAccount');
 const ScheduledStatementService = require('../services/ScheduledStatementService');
 const AuditLog = require('../models/AuditLog');
 const { catchAsync } = require('../middleware/errorHandler');
@@ -43,10 +44,10 @@ class StatementController {
       : 'N/A';
     const isOverdue = request.deadline_at && new Date(request.deadline_at) < new Date();
 
-    // Get historical brokerages for this employee
-    const brokerages = await StatementRequest.getDistinctBrokerages(request.employee_email);
-    const brokerageOptions = brokerages.map(b =>
-      `<option value="${b}">${b}</option>`
+    // Get registered brokerage accounts for this employee
+    const accounts = await BrokerageAccount.getByEmployee(request.employee_email);
+    const accountOptions = accounts.map(a =>
+      `<option value="${a.firm_name} — ${a.account_number}">${a.firm_name} — ${a.account_number}</option>`
     ).join('');
 
     const content = `
@@ -68,16 +69,16 @@ class StatementController {
 
               <form method="post" action="/upload-statement/${token}" enctype="multipart/form-data">
                 <div class="mb-6">
-                  <label class="form-label">Brokerage</label>
+                  <label class="form-label">Brokerage Account</label>
                   <select name="brokerage_select" class="form-control">
-                    <option value="">Select brokerage...</option>
-                    ${brokerageOptions}
-                    <option value="__new__">+ Add new brokerage</option>
+                    <option value="">Select account...</option>
+                    ${accountOptions}
+                    <option value="__new__">+ Other (type below)</option>
                   </select>
                 </div>
                 <div class="mb-6" id="new-brokerage-row" style="display:none">
-                  <label class="form-label">New Brokerage Name</label>
-                  <input type="text" name="brokerage_new" placeholder="e.g., Interactive Brokers, Charles Schwab..."
+                  <label class="form-label">Brokerage Name</label>
+                  <input type="text" name="brokerage_new" placeholder="e.g., Interactive Brokers — U12345678"
                          class="form-control" maxlength="255">
                 </div>
                 <style>

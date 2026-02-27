@@ -705,6 +705,10 @@ app.get('/employee-dashboard', requireEmployee, EmployeeController.getDashboard)
 app.get('/employee-history', requireEmployee, EmployeeController.getHistory);
 app.get('/employee-export-history', requireEmployee, EmployeeController.exportHistory);
 app.get('/escalate-form/:id', requireEmployee, EmployeeController.getEscalationForm);
+app.get('/employee-brokerage-accounts', requireEmployee, EmployeeController.getBrokerageAccounts);
+app.post('/employee-add-brokerage', requireEmployee, verifyCsrfToken, EmployeeController.addBrokerage);
+app.post('/employee-edit-brokerage', requireEmployee, verifyCsrfToken, EmployeeController.editBrokerage);
+app.post('/employee-remove-brokerage', requireEmployee, verifyCsrfToken, EmployeeController.removeBrokerage);
 app.get('/employee-upload-statement', requireEmployee, EmployeeController.getUploadStatementPage);
 app.post('/employee-upload-statement', requireEmployee, uploadStatement.single('statement'), verifyCsrfToken, EmployeeController.processStatementUpload);
 

@@ -54,6 +54,7 @@ function renderEmployeePage(title, content, employeeName = '', employeeEmail = '
         <nav class="nav mb-6">
             <a href="/employee-dashboard" class="nav-link ${title === 'Employee Dashboard' ? 'active' : ''}">Dashboard</a>
             <a href="/employee-history" class="nav-link ${title === 'Trading History' || title === 'Request History' ? 'active' : ''}">My History</a>
+            <a href="/employee-brokerage-accounts" class="nav-link ${title === 'Brokerage Accounts' ? 'active' : ''}">Accounts</a>
             <a href="/employee-logout" class="nav-link">Logout</a>
         </nav>`;
   

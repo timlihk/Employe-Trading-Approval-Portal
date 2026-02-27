@@ -132,6 +132,19 @@ class Database {
         )
       `);
 
+      // Brokerage accounts registry
+      await this.pool.query(`
+        CREATE TABLE IF NOT EXISTS brokerage_accounts (
+          uuid UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+          employee_email VARCHAR(255) NOT NULL,
+          firm_name VARCHAR(255) NOT NULL,
+          account_number VARCHAR(100) NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          UNIQUE(employee_email, firm_name, account_number)
+        )
+      `);
+
       // Drop unused compliance_settings table if it exists
       await this.pool.query('DROP TABLE IF EXISTS compliance_settings');
       console.log('🗑️  Removed unused compliance_settings table');
