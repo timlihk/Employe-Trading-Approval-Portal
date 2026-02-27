@@ -52,10 +52,10 @@ class BaseModel {
     });
   }
 
-  static findById(id) {
+  static findById(uuid) {
     return new Promise((resolve, reject) => {
-      const query = `SELECT * FROM ${this.tableName} WHERE id = $1`;
-      this.get(query, [id]).then(resolve).catch(reject);
+      const query = `SELECT * FROM ${this.tableName} WHERE uuid = $1`;
+      this.get(query, [uuid]).then(resolve).catch(reject);
     });
   }
 
@@ -99,7 +99,7 @@ class BaseModel {
     });
   }
 
-  static update(id, data) {
+  static update(uuid, data) {
     return new Promise((resolve, reject) => {
       const keys = Object.keys(data);
       const values = Object.values(data);
@@ -108,10 +108,10 @@ class BaseModel {
       const query = `
         UPDATE ${this.tableName}
         SET ${setClause}
-        WHERE id = $${keys.length + 1}
+        WHERE uuid = $${keys.length + 1}
       `;
 
-      this.run(query, [...values, id]).then(result => {
+      this.run(query, [...values, uuid]).then(result => {
         resolve({ changes: result.changes });
       }).catch(reject);
     });
@@ -140,10 +140,10 @@ class BaseModel {
     });
   }
 
-  static delete(id) {
+  static delete(uuid) {
     return new Promise((resolve, reject) => {
-      const query = `DELETE FROM ${this.tableName} WHERE id = $1`;
-      this.run(query, [id]).then(result => {
+      const query = `DELETE FROM ${this.tableName} WHERE uuid = $1`;
+      this.run(query, [uuid]).then(result => {
         resolve({ changes: result.changes });
       }).catch(reject);
     });

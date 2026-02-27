@@ -627,7 +627,7 @@ class AdminController {
    * Export trading requests as CSV
    */
   exportTradingRequests = catchAsync(async (req, res) => {
-    const { sort_by = 'id', sort_order = 'DESC' } = req.query;
+    const { sort_by = 'created_at', sort_order = 'DESC' } = req.query;
     
     try {
       // Get all trading requests with current sorting

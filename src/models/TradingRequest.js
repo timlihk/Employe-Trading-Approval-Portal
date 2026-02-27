@@ -133,8 +133,8 @@ class TradingRequest extends BaseModel {
 
   static findByEmail(email) {
     return new Promise((resolve, reject) => {
-      const sql = 'SELECT * FROM trading_requests WHERE LOWER(employee_email) = $1 ORDER BY created_at DESC';
-      
+      const sql = 'SELECT * FROM trading_requests WHERE employee_email = $1 ORDER BY created_at DESC';
+
       this.query(sql, [email.toLowerCase()]).then(rows => {
         resolve(rows);
       }).catch(err => {
@@ -146,8 +146,8 @@ class TradingRequest extends BaseModel {
 
   static getUniqueTeamMembers() {
     return new Promise((resolve, reject) => {
-      const sql = 'SELECT DISTINCT LOWER(employee_email) as employee_email FROM trading_requests ORDER BY employee_email';
-      
+      const sql = 'SELECT DISTINCT employee_email FROM trading_requests ORDER BY employee_email';
+
       this.query(sql, []).then(rows => {
         resolve(rows.map(row => row.employee_email));
       }).catch(err => {
@@ -156,7 +156,7 @@ class TradingRequest extends BaseModel {
     });
   }
 
-  static getFilteredHistory(filters, sortBy = 'id', sortOrder = 'DESC') {
+  static getFilteredHistory(filters, sortBy = 'created_at', sortOrder = 'DESC') {
     return new Promise((resolve, reject) => {
       // Build filter clauses using helper
       const { whereClause, params, paramIndex } = this._buildFilterClauses(filters);
@@ -214,12 +214,12 @@ class TradingRequest extends BaseModel {
     });
   }
 
-  static getPendingRequests(sortBy = 'id', sortOrder = 'DESC') {
+  static getPendingRequests(sortBy = 'created_at', sortOrder = 'DESC') {
     return new Promise((resolve, reject) => {
-      const validSortColumns = ['id', 'created_at', 'ticker'];
+      const validSortColumns = ['created_at', 'ticker', 'employee_email'];
       const validSortOrders = ['ASC', 'DESC'];
-      
-      const sortColumn = validSortColumns.includes(sortBy) ? sortBy : 'id';
+
+      const sortColumn = validSortColumns.includes(sortBy) ? sortBy : 'created_at';
       const sortDirection = validSortOrders.includes(sortOrder.toUpperCase()) ? sortOrder.toUpperCase() : 'DESC';
       
       const sql = `SELECT * FROM trading_requests WHERE status = $1 ORDER BY ${sortColumn} ${sortDirection}`;
@@ -231,12 +231,12 @@ class TradingRequest extends BaseModel {
     });
   }
 
-  static getEscalatedRequests(sortBy = 'id', sortOrder = 'DESC') {
+  static getEscalatedRequests(sortBy = 'created_at', sortOrder = 'DESC') {
     return new Promise((resolve, reject) => {
-      const validSortColumns = ['id', 'created_at', 'ticker'];
+      const validSortColumns = ['created_at', 'ticker', 'employee_email'];
       const validSortOrders = ['ASC', 'DESC'];
-      
-      const sortColumn = validSortColumns.includes(sortBy) ? sortBy : 'id';
+
+      const sortColumn = validSortColumns.includes(sortBy) ? sortBy : 'created_at';
       const sortDirection = validSortOrders.includes(sortOrder.toUpperCase()) ? sortOrder.toUpperCase() : 'DESC';
       
       const sql = `SELECT * FROM trading_requests WHERE escalated = $1 AND status = $2 ORDER BY ${sortColumn} ${sortDirection}`;
@@ -295,38 +295,39 @@ class TradingRequest extends BaseModel {
     let paramIndex = initialParamIndex;
 
     if (filters.employee_email) {
-      whereClause += ` AND LOWER(employee_email) = $${paramIndex}`;
+      whereClause += ` AND employee_email = $${paramIndex}`;
       params.push(filters.employee_email.toLowerCase());
       paramIndex++;
     }
 
+    // Sargable date filtering: convert date to HKT timestamp range
+    // so PostgreSQL can use the index on created_at
     if (filters.start_date) {
-      // Convert to Hong Kong timezone (UTC+8) for date comparison
-      whereClause += ` AND DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Hong_Kong') >= $${paramIndex}`;
+      whereClause += ` AND created_at >= ($${paramIndex}::date AT TIME ZONE 'Asia/Hong_Kong')`;
       params.push(filters.start_date);
       paramIndex++;
     }
 
     if (filters.end_date) {
-      whereClause += ` AND DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Hong_Kong') <= $${paramIndex}`;
+      whereClause += ` AND created_at < (($${paramIndex}::date + interval '1 day') AT TIME ZONE 'Asia/Hong_Kong')`;
       params.push(filters.end_date);
       paramIndex++;
     }
 
     if (filters.ticker) {
-      whereClause += ` AND UPPER(ticker) = $${paramIndex}`;
+      whereClause += ` AND ticker = $${paramIndex}`;
       params.push(filters.ticker.toUpperCase());
       paramIndex++;
     }
 
     if (filters.trading_type) {
-      whereClause += ` AND LOWER(trading_type) = $${paramIndex}`;
+      whereClause += ` AND trading_type = $${paramIndex}`;
       params.push(filters.trading_type.toLowerCase());
       paramIndex++;
     }
 
     if (filters.status) {
-      whereClause += ` AND LOWER(status) = $${paramIndex}`;
+      whereClause += ` AND status = $${paramIndex}`;
       params.push(filters.status.toLowerCase());
       paramIndex++;
     }
@@ -338,7 +339,7 @@ class TradingRequest extends BaseModel {
     }
 
     if (filters.instrument_type) {
-      whereClause += ` AND LOWER(instrument_type) = $${paramIndex}`;
+      whereClause += ` AND instrument_type = $${paramIndex}`;
       params.push(filters.instrument_type.toLowerCase());
       paramIndex++;
     }
@@ -348,10 +349,10 @@ class TradingRequest extends BaseModel {
 
   // Helper method to build ORDER BY clause
   static _buildSortClause(sortBy, sortOrder) {
-    const validSortColumns = ['id', 'created_at', 'ticker', 'employee_email', 'total_value_usd'];
+    const validSortColumns = ['created_at', 'ticker', 'employee_email', 'total_value_usd'];
     const validSortOrders = ['ASC', 'DESC'];
 
-    const sortColumn = validSortColumns.includes(sortBy) ? sortBy : 'id';
+    const sortColumn = validSortColumns.includes(sortBy) ? sortBy : 'created_at';
     const sortDirection = validSortOrders.includes(sortOrder.toUpperCase()) ? sortOrder.toUpperCase() : 'DESC';
 
     return ` ORDER BY ${sortColumn} ${sortDirection}`;

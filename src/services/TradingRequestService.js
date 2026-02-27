@@ -446,7 +446,7 @@ class TradingRequestService {
   /**
    * Get trading requests for an employee with filters and sorting
    */
-  async getEmployeeRequests(employeeEmail, filters = {}, sortBy = 'id', sortOrder = 'DESC') {
+  async getEmployeeRequests(employeeEmail, filters = {}, sortBy = 'created_at', sortOrder = 'DESC') {
     try {
       const requestFilters = {
         employee_email: employeeEmail,

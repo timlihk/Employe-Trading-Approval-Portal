@@ -33,14 +33,14 @@ class Database {
       await this.pool.query(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`);
       console.log('✅ UUID extension enabled');
       
-      // Create tables for PostgreSQL
+      // Create tables for PostgreSQL (using TIMESTAMPTZ for proper timezone handling)
       await this.pool.query(`
         CREATE TABLE IF NOT EXISTS restricted_stocks (
           uuid UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
           ticker VARCHAR(20) UNIQUE NOT NULL,
           company_name TEXT NOT NULL,
           exchange VARCHAR(50),
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
         )
       `);
 
@@ -62,10 +62,10 @@ class Database {
           rejection_reason TEXT,
           escalated BOOLEAN DEFAULT FALSE,
           escalation_reason TEXT,
-          escalated_at TIMESTAMP,
+          escalated_at TIMESTAMPTZ,
           custom_id VARCHAR(50),
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          processed_at TIMESTAMP
+          created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+          processed_at TIMESTAMPTZ
         )
       `);
 
@@ -81,10 +81,9 @@ class Database {
           ip_address VARCHAR(45),
           user_agent TEXT,
           session_id TEXT,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
         )
       `);
-
 
       await this.pool.query(`
         CREATE TABLE IF NOT EXISTS restricted_stock_changelog (
@@ -97,10 +96,9 @@ class Database {
           ip_address VARCHAR(45),
           user_agent TEXT,
           session_id TEXT,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+          created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
         )
       `);
-
 
       // Statement requests table for monthly trading statement collection
       await this.pool.query(`
@@ -112,22 +110,22 @@ class Database {
           employee_name VARCHAR(255),
           status VARCHAR(20) NOT NULL DEFAULT 'pending'
             CHECK(status IN ('pending', 'uploaded', 'overdue', 'skipped')),
-          email_sent_at TIMESTAMP,
+          email_sent_at TIMESTAMPTZ,
           email_message_id VARCHAR(255),
           upload_token VARCHAR(64) UNIQUE,
-          uploaded_at TIMESTAMP,
+          uploaded_at TIMESTAMPTZ,
           sharepoint_item_id VARCHAR(255),
           sharepoint_file_url TEXT,
           original_filename VARCHAR(500),
           file_size_bytes BIGINT,
           file_content_type VARCHAR(100),
           reminder_count INTEGER DEFAULT 0,
-          last_reminder_at TIMESTAMP,
-          deadline_at TIMESTAMP,
+          last_reminder_at TIMESTAMPTZ,
+          deadline_at TIMESTAMPTZ,
           brokerage_name VARCHAR(255),
           notes TEXT,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
           UNIQUE(period_year, period_month, employee_email, brokerage_name)
         )
       `);
@@ -139,8 +137,8 @@ class Database {
           employee_email VARCHAR(255) NOT NULL,
           firm_name VARCHAR(255) NOT NULL,
           account_number VARCHAR(100) NOT NULL,
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
           UNIQUE(employee_email, firm_name, account_number)
         )
       `);
@@ -173,11 +171,53 @@ class Database {
       await this.pool.query("UPDATE restricted_stocks SET instrument_type = 'equity' WHERE instrument_type IS NULL OR instrument_type = ''");
       await this.pool.query("UPDATE restricted_stock_changelog SET instrument_type = 'equity' WHERE instrument_type IS NULL OR instrument_type = ''");
 
+      // Upgrade existing TIMESTAMP columns to TIMESTAMPTZ (safe: existing data is UTC)
+      const timestampUpgrades = [
+        `ALTER TABLE trading_requests ALTER COLUMN created_at TYPE TIMESTAMPTZ USING created_at AT TIME ZONE 'UTC'`,
+        `ALTER TABLE trading_requests ALTER COLUMN processed_at TYPE TIMESTAMPTZ USING processed_at AT TIME ZONE 'UTC'`,
+        `ALTER TABLE trading_requests ALTER COLUMN escalated_at TYPE TIMESTAMPTZ USING escalated_at AT TIME ZONE 'UTC'`,
+        `ALTER TABLE audit_logs ALTER COLUMN created_at TYPE TIMESTAMPTZ USING created_at AT TIME ZONE 'UTC'`,
+        `ALTER TABLE restricted_stock_changelog ALTER COLUMN created_at TYPE TIMESTAMPTZ USING created_at AT TIME ZONE 'UTC'`,
+        `ALTER TABLE restricted_stocks ALTER COLUMN created_at TYPE TIMESTAMPTZ USING created_at AT TIME ZONE 'UTC'`,
+        `ALTER TABLE statement_requests ALTER COLUMN created_at TYPE TIMESTAMPTZ USING created_at AT TIME ZONE 'UTC'`,
+        `ALTER TABLE statement_requests ALTER COLUMN updated_at TYPE TIMESTAMPTZ USING updated_at AT TIME ZONE 'UTC'`,
+        `ALTER TABLE statement_requests ALTER COLUMN email_sent_at TYPE TIMESTAMPTZ USING email_sent_at AT TIME ZONE 'UTC'`,
+        `ALTER TABLE statement_requests ALTER COLUMN uploaded_at TYPE TIMESTAMPTZ USING uploaded_at AT TIME ZONE 'UTC'`,
+        `ALTER TABLE statement_requests ALTER COLUMN last_reminder_at TYPE TIMESTAMPTZ USING last_reminder_at AT TIME ZONE 'UTC'`,
+        `ALTER TABLE statement_requests ALTER COLUMN deadline_at TYPE TIMESTAMPTZ USING deadline_at AT TIME ZONE 'UTC'`,
+        `ALTER TABLE brokerage_accounts ALTER COLUMN created_at TYPE TIMESTAMPTZ USING created_at AT TIME ZONE 'UTC'`,
+        `ALTER TABLE brokerage_accounts ALTER COLUMN updated_at TYPE TIMESTAMPTZ USING updated_at AT TIME ZONE 'UTC'`,
+      ];
+      for (const sql of timestampUpgrades) {
+        try { await this.pool.query(sql); } catch (e) { /* already TIMESTAMPTZ */ }
+      }
+      console.log('✅ TIMESTAMP columns upgraded to TIMESTAMPTZ');
+
       // Create indexes for performance
       await this.pool.query('CREATE INDEX IF NOT EXISTS idx_trading_requests_instrument_type ON trading_requests(instrument_type)');
       await this.pool.query('CREATE INDEX IF NOT EXISTS idx_restricted_stocks_instrument_type ON restricted_stocks(instrument_type)');
 
-      console.log('✅ PostgreSQL database initialized successfully with bond support');
+      // Core query indexes
+      await this.pool.query('CREATE INDEX IF NOT EXISTS idx_trading_requests_employee_email ON trading_requests(employee_email)');
+      await this.pool.query('CREATE INDEX IF NOT EXISTS idx_trading_requests_status ON trading_requests(status)');
+      await this.pool.query('CREATE INDEX IF NOT EXISTS idx_trading_requests_created_at ON trading_requests(created_at DESC)');
+      await this.pool.query('CREATE INDEX IF NOT EXISTS idx_trading_requests_ticker ON trading_requests(ticker)');
+      await this.pool.query('CREATE INDEX IF NOT EXISTS idx_trading_requests_escalated_status ON trading_requests(escalated, status)');
+
+      await this.pool.query('CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at ON audit_logs(created_at DESC)');
+      await this.pool.query('CREATE INDEX IF NOT EXISTS idx_audit_logs_user_email ON audit_logs(user_email)');
+
+      await this.pool.query('CREATE INDEX IF NOT EXISTS idx_changelog_created_at ON restricted_stock_changelog(created_at DESC)');
+      await this.pool.query('CREATE INDEX IF NOT EXISTS idx_changelog_ticker ON restricted_stock_changelog(ticker)');
+
+      await this.pool.query('CREATE INDEX IF NOT EXISTS idx_statement_requests_employee_email ON statement_requests(employee_email)');
+      await this.pool.query('CREATE INDEX IF NOT EXISTS idx_statement_requests_status ON statement_requests(status)');
+      await this.pool.query('CREATE INDEX IF NOT EXISTS idx_statement_requests_status_deadline ON statement_requests(status, deadline_at)');
+      await this.pool.query('CREATE INDEX IF NOT EXISTS idx_statement_requests_period ON statement_requests(period_year, period_month)');
+
+      await this.pool.query('CREATE INDEX IF NOT EXISTS idx_brokerage_accounts_employee_email ON brokerage_accounts(employee_email)');
+
+      console.log('✅ PostgreSQL database initialized with indexes and TIMESTAMPTZ support');
     } catch (error) {
       console.error('❌ Error initializing PostgreSQL database:', error);
       console.error('This might be a temporary issue during Railway deployment');

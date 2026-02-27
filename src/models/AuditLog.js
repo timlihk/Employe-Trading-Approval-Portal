@@ -146,12 +146,12 @@ class AuditLog extends BaseModel {
   static getActivityByUser(userEmail, limit = 50) {
     return new Promise((resolve, reject) => {
       const query = `
-        SELECT * FROM audit_logs 
-        WHERE LOWER(user_email) = $1 
-        ORDER BY created_at DESC 
+        SELECT * FROM audit_logs
+        WHERE user_email = $1
+        ORDER BY created_at DESC
         LIMIT $2
       `;
-      
+
       this.query(query, [userEmail.toLowerCase(), limit]).then(resolve).catch(reject);
     });
   }
@@ -187,12 +187,22 @@ class AuditLog extends BaseModel {
       }
     };
 
-    addCondition('LOWER(user_email)', filters.userEmail, '=', (v) => v.toLowerCase());
+    addCondition('user_email', filters.userEmail, '=', (v) => v.toLowerCase());
     addCondition('user_type', filters.userType);
     addCondition('action', filters.action);
     addCondition('target_type', filters.targetType);
-    addCondition(`DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Hong_Kong')`, filters.startDate, '>=');
-    addCondition(`DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Hong_Kong')`, filters.endDate, '<=');
+
+    // Sargable date filtering: convert date to HKT timestamp range
+    if (filters.startDate) {
+      conditions.push(`created_at >= ($${paramIndex}::date AT TIME ZONE 'Asia/Hong_Kong')`);
+      params.push(filters.startDate);
+      paramIndex++;
+    }
+    if (filters.endDate) {
+      conditions.push(`created_at < (($${paramIndex}::date + interval '1 day') AT TIME ZONE 'Asia/Hong_Kong')`);
+      params.push(filters.endDate);
+      paramIndex++;
+    }
 
     return { conditions, params, paramIndex };
   }

@@ -77,14 +77,15 @@ class RestrictedStockChangelog extends BaseModel {
         paramIndex++;
       }
 
+      // Sargable date filtering: convert date to HKT timestamp range
       if (filters.start_date) {
-        sql += ` AND DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Hong_Kong') >= $${paramIndex}`;
+        sql += ` AND created_at >= ($${paramIndex}::date AT TIME ZONE 'Asia/Hong_Kong')`;
         params.push(filters.start_date);
         paramIndex++;
       }
 
       if (filters.end_date) {
-        sql += ` AND DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Hong_Kong') <= $${paramIndex}`;
+        sql += ` AND created_at < (($${paramIndex}::date + interval '1 day') AT TIME ZONE 'Asia/Hong_Kong')`;
         params.push(filters.end_date);
         paramIndex++;
       }
@@ -98,26 +99,27 @@ class RestrictedStockChangelog extends BaseModel {
   static getSummary(filters = {}) {
     return new Promise((resolve, reject) => {
       let sql = `
-        SELECT 
+        SELECT
           COUNT(*) as total_changes,
           SUM(CASE WHEN action = 'added' THEN 1 ELSE 0 END) as total_added,
           SUM(CASE WHEN action = 'removed' THEN 1 ELSE 0 END) as total_removed,
           COUNT(DISTINCT ticker) as unique_stocks_affected,
           COUNT(DISTINCT admin_email) as unique_admins
-        FROM restricted_stock_changelog 
+        FROM restricted_stock_changelog
         WHERE 1=1
       `;
       const params = [];
       let paramIndex = 1;
 
+      // Sargable date filtering
       if (filters.start_date) {
-        sql += ` AND DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Hong_Kong') >= $${paramIndex}`;
+        sql += ` AND created_at >= ($${paramIndex}::date AT TIME ZONE 'Asia/Hong_Kong')`;
         params.push(filters.start_date);
         paramIndex++;
       }
 
       if (filters.end_date) {
-        sql += ` AND DATE(created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Asia/Hong_Kong') <= $${paramIndex}`;
+        sql += ` AND created_at < (($${paramIndex}::date + interval '1 day') AT TIME ZONE 'Asia/Hong_Kong')`;
         params.push(filters.end_date);
         paramIndex++;
       }
