@@ -7,6 +7,7 @@ const GRAPH_BASE = 'https://graph.microsoft.com/v1.0';
 class GraphAPIService {
   static ccaInstance = null;
   static cachedSiteId = null;
+  static cachedDriveId = null;
 
   /**
    * Get or create a client-credentials MSAL instance.
@@ -185,6 +186,8 @@ class GraphAPIService {
    * Get the default document library drive ID for the configured SharePoint site.
    */
   static async getSharePointDriveId() {
+    if (this.cachedDriveId) return this.cachedDriveId;
+
     const siteId = await this.getSharePointSiteId();
     const libraryName = process.env.SHAREPOINT_LIBRARY_NAME || 'Documents';
 
@@ -210,6 +213,8 @@ class GraphAPIService {
       const available = drives.map(d => d.name).join(', ');
       throw new Error(`SharePoint document library "${libraryName}" not found. Available: ${available}`);
     }
+    this.cachedDriveId = drive.id;
+    logger.info(`Resolved SharePoint drive ID: ${drive.id}`);
     return drive.id;
   }
 

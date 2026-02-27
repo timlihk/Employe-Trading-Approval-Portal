@@ -229,9 +229,11 @@ class Database {
       await this.pool.query('CREATE INDEX IF NOT EXISTS idx_changelog_ticker ON restricted_stock_changelog(ticker)');
 
       await this.pool.query('CREATE INDEX IF NOT EXISTS idx_statement_requests_employee_email ON statement_requests(employee_email)');
+      await this.pool.query('CREATE INDEX IF NOT EXISTS idx_statement_requests_employee_status ON statement_requests(employee_email, status)');
       await this.pool.query('CREATE INDEX IF NOT EXISTS idx_statement_requests_status ON statement_requests(status)');
       await this.pool.query('CREATE INDEX IF NOT EXISTS idx_statement_requests_status_deadline ON statement_requests(status, deadline_at)');
       await this.pool.query('CREATE INDEX IF NOT EXISTS idx_statement_requests_period ON statement_requests(period_year, period_month)');
+      await this.pool.query('CREATE INDEX IF NOT EXISTS idx_statement_requests_period_employee ON statement_requests(period_year, period_month, employee_email)');
 
       await this.pool.query('CREATE INDEX IF NOT EXISTS idx_brokerage_accounts_employee_email ON brokerage_accounts(employee_email)');
 

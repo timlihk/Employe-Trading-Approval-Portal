@@ -136,18 +136,34 @@ async function requireBrokerageSetup(req, res, next) {
   try {
     const email = req.session.employee.email;
 
-    // Check 1: Does the employee have any brokerage accounts?
-    const accounts = await BrokerageAccount.getByEmployee(email);
-    if (!accounts || accounts.length === 0) {
-      return res.redirect('/employee-brokerage-accounts?setup=required');
+    // Cache result in session for 5 minutes to avoid repeated DB queries
+    if (req.session._brokerageCheck &&
+        Date.now() - req.session._brokerageCheck.at < 5 * 60 * 1000) {
+      const cached = req.session._brokerageCheck.result;
+      if (cached === 'ok') return next();
+      return res.redirect(`/employee-brokerage-accounts?${cached}`);
     }
 
-    // Check 2: Has the employee confirmed accounts within the last 30 days?
-    const isCurrent = await EmployeeProfile.isConfirmationCurrent(email);
-    if (!isCurrent) {
-      return res.redirect('/employee-brokerage-accounts?confirm=required');
+    // Single query: check account count + confirmation status
+    const result = await database.get(`
+      SELECT
+        (SELECT COUNT(*) FROM brokerage_accounts WHERE employee_email = $1) AS account_count,
+        (SELECT accounts_confirmed_at > NOW() - INTERVAL '30 days'
+         FROM employee_profiles WHERE employee_email = $1) AS is_confirmed
+    `, [email.toLowerCase()]);
+
+    let checkResult = 'ok';
+    if (!result || parseInt(result.account_count) === 0) {
+      checkResult = 'setup=required';
+    } else if (!result.is_confirmed) {
+      checkResult = 'confirm=required';
     }
 
+    req.session._brokerageCheck = { result: checkResult, at: Date.now() };
+
+    if (checkResult !== 'ok') {
+      return res.redirect(`/employee-brokerage-accounts?${checkResult}`);
+    }
     next();
   } catch (err) {
     // Graceful degradation: if check fails, let the request through

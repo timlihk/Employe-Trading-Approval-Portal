@@ -20,11 +20,15 @@ class EmployeeProfile extends BaseModel {
    * Check if the employee's accounts confirmation is current (within 30 days).
    */
   static async isConfirmationCurrent(email) {
-    const profile = await this.getByEmail(email);
-    if (!profile || !profile.accounts_confirmed_at) return false;
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    return new Date(profile.accounts_confirmed_at) > thirtyDaysAgo;
+    if (!email) return false;
+    const sql = `
+      SELECT accounts_confirmed_at > NOW() - INTERVAL '30 days' AS is_current
+      FROM employee_profiles
+      WHERE employee_email = $1
+      LIMIT 1
+    `;
+    const result = await this.get(sql, [email.toLowerCase()]);
+    return result?.is_current || false;
   }
 
   /**

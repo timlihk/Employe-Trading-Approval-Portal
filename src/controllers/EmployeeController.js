@@ -370,6 +370,7 @@ class EmployeeController {
     if (!result) {
       return res.redirect('/employee-brokerage-accounts?error=' + encodeURIComponent('This account already exists'));
     }
+    delete req.session._brokerageCheck;
     res.redirect('/employee-brokerage-accounts?message=' + encodeURIComponent('Brokerage account added'));
   });
 
@@ -397,6 +398,7 @@ class EmployeeController {
     }
     const { uuid } = req.body;
     await BrokerageAccount.delete(uuid, req.session.employee.email);
+    delete req.session._brokerageCheck;
     res.redirect('/employee-brokerage-accounts?message=' + encodeURIComponent('Account removed'));
   });
 
@@ -418,6 +420,7 @@ class EmployeeController {
     }
 
     await EmployeeProfile.confirmAccounts(email);
+    delete req.session._brokerageCheck;
     res.redirect('/employee-dashboard?message=accounts_confirmed');
   });
 
