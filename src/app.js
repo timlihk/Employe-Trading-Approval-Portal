@@ -715,6 +715,7 @@ app.post('/admin-test-sharepoint', requireAdmin, verifyCsrfToken, StatementContr
 
 app.get('/upload-statement/:token', StatementController.getUploadPage);
 app.post('/upload-statement/:token', uploadStatement.single('statement'), StatementController.processUpload);
+app.get('/statement-file/:uuid', StatementController.downloadFile);
 
 // ===========================================
 // EMPLOYEE ROUTES

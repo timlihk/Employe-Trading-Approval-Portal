@@ -67,8 +67,8 @@ class EmployeeController {
         ? new Date(r.uploaded_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
         : '-';
       const fileInfo = r.original_filename || '-';
-      const fileLink = r.sharepoint_file_url
-        ? `<a href="${r.sharepoint_file_url}" target="_blank" rel="noopener">${fileInfo}</a>`
+      const fileLink = r.sharepoint_item_id
+        ? `<a href="/statement-file/${r.uuid}" target="_blank" rel="noopener">${fileInfo}</a>`
         : fileInfo;
       return `<tr>
         <td><span class="font-weight-600">${monthName} ${r.period_year}</span></td>

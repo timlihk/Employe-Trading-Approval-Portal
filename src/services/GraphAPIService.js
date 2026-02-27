@@ -311,6 +311,28 @@ class GraphAPIService {
   }
 
   /**
+   * Download a file from SharePoint by its item ID.
+   * Returns the file buffer and content type.
+   */
+  static async downloadSharePointFile(itemId) {
+    const driveId = await this.getSharePointDriveId();
+    const token = await this.getAccessToken();
+
+    const response = await fetch(`${GRAPH_BASE}/drives/${driveId}/items/${itemId}/content`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+      redirect: 'follow'
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to download file (${response.status}): ${response.statusText}`);
+    }
+
+    const buffer = await response.buffer();
+    const contentType = response.headers.get('content-type') || 'application/octet-stream';
+    return { buffer, contentType };
+  }
+
+  /**
    * Test SharePoint connectivity by resolving site ID and drive ID.
    * Returns diagnostic info or throws with a descriptive error.
    */

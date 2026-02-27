@@ -233,8 +233,8 @@ class StatementController {
         ? new Date(r.uploaded_at).toLocaleDateString('en-GB')
         : '-';
       const fileInfo = r.original_filename || '-';
-      const fileLink = r.sharepoint_file_url
-        ? `<a href="${r.sharepoint_file_url}" target="_blank" rel="noopener">${fileInfo}</a>`
+      const fileLink = r.sharepoint_item_id
+        ? `<a href="/statement-file/${r.uuid}" target="_blank" rel="noopener">${fileInfo}</a>`
         : fileInfo;
 
       const resendForm = r.status !== 'uploaded'
@@ -443,6 +443,37 @@ class StatementController {
     } catch (error) {
       res.redirect('/admin-statement-scheduler?error=' + encodeURIComponent('SharePoint test error: ' + error.message));
     }
+  });
+
+  /**
+   * GET /statement-file/:uuid
+   * Proxy download: fetches the file from SharePoint and serves it directly.
+   * Accessible by the employee who owns it or by admins.
+   */
+  downloadFile = catchAsync(async (req, res) => {
+    const { uuid } = req.params;
+    const request = await StatementRequest.findByUuid(uuid);
+
+    if (!request || !request.sharepoint_item_id) {
+      return res.status(404).send('File not found');
+    }
+
+    // Auth: must be the owning employee or an admin
+    const isAdmin = req.session.admin;
+    const isOwner = req.session.employee && req.session.employee.email.toLowerCase() === request.employee_email;
+    if (!isAdmin && !isOwner) {
+      return res.status(403).send('Access denied');
+    }
+
+    const { buffer, contentType } = await GraphAPIService.downloadSharePointFile(request.sharepoint_item_id);
+    const filename = request.original_filename || 'statement';
+
+    res.set({
+      'Content-Type': contentType,
+      'Content-Disposition': `inline; filename="${filename}"`,
+      'Content-Length': buffer.length
+    });
+    res.send(buffer);
   });
 }
 
