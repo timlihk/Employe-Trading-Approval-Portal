@@ -119,16 +119,24 @@ class EmployeeController {
         </div>`;
     }
 
-    // Recent uploads
+    // Recent uploads (collapsible)
     if (uploadedStatements.length > 0) {
       statementCardContent += `
         <hr class="my-4">
-        <h4 class="mb-3">Recent Uploads</h4>
-        <div class="table-container">
-          <table class="modern-table">
-            <thead><tr><th>Period</th><th>Brokerage</th><th>File</th><th>Uploaded</th><th>Status</th></tr></thead>
-            <tbody>${uploadedRows}</tbody>
-          </table>
+        <div class="collapsible-help">
+          <input type="checkbox" id="recent-uploads-toggle" class="help-checkbox">
+          <label for="recent-uploads-toggle" class="help-toggle section-toggle">
+            <span class="toggle-text-show">Recent Uploads (${uploadedStatements.length})</span>
+            <span class="toggle-text-hide">Recent Uploads (${uploadedStatements.length})</span>
+          </label>
+          <div class="help-content">
+            <div class="table-container">
+              <table class="modern-table">
+                <thead><tr><th>Period</th><th>Brokerage</th><th>File</th><th>Uploaded</th><th>Status</th></tr></thead>
+                <tbody>${uploadedRows}</tbody>
+              </table>
+            </div>
+          </div>
         </div>`;
     }
 
