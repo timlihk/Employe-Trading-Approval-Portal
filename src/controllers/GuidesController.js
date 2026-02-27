@@ -30,6 +30,7 @@ class GuidesController {
     // Employee Guides
     const employeeContent = `
       ${collapsible('emp-trade', 'Submitting a Trading Request', `
+        <img src="/images/guides/employee-dashboard.png" alt="Employee Dashboard — Submit Trading Request form" class="guide-screenshot">
         <ol>
           <li><strong>Navigate to Dashboard</strong> &mdash; After logging in, you will land on the Employee Dashboard.</li>
           <li><strong>Enter the ticker symbol</strong> &mdash; Type the stock ticker (e.g. AAPL, MSFT) or ISIN for bonds into the Ticker/ISIN field. Use the "Show examples" toggle for format guidance.</li>
@@ -43,6 +44,7 @@ class GuidesController {
       `)}
 
       ${collapsible('emp-result', 'Understanding Your Trading Result', `
+        <img src="/images/guides/trade-result-approved.png" alt="Trading Result — Approved status page" class="guide-screenshot">
         <p>After submitting, your request receives one of three statuses:</p>
         <ul>
           <li><strong>Approved</strong> &mdash; The stock is not on the restricted list. You may proceed with your trade within the approval validity period.</li>
@@ -52,6 +54,7 @@ class GuidesController {
       `)}
 
       ${collapsible('emp-history', 'Viewing Your Trading History', `
+        <img src="/images/guides/employee-history.png" alt="Trading History — filters, table, and export" class="guide-screenshot">
         <p>Navigate to <strong>My History</strong> from the top navigation bar to see all your past trading requests.</p>
         <ul>
           <li><strong>Filter by status</strong> &mdash; Use the status filter to show only approved, rejected, or escalated requests.</li>
@@ -61,6 +64,7 @@ class GuidesController {
       `)}
 
       ${collapsible('emp-brokerage', 'Managing Brokerage Accounts', `
+        <img src="/images/guides/brokerage-accounts.png" alt="Brokerage Accounts — add, edit, and confirm accounts" class="guide-screenshot">
         <p>Before submitting your first trading request, you must set up your brokerage accounts.</p>
         <ol>
           <li><strong>Navigate to Accounts</strong> &mdash; Click "Accounts" in the top navigation bar.</li>
@@ -92,6 +96,7 @@ class GuidesController {
     // Admin Guides
     const adminContent = `
       ${collapsible('adm-dashboard', 'Dashboard Overview', `
+        <img src="/images/guides/admin-dashboard.png" alt="Admin Dashboard — metric cards and quick actions" class="guide-screenshot">
         <p>The admin dashboard shows key metrics at a glance:</p>
         <ul>
           <li><strong>Pending Requests</strong> &mdash; Number of trading requests awaiting review (escalated requests).</li>
@@ -103,6 +108,7 @@ class GuidesController {
       `)}
 
       ${collapsible('adm-restricted', 'Managing Restricted Stocks', `
+        <img src="/images/guides/admin-restricted-stocks.png" alt="Restricted Stocks — add and remove restricted tickers" class="guide-screenshot">
         <p>The restricted stocks list determines which trades are automatically rejected.</p>
         <ul>
           <li><strong>Add a stock</strong> &mdash; Enter a ticker symbol (e.g. AAPL) or ISIN. The system validates the ticker against market data before adding.</li>
@@ -112,6 +118,7 @@ class GuidesController {
       `)}
 
       ${collapsible('adm-requests', 'Reviewing Trading Requests', `
+        <img src="/images/guides/admin-requests.png" alt="Trading Requests — review, approve, and reject" class="guide-screenshot">
         <p>Navigate to <strong>Trading Requests</strong> to see all submitted requests.</p>
         <ul>
           <li><strong>Filter by escalated</strong> &mdash; Use the filter to show only escalated requests that need manual review.</li>
@@ -122,6 +129,7 @@ class GuidesController {
       `)}
 
       ${collapsible('adm-statements', 'Statement Management', `
+        <img src="/images/guides/admin-statements.png" alt="Statement Management — send requests and track compliance" class="guide-screenshot">
         <p>Navigate to <strong>Statements</strong> to manage the monthly statement request process.</p>
         <ul>
           <li><strong>Send monthly requests</strong> &mdash; Trigger statement request emails to all employees. This can also be automated via the scheduler.</li>
