@@ -20,5 +20,6 @@ module.exports = {
     }
   },
   setupFilesAfterEnv: ['<rootDir>/test/setup.js'],
-  testTimeout: 10000
+  testTimeout: 10000,
+  forceExit: true
 };

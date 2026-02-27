@@ -308,7 +308,7 @@ SET session_replication_role = 'replica';
       possibleDirs.push(path.join(process.cwd(), 'backups'));
       
       // Find the first directory that exists and has backups
-      let backupsDir = null;
+      const backupsDir = null;
       let allBackups = [];
       
       for (const dir of possibleDirs) {

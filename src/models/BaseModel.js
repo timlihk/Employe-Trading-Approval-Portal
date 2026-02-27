@@ -29,7 +29,7 @@ class BaseModel {
   static findAll(conditions = {}, orderBy = null) {
     return new Promise((resolve, reject) => {
       let query = `SELECT * FROM ${this.tableName}`;
-      let params = [];
+      const params = [];
       let paramIndex = 1;
 
       // Build WHERE conditions
@@ -62,7 +62,7 @@ class BaseModel {
   static findOne(conditions = {}) {
     return new Promise((resolve, reject) => {
       let query = `SELECT * FROM ${this.tableName}`;
-      let params = [];
+      const params = [];
       let paramIndex = 1;
 
       const conditionStrings = [];
@@ -166,7 +166,7 @@ class BaseModel {
   static count(conditions = {}) {
     return new Promise((resolve, reject) => {
       let query = `SELECT COUNT(*) as count FROM ${this.tableName}`;
-      let params = [];
+      const params = [];
       let paramIndex = 1;
 
       const conditionStrings = [];

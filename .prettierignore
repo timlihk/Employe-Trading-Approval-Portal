@@ -1,0 +1,6 @@
+node_modules/
+public/css/
+public/styles-modern.min.css
+*.min.js
+*.min.css
+coverage/

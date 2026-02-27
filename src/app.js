@@ -9,7 +9,7 @@ const pgSessionFactory = require('connect-pg-simple');
 
 // Security and logging utilities
 const { logger, addRequestId, logRequest, logSecurityEvent } = require('./utils/logger');
-const { metrics } = require('./utils/metrics');
+const { metrics, trackError } = require('./utils/metrics');
 const { generalLimiter, authLimiter, adminActionLimiter } = require('./middleware/security');
 const { globalErrorHandler, handleNotFound, catchAsync, AppError } = require('./middleware/errorHandler');
 const { validateTradingRequest, validateAdminAuth } = require('./middleware/validation');
@@ -435,7 +435,12 @@ app.get('/metrics', async (req, res) => {
       }
     },
     sessionStore: metrics.sessionStore,
-    database: metrics.database,
+    database: {
+      ...metrics.database,
+      pool: database.poolStats()
+    },
+    errorCategories: metrics.errorCategories,
+    recentErrors: metrics.recentErrors,
     startedAt: new Date(metrics.startTime).toISOString(),
     now: new Date(now).toISOString()
   });
@@ -803,14 +808,16 @@ async function startServerWithMigrations() {
   });
 }
 
-// Start server with migrations (IIFE to handle async)
+// Start server with migrations (only when run directly, not when imported for testing)
 let server;
-(async () => {
-  server = await startServerWithMigrations();
-})().catch(error => {
-  logger.error('Failed to start server:', error);
-  process.exit(1);
-});
+if (require.main === module) {
+  (async () => {
+    server = await startServerWithMigrations();
+  })().catch(error => {
+    logger.error('Failed to start server:', error);
+    process.exit(1);
+  });
+}
 
 function shutdown(signal) {
   return () => {
@@ -823,5 +830,16 @@ function shutdown(signal) {
 }
 process.on('SIGTERM', shutdown('SIGTERM'));
 process.on('SIGINT', shutdown('SIGINT'));
+
+process.on('unhandledRejection', (reason) => {
+  logger.error('Unhandled rejection', { error: reason instanceof Error ? reason.message : String(reason) });
+  trackError(reason instanceof Error ? reason : new Error(String(reason)));
+});
+
+process.on('uncaughtException', (err) => {
+  logger.error('Uncaught exception', { error: err.message, stack: err.stack });
+  trackError(err);
+  process.exit(1);
+});
 
 module.exports = app;

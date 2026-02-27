@@ -11,6 +11,7 @@ class MockDatabase {
     this.run = jest.fn().mockResolvedValue({ uuid: null, changes: 0 });
     this.get = jest.fn().mockResolvedValue(null);
     this.getPool = jest.fn().mockReturnValue(null);
+    this.poolStats = jest.fn().mockReturnValue({ total: 0, idle: 0, waiting: 0 });
     this.close = jest.fn().mockResolvedValue();
     this.init = jest.fn().mockResolvedValue();
   }

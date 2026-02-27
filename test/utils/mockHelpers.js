@@ -8,6 +8,7 @@ function resetDatabaseMocks() {
   database.run.mockClear();
   database.get.mockClear();
   database.getPool.mockClear();
+  database.poolStats.mockClear();
   database.close.mockClear();
   database.init.mockClear();
 }

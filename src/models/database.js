@@ -7,7 +7,17 @@ class Database {
       console.log('🐘 Using PostgreSQL database');
       this.pool = new Pool({
         connectionString: process.env.DATABASE_URL,
-        ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+        ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+        max: parseInt(process.env.DB_POOL_MAX) || 20,
+        min: parseInt(process.env.DB_POOL_MIN) || 2,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 5000,
+        statement_timeout: 30000,
+        allowExitOnIdle: false
+      });
+      this.pool.on('error', (err) => {
+        console.error('Unexpected pool error:', err.message);
+        metrics.database.connectionErrors = (metrics.database.connectionErrors || 0) + 1;
       });
     } else {
       console.log('⚠️  No DATABASE_URL found - PostgreSQL not available');
@@ -15,7 +25,7 @@ class Database {
       // For now, we'll use a minimal fallback that doesn't crash the app
       this.pool = null;
     }
-    
+
     this.init();
     metrics.database.connectionStatus = this.pool ? 'connected' : 'disconnected';
   }
@@ -319,8 +329,18 @@ class Database {
     return this.pool;
   }
 
+  // Pool connection stats for /metrics
+  poolStats() {
+    if (!this.pool) return { total: 0, idle: 0, waiting: 0 };
+    return {
+      total: this.pool.totalCount,
+      idle: this.pool.idleCount,
+      waiting: this.pool.waitingCount
+    };
+  }
+
   async close() {
-    await this.pool.end();
+    if (this.pool) await this.pool.end();
   }
 }
 

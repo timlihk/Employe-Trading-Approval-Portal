@@ -1,4 +1,5 @@
 const { logger } = require('../utils/logger');
+const { trackError } = require('../utils/metrics');
 const APP_VERSION = require('../../package.json').version || '0';
 
 // Custom error class for operational errors
@@ -144,9 +145,11 @@ const sendErrorProd = (err, req, res) => {
 };
 
 // Main error handling middleware
-const globalErrorHandler = (err, req, res, next) => {
+const globalErrorHandler = (err, req, res, _next) => {
   err.statusCode = err.statusCode || 500;
   err.status = err.status || 'error';
+
+  trackError(err, req.path);
 
   if (process.env.NODE_ENV === 'development') {
     sendErrorDev(err, req, res);

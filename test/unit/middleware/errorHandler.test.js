@@ -11,6 +11,13 @@ jest.mock('../../../src/utils/logger', () => ({
   logSecurityEvent: jest.fn()
 }));
 
+// Mock the metrics module
+jest.mock('../../../src/utils/metrics', () => ({
+  metrics: { errors: 0, errorCategories: { validation: 0, authentication: 0, database: 0, externalApi: 0, notFound: 0, rateLimit: 0, unknown: 0 }, recentErrors: [] },
+  trackError: jest.fn(),
+  categorizeError: jest.fn().mockReturnValue('unknown')
+}));
+
 /**
  * Create a mock Express request object
  */

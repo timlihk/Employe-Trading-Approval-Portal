@@ -180,7 +180,7 @@ class AuditLog extends BaseModel {
 
     const addCondition = (field, value, operator = '=', transform = null) => {
       if (value !== undefined && value !== null && value !== '') {
-        let conditionValue = transform ? transform(value) : value;
+        const conditionValue = transform ? transform(value) : value;
         conditions.push(`${field} ${operator} $${paramIndex}`);
         params.push(conditionValue);
         paramIndex++;
