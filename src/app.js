@@ -18,6 +18,10 @@ const { validateTradingRequest, validateAdminAuth } = require('./middleware/vali
 const AdminController = require('./controllers/AdminController');
 const EmployeeController = require('./controllers/EmployeeController');
 const TradingRequestController = require('./controllers/TradingRequestController');
+const StatementController = require('./controllers/StatementController');
+
+// Upload middleware
+const { uploadStatement } = require('./middleware/upload');
 
 // Services
 const AdminService = require('./services/AdminService');
@@ -680,6 +684,19 @@ app.get('/admin-clear-database-confirm', requireAdmin, AdminController.getClearD
 app.post('/admin-clear-database', requireAdmin, verifyCsrfToken, AdminController.clearDatabase);
 app.get('/admin-audit-log', requireAdmin, AdminController.getAuditLog);
 
+// Statement management (admin)
+app.get('/admin-statements', requireAdmin, StatementController.getStatementsDashboard);
+app.get('/admin-statement-scheduler', requireAdmin, StatementController.getSchedulerStatus);
+app.post('/admin-trigger-statement-request', requireAdmin, adminActionLimiter, verifyCsrfToken, StatementController.triggerStatementRequest);
+app.post('/admin-resend-statement-email', requireAdmin, adminActionLimiter, verifyCsrfToken, StatementController.resendEmail);
+
+// ===========================================
+// STATEMENT UPLOAD ROUTES (token-authenticated, no session required)
+// ===========================================
+
+app.get('/upload-statement/:token', StatementController.getUploadPage);
+app.post('/upload-statement/:token', uploadStatement.single('statement'), StatementController.processUpload);
+
 // ===========================================
 // EMPLOYEE ROUTES
 // ===========================================
@@ -747,7 +764,18 @@ async function startServerWithMigrations() {
       logger.info('💾 Automatic backups: disabled (DISABLE_SCHEDULED_BACKUPS=true)');
     }
   }
-  
+
+  // Initialize monthly statement request scheduler if configured
+  if (process.env.AZURE_CLIENT_ID && process.env.STATEMENT_SENDER_EMAIL
+      && process.env.DISABLE_STATEMENT_REQUESTS !== 'true') {
+    const ScheduledStatementService = require('./services/ScheduledStatementService');
+    const statementSchedule = process.env.STATEMENT_REQUEST_SCHEDULE || '0 0 9 7 * *';
+    ScheduledStatementService.initialize(statementSchedule);
+    logger.info(`📋 Monthly statement requests: enabled (schedule: ${statementSchedule})`);
+  } else {
+    logger.info('📋 Monthly statement requests: disabled');
+  }
+
   return app.listen(PORT, () => {
     logger.info(`🚀 Server running on port ${PORT}`);
     logger.info(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);

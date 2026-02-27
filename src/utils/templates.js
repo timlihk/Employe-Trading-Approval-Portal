@@ -42,6 +42,7 @@ function renderAdminPage(title, content) {
             <a href="/admin-dashboard" class="nav-link ${title === 'Admin Dashboard' ? 'active' : ''}">Dashboard</a>
             <a href="/admin-restricted-stocks" class="nav-link ${title === 'Restricted Stocks Management' ? 'active' : ''}">Restricted Stocks</a>
             <a href="/admin-requests" class="nav-link ${title === 'Trading Requests' ? 'active' : ''}">Trading Requests</a>
+            <a href="/admin-statements" class="nav-link ${title === 'Statement Requests' || title === 'Statement Scheduler' ? 'active' : ''}">Statements</a>
             <a href="/admin-logout" class="nav-link">Logout</a>
         </nav>`;
   
@@ -99,6 +100,15 @@ function generateNotificationBanner(query) {
         break;
       case 'database_cleared':
         message = '✅ Database Successfully Reset! All data has been permanently cleared and the system has been reset to brand new state.';
+        break;
+      case 'statement_emails_sent':
+        message = 'Monthly statement request emails have been sent successfully';
+        break;
+      case 'statement_email_resent':
+        message = 'Statement request email has been resent';
+        break;
+      case 'statement_uploaded':
+        message = 'Trading statement uploaded successfully';
         break;
       default:
         message = decodeURIComponent(query.message);
