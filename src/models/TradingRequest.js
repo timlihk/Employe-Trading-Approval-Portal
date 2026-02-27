@@ -99,10 +99,44 @@ class TradingRequest extends BaseModel {
   static getByUuid(uuid) {
     return this.findOne({ uuid: uuid });
   }
-  
+
   // Simplified: Only use UUID as primary identifier
   static getById(uuid) {
     return this.getByUuid(uuid);
+  }
+
+  /**
+   * Find approved trades by the same employee for the same ticker
+   * in the opposite direction within the last N days.
+   * Used for 30-day short-term trading detection.
+   */
+  static async findRecentOppositeTradesByEmployee(employeeEmail, ticker, tradingType, days = 30) {
+    const oppositeType = tradingType === 'buy' ? 'sell' : 'buy';
+    const sql = `
+      SELECT uuid, ticker, trading_type, shares, status, created_at
+      FROM trading_requests
+      WHERE employee_email = $1
+        AND ticker = $2
+        AND trading_type = $3
+        AND status = 'approved'
+        AND created_at >= NOW() - INTERVAL '${parseInt(days)} days'
+      ORDER BY created_at DESC
+    `;
+    return this.query(sql, [employeeEmail.toLowerCase(), ticker.toUpperCase(), oppositeType]);
+  }
+
+  /**
+   * Auto-approve a pending escalated request.
+   * Only updates if status is still 'pending' (admin may have already acted).
+   */
+  static async autoApprove(uuid) {
+    const sql = `
+      UPDATE trading_requests
+      SET status = 'approved', processed_at = CURRENT_TIMESTAMP
+      WHERE uuid = $1 AND status = 'pending'
+      RETURNING uuid
+    `;
+    return this.query(sql, [uuid]);
   }
 
   static escalate(uuid, escalationReason, status = 'pending') {

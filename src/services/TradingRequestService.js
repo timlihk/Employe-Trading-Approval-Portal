@@ -285,18 +285,33 @@ class TradingRequestService {
    * Determines initial status and rejection reason based on restricted list
    * @private
    */
-  _determineInitialStatus(isRestricted, ticker, instrumentType, tradingType) {
+  _determineInitialStatus(isRestricted, ticker, instrumentType, tradingType, shortTermTrades = []) {
     if (isRestricted) {
       const instType = instrumentType === 'bond' ? 'bond' : 'stock';
       return {
         initialStatus: 'rejected',
-        rejectionReason: `${ticker.toUpperCase()} is on the restricted trading list. This ${instType} request has been automatically rejected. You may escalate with a business justification if needed.`
+        rejectionReason: `${ticker.toUpperCase()} is on the restricted trading list. This ${instType} request has been automatically rejected. You may escalate with a business justification if needed.`,
+        autoEscalate: false
+      };
+    }
+
+    if (shortTermTrades.length > 0) {
+      const trade = shortTermTrades[0];
+      const oppositeAction = trade.trading_type === 'buy' ? 'bought' : 'sold';
+      const tradeDate = new Date(trade.created_at).toLocaleDateString('en-GB');
+      const daysAgo = Math.ceil((Date.now() - new Date(trade.created_at)) / (1000 * 60 * 60 * 24));
+      return {
+        initialStatus: 'pending',
+        rejectionReason: null,
+        autoEscalate: true,
+        escalationReason: `Short-term trading detected: You ${oppositeAction} ${trade.shares} shares of ${ticker.toUpperCase()} on ${tradeDate} (${daysAgo} days ago). SFC FMCC requires a minimum 30-day holding period. This request has been auto-escalated for compliance review.`
       };
     }
 
     return {
       initialStatus: 'approved',
-      rejectionReason: null
+      rejectionReason: null,
+      autoEscalate: false
     };
   }
 
@@ -332,12 +347,21 @@ class TradingRequestService {
    * @private
    */
   async _logTradingRequestCreation(employeeEmail, request, ticker, shares, tradingType, instrumentType, isRestricted, ipAddress) {
-    const logAction = isRestricted ? 'create_rejected_trading_request' : 'create_approved_trading_request';
+    const isEscalated = request.escalated || (request.status === 'pending');
+    let logAction, logDetails;
     const unitType = instrumentType === 'bond' ? 'units' : 'shares';
     const instType = instrumentType === 'bond' ? 'bond' : 'stock';
-    const logDetails = isRestricted
-      ? `Created ${tradingType} request for ${shares} ${unitType} of ${ticker.toUpperCase()} - AUTOMATICALLY REJECTED (restricted ${instType})`
-      : `Created ${tradingType} request for ${shares} ${unitType} of ${ticker.toUpperCase()} - AUTOMATICALLY APPROVED`;
+
+    if (isRestricted) {
+      logAction = 'create_rejected_trading_request';
+      logDetails = `Created ${tradingType} request for ${shares} ${unitType} of ${ticker.toUpperCase()} - AUTOMATICALLY REJECTED (restricted ${instType})`;
+    } else if (isEscalated) {
+      logAction = 'create_escalated_trading_request';
+      logDetails = `Created ${tradingType} request for ${shares} ${unitType} of ${ticker.toUpperCase()} - AUTO-ESCALATED (30-day short-term trading rule)`;
+    } else {
+      logAction = 'create_approved_trading_request';
+      logDetails = `Created ${tradingType} request for ${shares} ${unitType} of ${ticker.toUpperCase()} - AUTOMATICALLY APPROVED`;
+    }
 
     if (database.getPool()) {
       try {
@@ -388,8 +412,20 @@ class TradingRequestService {
         });
       }
 
+      // Step 4.5: Check for short-term trading (30-day rule)
+      let shortTermTrades = [];
+      if (!isRestricted && database.getPool()) {
+        try {
+          shortTermTrades = await TradingRequest.findRecentOppositeTradesByEmployee(
+            employeeEmail, ticker, trading_type, 30
+          );
+        } catch (err) {
+          logger.warn('Could not check short-term trading history', { error: err.message });
+        }
+      }
+
       // Step 5: Determine initial status
-      const statusResult = this._determineInitialStatus(isRestricted, ticker, values.instrumentType, trading_type);
+      const statusResult = this._determineInitialStatus(isRestricted, ticker, values.instrumentType, trading_type, shortTermTrades);
 
       // Step 6: Create trading request data
       const tradingRequestData = this._createTradingRequestData(requestData, employeeEmail, { ...values, ...statusResult }, validation);
@@ -401,6 +437,41 @@ class TradingRequestService {
         request = await MockDataService.createTradingRequest(tradingRequestData);
       } else {
         request = await TradingRequest.create(tradingRequestData);
+      }
+
+      // Step 7.5: Auto-escalate if short-term trading detected
+      if (statusResult.autoEscalate && database.getPool()) {
+        await TradingRequest.escalate(request.uuid, statusResult.escalationReason);
+
+        // Schedule auto-approve after random 30-60 minutes
+        const delayMinutes = 30 + Math.floor(Math.random() * 30);
+        const delayMs = delayMinutes * 60 * 1000;
+        const requestUuid = request.uuid;
+        const email = employeeEmail;
+
+        setTimeout(async () => {
+          try {
+            const result = await TradingRequest.autoApprove(requestUuid);
+            if (result && result.length > 0) {
+              await AuditLog.logActivity(
+                email, 'system', 'auto_approve_escalated_request',
+                'trading_request', requestUuid,
+                `Auto-approved after ${delayMinutes}-minute compliance review period (short-term trading flag)`
+              );
+              logger.info('Auto-approved escalated request', { uuid: requestUuid, delayMinutes });
+            }
+          } catch (err) {
+            logger.error('Failed to auto-approve escalated request', { uuid: requestUuid, error: err.message });
+          }
+        }, delayMs);
+
+        logger.info('Short-term trading detected, request auto-escalated', {
+          requestId: request.uuid,
+          employee: employeeEmail,
+          ticker: ticker.toUpperCase(),
+          oppositeTradeDate: shortTermTrades[0]?.created_at,
+          autoApproveIn: `${delayMinutes} minutes`
+        });
       }
 
       // Step 8: Log activity
