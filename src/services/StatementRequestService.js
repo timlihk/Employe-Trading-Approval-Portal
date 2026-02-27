@@ -245,16 +245,18 @@ class StatementRequestService {
   async _uploadToSharePointAndMark(request, file, notes) {
     const monthStr = String(request.period_month).padStart(2, '0');
     const periodStr = `${request.period_year}-${monthStr}`;
-    const baseFolderPath = process.env.SHAREPOINT_FOLDER_PATH || 'Trading Statements';
-    const folderPath = `${baseFolderPath}/${periodStr}`;
-
-    // Build filename: email_brokerage_timestamp_originalname
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
+    const baseFolderPath = process.env.SHAREPOINT_FOLDER_PATH;
     const emailPrefix = request.employee_email.split('@')[0];
+    const folderPath = baseFolderPath
+      ? `${baseFolderPath}/${emailPrefix}/${periodStr}`
+      : `${emailPrefix}/${periodStr}`;
+
+    // Build filename: brokerage_timestamp_originalname
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
     const brokeragePart = request.brokerage_name
-      ? `_${request.brokerage_name.replace(/[^a-zA-Z0-9]/g, '_')}`
+      ? `${request.brokerage_name.replace(/[^a-zA-Z0-9]/g, '_')}_`
       : '';
-    const uploadFilename = `${emailPrefix}${brokeragePart}_${timestamp}_${file.originalname}`;
+    const uploadFilename = `${brokeragePart}${timestamp}_${file.originalname}`;
 
     let sharepointResult;
     try {
