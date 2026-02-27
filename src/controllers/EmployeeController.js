@@ -56,7 +56,7 @@ class EmployeeController {
         <td><span class="font-weight-600">${monthName} ${r.period_year}</span></td>
         <td class="text-sm">${r.brokerage_name || '-'}</td>
         <td>${deadlineStr}${isOverdue ? ' <span class="table-status overdue">Overdue</span>' : ''}</td>
-        <td><a href="/upload-statement/${r.upload_token}" class="btn btn-sm btn-primary">Upload</a></td>
+        <td><a href="${r.upload_token ? '/upload-statement/' + r.upload_token : '/employee-upload-statement'}" class="btn btn-sm btn-primary">Upload</a></td>
       </tr>`;
     }).join('');
 

@@ -274,12 +274,13 @@ class StatementRequest extends BaseModel {
    */
   static async createSelfServiceRequest(data) {
     const uuid = uuidv4();
+    const uploadToken = crypto.randomBytes(32).toString('hex');
     const sql = `
       INSERT INTO statement_requests (
         uuid, period_year, period_month, employee_email, employee_name,
-        status, brokerage_name
+        status, upload_token, brokerage_name
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       ON CONFLICT (period_year, period_month, employee_email, brokerage_name) DO NOTHING
       RETURNING *
     `;
@@ -290,6 +291,7 @@ class StatementRequest extends BaseModel {
       data.employee_email.toLowerCase(),
       data.employee_name || null,
       'pending',
+      uploadToken,
       data.brokerage_name || null
     ];
 
