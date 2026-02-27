@@ -1,5 +1,7 @@
 // HTML Template utilities to eliminate duplicate HTML across routes
 
+const APP_VERSION = require('../../package.json').version;
+
 function renderBasePage(title, subtitle, content, navigation = '') {
   return `
 <!DOCTYPE html>
@@ -12,7 +14,7 @@ function renderBasePage(title, subtitle, content, navigation = '') {
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
-    <link rel="stylesheet" href="/styles-modern.min.css?v=3.3">
+    <link rel="stylesheet" href="/styles-modern.min.css?v=${APP_VERSION}">
 </head>
 <body>
     <header class="site-header">
