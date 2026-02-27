@@ -1542,6 +1542,12 @@ select.brokerage-select:has(option[value="__new__"]:checked) ~ .new-brokerage-fi
    ---------------------------------------------------------- */
 
 @media (max-width: 768px) {
+  :root {
+    --font-md: 1.125rem;
+    --font-lg: 1.25rem;
+    --font-xl: 1.5rem;
+  }
+
   .container {
     padding-left: var(--space-4);
     padding-right: var(--space-4);
@@ -1598,6 +1604,11 @@ select.brokerage-select:has(option[value="__new__"]:checked) ~ .new-brokerage-fi
 
   .w-full-mobile {
     width: 100%;
+  }
+
+  .card-body.p-6,
+  .card-body.p-4 {
+    padding: var(--space-3);
   }
 
   .action-bar {
