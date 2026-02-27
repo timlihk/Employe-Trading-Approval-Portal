@@ -189,9 +189,26 @@ class GraphAPIService {
     const libraryName = process.env.SHAREPOINT_LIBRARY_NAME || 'Documents';
 
     const data = await this.graphRequest('GET', `/sites/${siteId}/drives`);
-    const drive = data.value.find(d => d.name === libraryName);
+    const drives = data.value || [];
+
+    // Try exact match, then case-insensitive, then partial match on name or webUrl
+    let drive = drives.find(d => d.name === libraryName);
     if (!drive) {
-      throw new Error(`SharePoint document library "${libraryName}" not found`);
+      const lower = libraryName.toLowerCase();
+      drive = drives.find(d => d.name && d.name.toLowerCase() === lower);
+    }
+    if (!drive) {
+      const lower = libraryName.toLowerCase();
+      drive = drives.find(d => (d.webUrl && d.webUrl.toLowerCase().includes(lower)));
+    }
+    // "Shared Documents" is the URL path for the default "Documents" library
+    if (!drive && (libraryName === 'Shared Documents' || libraryName === 'Documents')) {
+      drive = drives.find(d => d.name === 'Documents' || (d.webUrl && d.webUrl.includes('Shared%20Documents')));
+    }
+
+    if (!drive) {
+      const available = drives.map(d => d.name).join(', ');
+      throw new Error(`SharePoint document library "${libraryName}" not found. Available: ${available}`);
     }
     return drive.id;
   }
