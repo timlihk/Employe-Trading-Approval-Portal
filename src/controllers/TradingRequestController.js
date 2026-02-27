@@ -60,7 +60,7 @@ class TradingRequestController {
         const instrumentTypeDisplay = instrumentType === 'bond' ? 'Bond' : 'Stock';
         expectedOutcome = `
           <div class="bg-warning border rounded p-4 mb-4">
-            <h4 class="m-0 text-warning">⚠️ Restricted ${instrumentTypeDisplay} Warning</h4>
+            <h4 class="m-0 text-warning">Restricted ${instrumentTypeDisplay} Warning</h4>
             <p class="mt-2 m-0 text-warning">${ticker.toUpperCase()} is on the restricted trading list. This request will be <strong>automatically rejected</strong> upon submission, but you will have the option to escalate with a business justification.</p>
           </div>`;
       }
@@ -123,7 +123,7 @@ class TradingRequestController {
 
           <div class="card mt-6">
             <div class="card-header">
-              <h3 class="card-title heading">⚖️ Compliance Declaration</h3>
+              <h3 class="card-title heading">Compliance Declaration</h3>
             </div>
             <div class="card-body p-6">
               <form method="post" action="/submit-trade">
@@ -237,31 +237,27 @@ class TradingRequestController {
 
       let statusBanner = '';
       let statusText = '';
-      let statusColor = '';
-    
+
         if (status === 'approved') {
           statusBanner = `
             <div class="alert alert-success text-center">
-              <h3 class="m-0">✅ Request Approved</h3>
+              <h3 class="m-0">Request Approved</h3>
             </div>`;
           statusText = 'APPROVED';
-          statusColor = '#28a745';
       } else if (status === 'rejected') {
         statusBanner = `
           <div class="alert alert-error text-center">
-            <h3 class="m-0">❌ Request Rejected</h3>
+            <h3 class="m-0">Request Rejected</h3>
             <p class="mt-2 m-0"><strong>You can escalate this request with a business justification below.</strong></p>
           </div>`;
         statusText = 'REJECTED';
-        statusColor = '#dc3545';
       } else {
         statusBanner = `
           <div class="alert alert-info text-center">
-            <h3 class="m-0">✅ Request Created Successfully</h3>
+            <h3 class="m-0">Request Created Successfully</h3>
             <p class="mt-2 m-0 text-muted">Your trading request has been submitted and is pending approval.</p>
           </div>`;
         statusText = 'PENDING APPROVAL';
-        statusColor = '#ffc107';
       }
 
       const resultContent = `
@@ -310,7 +306,7 @@ class TradingRequestController {
         ${request.status === 'rejected' ? `
         <div class="card mt-6">
           <div class="card-header">
-            <h3 class="card-title heading">🚀 Request Escalation</h3>
+            <h3 class="card-title heading">Request Escalation</h3>
           </div>
           <div class="card-body p-0">
             <div class="p-6 pb-0">

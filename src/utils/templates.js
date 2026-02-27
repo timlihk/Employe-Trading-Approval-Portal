@@ -7,57 +7,61 @@ function renderBasePage(title, subtitle, content, navigation = '') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
     <title>${title} - Inspiration Capital Management Limited</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" media="print" onload="this.media='all'">
-    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"></noscript>
-    <link rel="stylesheet" href="/styles-modern.min.css?v=${new Date().getTime()}">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+    <link rel="stylesheet" href="/styles-modern.min.css?v=3.0">
 </head>
 <body>
-    <div class="container">
-        <header>
-            <div class="header-content">
-                <div>
-                    <h1>Trading Compliance Portal</h1>
-                    <div class="header-subtitle">Inspiration Capital Management Limited</div>
-                    <div class="text-sm text-muted mt-1">${subtitle}</div>
-                </div>
+    <header class="site-header">
+        <div class="header-inner">
+            <div class="header-brand">
+                <span class="brand-name">Inspiration Capital</span>
+                <span class="brand-divider" aria-hidden="true"></span>
+                <span class="brand-module">Trading Compliance</span>
             </div>
-        </header>
-        
-        ${navigation}
-        
-        <main>
+            <div class="header-meta">${subtitle}</div>
+        </div>
+    </header>
+    ${navigation}
+    <main class="main-content">
+        <div class="container">
             ${content}
-        </main>
-    </div>
+        </div>
+    </main>
+    <footer class="site-footer">
+        <span>Inspiration Capital Management Limited</span>
+        <span class="footer-separator" aria-hidden="true">|</span>
+        <span>Compliance Portal</span>
+    </footer>
 </body>
 </html>`;
 }
 
 function renderAdminPage(title, content) {
   const navigation = `
-        <nav class="nav mb-6">
-            <a href="/admin-dashboard" class="nav-link ${title === 'Admin Dashboard' ? 'active' : ''}">Dashboard</a>
-            <a href="/admin-restricted-stocks" class="nav-link ${title === 'Restricted Stocks Management' ? 'active' : ''}">Restricted Stocks</a>
-            <a href="/admin-requests" class="nav-link ${title === 'Trading Requests' ? 'active' : ''}">Trading Requests</a>
-            <a href="/admin-statements" class="nav-link ${title === 'Statement Requests' || title === 'Statement Scheduler' ? 'active' : ''}">Statements</a>
-            <a href="/admin-logout" class="nav-link">Logout</a>
-        </nav>`;
-  
+    <nav class="nav container">
+        <a href="/admin-dashboard" class="nav-link ${title === 'Admin Dashboard' || title === 'Administrator Dashboard' ? 'active' : ''}">Dashboard</a>
+        <a href="/admin-restricted-stocks" class="nav-link ${title === 'Restricted Stocks Management' ? 'active' : ''}">Restricted Stocks</a>
+        <a href="/admin-requests" class="nav-link ${title === 'Trading Requests' ? 'active' : ''}">Trading Requests</a>
+        <a href="/admin-statements" class="nav-link ${title === 'Statement Requests' || title === 'Statement Scheduler' ? 'active' : ''}">Statements</a>
+        <a href="/admin-logout" class="nav-link">Logout</a>
+    </nav>`;
+
   return renderBasePage(title, 'Administrator Dashboard', content, navigation);
 }
 
 function renderEmployeePage(title, content, employeeName = '', employeeEmail = '') {
   const navigation = `
-        <nav class="nav mb-6">
-            <a href="/employee-dashboard" class="nav-link ${title === 'Employee Dashboard' ? 'active' : ''}">Dashboard</a>
-            <a href="/employee-history" class="nav-link ${title === 'Trading History' || title === 'Request History' ? 'active' : ''}">My History</a>
-            <a href="/employee-brokerage-accounts" class="nav-link ${title === 'Brokerage Accounts' ? 'active' : ''}">Accounts</a>
-            <a href="/employee-logout" class="nav-link">Logout</a>
-        </nav>`;
-  
+    <nav class="nav container">
+        <a href="/employee-dashboard" class="nav-link ${title === 'Employee Dashboard' ? 'active' : ''}">Dashboard</a>
+        <a href="/employee-history" class="nav-link ${title === 'Trading History' || title === 'Request History' ? 'active' : ''}">My History</a>
+        <a href="/employee-brokerage-accounts" class="nav-link ${title === 'Brokerage Accounts' ? 'active' : ''}">Accounts</a>
+        <a href="/employee-logout" class="nav-link">Logout</a>
+    </nav>`;
+
   const subtitle = employeeName ? `Welcome, ${employeeName}` : 'Pre-Trading Approval & Risk Management System';
   return renderBasePage(title, subtitle, content, navigation);
 }
@@ -100,7 +104,7 @@ function generateNotificationBanner(query) {
         message = 'You have been logged out successfully';
         break;
       case 'database_cleared':
-        message = '✅ Database Successfully Reset! All data has been permanently cleared and the system has been reset to brand new state.';
+        message = 'Database successfully reset. All data has been permanently cleared.';
         break;
       case 'statement_emails_sent':
         message = 'Monthly statement request emails have been sent successfully';
@@ -157,14 +161,9 @@ function generateNotificationBanner(query) {
 
   if (!message) return '';
 
-  const bgColor = type === 'success' ? '#d1ecf1' : type === 'error' ? '#f8d7da' : '#d4edda';
-  const borderColor = type === 'success' ? '#bee5eb' : type === 'error' ? '#f5c6cb' : '#c3e6cb';
-  const textColor = type === 'success' ? '#0c5460' : type === 'error' ? '#721c24' : '#155724';
-  const icon = type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️';
-
   return `
-        <div class="border rounded p-4 mb-6 ${type === 'success' ? 'alert-success' : type === 'error' ? 'alert-error' : 'alert-info'}">
-            <strong>${icon} ${message}</strong>
+        <div class="${type === 'success' ? 'alert-success' : type === 'error' ? 'alert-error' : 'alert-info'} alert" role="alert">
+            <strong>${message}</strong>
         </div>`;
 }
 
@@ -183,7 +182,7 @@ function renderCard(title, content, subtitle = '') {
 
 function renderTable(headers, rows, emptyMessage = 'No data found') {
   const headerCells = headers.map(header => `<th>${header}</th>`).join('');
-  const tableRows = rows.length > 0 ? rows.join('') : 
+  const tableRows = rows.length > 0 ? rows.join('') :
     `<tr><td colspan="${headers.length}" class="text-center p-6 text-muted">${emptyMessage}</td></tr>`;
 
   return `
@@ -203,7 +202,7 @@ function renderTable(headers, rows, emptyMessage = 'No data found') {
 
 module.exports = {
   renderBasePage,
-  renderAdminPage, 
+  renderAdminPage,
   renderEmployeePage,
   renderPublicPage,
   generateNotificationBanner,

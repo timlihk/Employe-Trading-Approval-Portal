@@ -93,35 +93,85 @@ class AdminController {
    */
   getDashboard = catchAsync(async (req, res) => {
     const banner = generateNotificationBanner(req.query);
-    
+
+    const [pendingCount, escalatedCount, todayCount, restrictedCount] = await Promise.all([
+      TradingRequest.countByStatus('pending'),
+      TradingRequest.countEscalated(),
+      TradingRequest.countToday(),
+      RestrictedStock.getCount()
+    ]);
+
     const dashboardContent = `
       ${banner}
-      
-      <div class="card">
-        <div class="card-header">
-          <h3 class="card-title heading">Quick Actions</h3>
+
+      <div class="metrics-grid">
+        <div class="card card-metric">
+          <div class="metric-value">${pendingCount}</div>
+          <div class="metric-label">Pending Requests</div>
         </div>
-        <div class="card-body p-6">
-          <div class="grid grid-auto gap-4 grid-mobile-stack">
-            <a href="/admin-requests" class="btn btn-primary text-decoration-none text-center">
-              📋 Review All Requests
-            </a>
-            <a href="/admin-requests?escalated=true" class="btn btn-primary text-decoration-none text-center">
-              ⚠️ Review Escalated Requests
-            </a>
-            <a href="/admin-restricted-stocks" class="btn btn-primary text-decoration-none text-center">
-              🚫 Manage Restricted Stocks
-            </a>
-            <a href="/admin-audit-log" class="btn btn-primary text-decoration-none text-center">
-              📊 View Audit Log
-            </a>
-            <a href="/admin-backup-list" class="btn btn-primary text-decoration-none text-center">
-              💾 Backup Management
-            </a>
-            <a href="/admin-clear-database-confirm" class="btn btn-primary text-decoration-none text-center">
-              🗑️ Clear Database
-            </a>
-          </div>
+        <div class="card card-metric">
+          <div class="metric-value">${escalatedCount}</div>
+          <div class="metric-label">Escalated</div>
+        </div>
+        <div class="card card-metric">
+          <div class="metric-value">${todayCount}</div>
+          <div class="metric-label">Today</div>
+        </div>
+        <div class="card card-metric">
+          <div class="metric-value">${restrictedCount}</div>
+          <div class="metric-label">Restricted Stocks</div>
+        </div>
+      </div>
+
+      <div class="card mb-6">
+        <div class="card-header">
+          <h3 class="card-title">Quick Actions</h3>
+        </div>
+        <div class="card-body">
+          <ul class="action-list">
+            <li>
+              <a href="/admin-requests" class="action-item">
+                <span>Review All Requests</span>
+                <span class="action-arrow" aria-hidden="true">&#8250;</span>
+              </a>
+            </li>
+            <li>
+              <a href="/admin-requests?escalated=true" class="action-item">
+                <span>Review Escalated Requests</span>
+                <span class="action-arrow" aria-hidden="true">&#8250;</span>
+              </a>
+            </li>
+            <li>
+              <a href="/admin-restricted-stocks" class="action-item">
+                <span>Manage Restricted Stocks</span>
+                <span class="action-arrow" aria-hidden="true">&#8250;</span>
+              </a>
+            </li>
+            <li>
+              <a href="/admin-statements" class="action-item">
+                <span>Statement Requests</span>
+                <span class="action-arrow" aria-hidden="true">&#8250;</span>
+              </a>
+            </li>
+            <li>
+              <a href="/admin-audit-log" class="action-item">
+                <span>View Audit Log</span>
+                <span class="action-arrow" aria-hidden="true">&#8250;</span>
+              </a>
+            </li>
+            <li>
+              <a href="/admin-backup-list" class="action-item">
+                <span>Backup Management</span>
+                <span class="action-arrow" aria-hidden="true">&#8250;</span>
+              </a>
+            </li>
+            <li>
+              <a href="/admin-clear-database-confirm" class="action-item">
+                <span>Clear Database</span>
+                <span class="action-arrow" aria-hidden="true">&#8250;</span>
+              </a>
+            </li>
+          </ul>
         </div>
       </div>
     `;
@@ -305,7 +355,7 @@ class AdminController {
               <div class="btn-group btn-group-mobile">
                 <button type="submit" class="btn btn-primary w-full-mobile focus-ring">Apply Filters</button>
                 <a href="/admin-requests" class="btn btn-secondary text-decoration-none w-full-mobile focus-ring">Clear Filters</a>
-                <a href="/admin-export-trading-requests" class="btn btn-outline text-decoration-none w-full-mobile focus-ring hover-lift">📥 Export CSV</a>
+                <a href="/admin-export-trading-requests" class="btn btn-outline text-decoration-none w-full-mobile focus-ring hover-lift">Export CSV</a>
               </div>
             </div>
           </form>
@@ -520,16 +570,16 @@ class AdminController {
 
     // Build changelog rows
     const changelogRows = changelog.map(change => {
-      const actionColor = change.action === 'added' ? '#28a745' : '#dc3545';
+      const actionClass = change.action === 'added' ? 'text-success' : 'text-danger';
       const actionIcon = change.action === 'added' ? '+' : '−';
-      
+
       return `
         <tr>
           <td class="td-center">${formatHongKongTime(new Date(change.created_at), true)}</td>
           <td class="td-center font-weight-600">${change.ticker}</td>
           <td>${change.company_name}</td>
           <td class="td-center">
-            <span style="color: ${actionColor};" class="font-weight-600">
+            <span class="${actionClass} font-weight-600">
               ${actionIcon} ${change.action.toUpperCase()}
             </span>
           </td>
@@ -933,13 +983,13 @@ csvContent += `"${sanitizeCsv(getDisplayId(request))}","${sanitizeCsv(createdDat
         
         <div class="card mb-4">
           <div class="card-header">
-            <h3 class="card-title heading">⏰ Automatic Backup Status</h3>
+            <h3 class="card-title heading">Automatic Backup Status</h3>
           </div>
           <div class="card-body">
             <div class="d-flex justify-content-between align-items-center">
               <div>
                 <span class="badge ${schedulerStatus.isRunning ? 'badge-success' : 'badge-warning'} badge-sm">
-                  ${schedulerStatus.isRunning ? '✅ Scheduler Active' : '⚠️ Scheduler Inactive'}
+                  ${schedulerStatus.isRunning ? 'Scheduler Active' : 'Scheduler Inactive'}
                 </span>
                 ${schedulerStatus.nextRun ? `
                   <div class="mt-2 text-muted">
@@ -948,7 +998,7 @@ csvContent += `"${sanitizeCsv(getDisplayId(request))}","${sanitizeCsv(createdDat
                 ` : ''}
               </div>
               <a href="/admin-backup-scheduler" class="btn btn-sm btn-secondary">
-                ⚙️ Configure Scheduler
+                Configure Scheduler
               </a>
             </div>
           </div>
@@ -956,20 +1006,20 @@ csvContent += `"${sanitizeCsv(getDisplayId(request))}","${sanitizeCsv(createdDat
         
         <div class="card mb-4">
           <div class="card-header">
-            <h3 class="card-title heading">🔧 Manual Backup Options</h3>
+            <h3 class="card-title heading">Manual Backup Options</h3>
           </div>
           <div class="card-body">
             <div class="d-flex gap-3 flex-wrap justify-center">
               <a href="/admin-backup-database" class="btn btn-primary text-decoration-none">
-                📥 Download JSON Backup
+                Download JSON Backup
               </a>
               <a href="/admin-backup-database-sql" class="btn btn-primary text-decoration-none">
-                📄 Download SQL Backup
+                Download SQL Backup
               </a>
               <form method="post" action="/admin-store-backup" class="d-inline">
                 ${req.csrfInput()}
                 <button type="submit" class="btn btn-success">
-                  💾 Create & Store on Server
+                  Create & Store on Server
                 </button>
               </form>
             </div>
@@ -980,9 +1030,9 @@ csvContent += `"${sanitizeCsv(getDisplayId(request))}","${sanitizeCsv(createdDat
                 <li><strong>SQL</strong>: Can be imported directly via psql, more portable</li>
                 <li><strong>Server Storage</strong>: ${
                   process.env.RAILWAY_VOLUME_MOUNT_PATH 
-                    ? `Persistent volume at ${process.env.RAILWAY_VOLUME_MOUNT_PATH}/backups ✅` 
-                    : process.env.RAILWAY_ENVIRONMENT 
-                      ? 'Temporary storage at /tmp/backups ⚠️ (Configure volume for persistence)' 
+                    ? `Persistent volume at ${process.env.RAILWAY_VOLUME_MOUNT_PATH}/backups`
+                    : process.env.RAILWAY_ENVIRONMENT
+                      ? 'Temporary storage at /tmp/backups (Configure volume for persistence)' 
                       : 'Local directory'
                 }</li>
                 <li><strong>Automatic Backups</strong>: Run daily at 2 AM HKT by default</li>
@@ -993,7 +1043,7 @@ csvContent += `"${sanitizeCsv(getDisplayId(request))}","${sanitizeCsv(createdDat
         
         <div class="card">
           <div class="card-header">
-            <h3 class="card-title heading">📦 Stored Backups on Server</h3>
+            <h3 class="card-title heading">Stored Backups on Server</h3>
           </div>
           <div class="card-body">
             ${backups.length === 0 ? `
@@ -1019,7 +1069,7 @@ csvContent += `"${sanitizeCsv(getDisplayId(request))}","${sanitizeCsv(createdDat
                         <td>
                           <a href="/admin-download-backup?filename=${encodeURIComponent(backup.filename)}" 
                              class="btn btn-sm btn-primary">
-                            📥 Download
+                            Download
                           </a>
                         </td>
                       </tr>
@@ -1127,11 +1177,11 @@ csvContent += `"${sanitizeCsv(getDisplayId(request))}","${sanitizeCsv(createdDat
       <div class="container">
         <div class="card">
           <div class="card-header">
-            <h3 class="card-title heading">⏰ Automatic Backup Scheduler</h3>
+            <h3 class="card-title heading">Automatic Backup Scheduler</h3>
           </div>
           <div class="card-body">
             <div class="alert ${status.isRunning ? 'alert-success' : 'alert-warning'}">
-              <strong>Status:</strong> ${status.isRunning ? '✅ Running' : '⚠️ Stopped'}
+              <strong>Status:</strong> ${status.isRunning ? 'Running' : 'Stopped'}
             </div>
             
             <div class="info-grid">
@@ -1254,7 +1304,7 @@ csvContent += `"${sanitizeCsv(getDisplayId(request))}","${sanitizeCsv(createdDat
     
     const warningContent = `
       <div class="alert alert-warning mb-4">
-        <h4 class="alert-heading mb-3">⚠️ WARNING: This action cannot be undone!</h4>
+        <h4 class="alert-heading mb-3">WARNING: This action cannot be undone!</h4>
         <p class="mb-0">
           You are about to <strong>permanently delete ALL data</strong> from the database and reset it to brand new state.
         </p>
@@ -1272,7 +1322,7 @@ csvContent += `"${sanitizeCsv(getDisplayId(request))}","${sanitizeCsv(createdDat
       
       <div class="alert alert-danger mb-4">
         <p class="mb-0 text-center font-weight-bold">
-          ⚠️ FINAL WARNING: This action is IRREVERSIBLE ⚠️
+          FINAL WARNING: This action is IRREVERSIBLE
         </p>
       </div>
       
@@ -1282,14 +1332,14 @@ csvContent += `"${sanitizeCsv(getDisplayId(request))}","${sanitizeCsv(createdDat
         </a>
         <form method="post" action="/admin-clear-database" class="d-inline">\n          ${req.csrfInput()}
           <button type="submit" class="btn btn-danger">
-            🗑️ YES, PERMANENTLY DELETE ALL DATA
+            YES, PERMANENTLY DELETE ALL DATA
           </button>
         </form>
       </div>
     `;
     
     const confirmContent = renderCard(
-      '⚠️ DANGER - Confirm Database Reset',
+      'DANGER - Confirm Database Reset',
       warningContent,
       'Please read carefully before proceeding'
     );
@@ -1441,7 +1491,7 @@ csvContent += `"${sanitizeCsv(createdDate)}","${sanitizeCsv(createdTime)}","${sa
               <div class="btn-group btn-group-mobile">
                 <button type="submit" class="btn btn-primary w-full-mobile">Apply Filters</button>
                 <a href="/admin-audit-log" class="btn btn-secondary text-decoration-none w-full-mobile">Clear Filters</a>
-                <a href="/admin-export-audit-log" class="btn btn-outline text-decoration-none w-full-mobile hover-lift">📥 Export CSV</a>
+                <a href="/admin-export-audit-log" class="btn btn-outline text-decoration-none w-full-mobile hover-lift">Export CSV</a>
               </div>
             </div>
           </form>
@@ -1571,12 +1621,12 @@ function generateRestrictedStocksSortingControls(baseUrl, currentSortBy, current
           `<input type="hidden" name="${key}" value="${value || ''}">`
         ).join('')}
         
-        <select name="sort_by" class="form-control-xs" style="border: 1px solid var(--gs-neutral-300);">
+        <select name="sort_by" class="form-control-xs">
           <option value="ticker" ${currentSortBy === 'ticker' ? 'selected' : ''}>Ticker</option>
           <option value="company_name" ${currentSortBy === 'company_name' ? 'selected' : ''}>Company Name</option>
           <option value="created_at" ${currentSortBy === 'created_at' ? 'selected' : ''}>Date Added</option>
         </select>
-        <select name="sort_order" class="form-control-xs" style="border: 1px solid var(--gs-neutral-300);">
+        <select name="sort_order" class="form-control-xs">
           <option value="ASC" ${currentSortOrder === 'ASC' ? 'selected' : ''}>↑ Ascending</option>
           <option value="DESC" ${currentSortOrder === 'DESC' ? 'selected' : ''}>↓ Descending</option>
         </select>
@@ -1601,12 +1651,12 @@ function generateSortingControls(baseUrl, currentSortBy, currentSortOrder, query
       ).join('')}
 
       <span class="font-weight-600 text-gray-600">Sort by:</span>
-      <select name="sort_by" class="form-control-xs" style="border: 1px solid var(--gs-neutral-300);">
+      <select name="sort_by" class="form-control-xs">
         <option value="created_at" ${currentSortBy === 'created_at' ? 'selected' : ''}>Date</option>
         <option value="ticker" ${currentSortBy === 'ticker' ? 'selected' : ''}>Ticker</option>
         <option value="employee_email" ${currentSortBy === 'employee_email' ? 'selected' : ''}>Employee</option>
       </select>
-      <select name="sort_order" class="form-control-xs" style="border: 1px solid var(--gs-neutral-300);">
+      <select name="sort_order" class="form-control-xs">
         <option value="DESC" ${currentSortOrder === 'DESC' ? 'selected' : ''}>↓ Descending</option>
         <option value="ASC" ${currentSortOrder === 'ASC' ? 'selected' : ''}>↑ Ascending</option>
       </select>

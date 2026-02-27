@@ -142,7 +142,7 @@ app.use(helmet({
       frameAncestors: ["'self'"],
       objectSrc: ["'none'"],
       scriptSrc: ["'none'"],
-      styleSrc: ["'self'"],
+      styleSrc: ["'self'", "https://fonts.googleapis.com"],
       imgSrc: ["'self'", "data:"],
       fontSrc: ["'self'", 'https:', 'data:'],
       upgradeInsecureRequests: []
@@ -460,36 +460,25 @@ app.get('/', (req, res) => {
   }
 
   // Choose login method based on whether Microsoft 365 is configured
-  const loginButton = cca ? `
-    <div class="card">
-      <div class="card-body p-6">
-        <a href="/api/auth/microsoft/login" class="btn btn-primary w-full text-decoration-none">
-          🔑 Sign in with Microsoft 365
-        </a>
-      </div>
-    </div>
-  ` : `
-    <div class="card">
-      <div class="card-body p-6">
-        <a href="/employee-dummy-login" class="btn btn-primary w-full text-decoration-none">
-          Employee Login (Demo)
-        </a>
-        <p class="text-muted text-sm mt-3">
-          Demo mode - Microsoft 365 not configured
-        </p>
-      </div>
-    </div>
-  `;
+  const loginButton = cca
+    ? `<a href="/api/auth/microsoft/login" class="btn btn-primary w-full text-decoration-none">Sign in with Microsoft 365</a>`
+    : `<a href="/employee-dummy-login" class="btn btn-primary w-full text-decoration-none">Employee Login (Demo)</a>
+       <p class="text-muted text-sm mt-3">Demo mode — Microsoft 365 not configured</p>`;
 
   const landingContent = `
     ${banner}
-    <div class="text-center max-w-lg mx-auto">
-      ${loginButton}
-
-      <div class="mt-6 text-center">
-        <p class="text-muted text-sm">
-          Admin? <a href="/admin-login" class="link focus-ring">Sign in here</a>
-        </p>
+    <div class="login-page">
+      <div class="login-card">
+        <div class="login-brand">
+          <div class="login-title">Trading Compliance Portal</div>
+          <p class="login-subtitle">Inspiration Capital Management Limited</p>
+        </div>
+        <div class="login-body">
+          ${loginButton}
+        </div>
+        <div class="login-footer">
+          <a href="/admin-login" class="link">Administrator sign-in</a>
+        </div>
       </div>
     </div>
   `;
@@ -558,31 +547,29 @@ app.get('/admin-login', (req, res) => {
 
   const adminLoginContent = `
     ${banner}
-    <div class="max-w-lg mx-auto">
-      <div class="card">
-        <div class="card-header">
-          <h3 class="card-title heading">Administrator Sign In</h3>
+    <div class="login-page">
+      <div class="login-card">
+        <div class="login-brand">
+          <div class="login-title">Administrator Sign In</div>
+          <p class="login-subtitle">Inspiration Capital Management Limited</p>
         </div>
-        <div class="card-body p-6">
+        <div class="login-body">
           <form method="post" action="/admin-authenticate">
             ${req.csrfInput()}
             <div class="mb-4">
-              <label class="form-label">Username:</label>
+              <label class="form-label">Username</label>
               <input type="text" name="username" required class="form-control">
             </div>
             <div class="mb-4">
-              <label class="form-label">Password:</label>
+              <label class="form-label">Password</label>
               <input type="password" name="password" required class="form-control">
             </div>
-            <button type="submit" class="btn btn-primary w-full">
-              Sign In
-            </button>
+            <button type="submit" class="btn btn-primary w-full">Sign In</button>
           </form>
         </div>
-      </div>
-
-      <div class="text-center mt-6">
-        <a href="/" class="link focus-ring">← Back to Home</a>
+        <div class="login-footer">
+          <a href="/" class="link">Back to Home</a>
+        </div>
       </div>
     </div>
   `;
@@ -594,28 +581,26 @@ app.get('/admin-login', (req, res) => {
 // Dummy Employee Login for Testing
 app.get('/employee-dummy-login', (req, res) => {
   const dummyLoginContent = `
-    <div class="max-w-lg mx-auto">
-      <div class="card">
-        <div class="card-header">
-          <h3 class="card-title heading">Employee Login (Demo)</h3>
+    <div class="login-page">
+      <div class="login-card">
+        <div class="login-brand">
+          <div class="login-title">Employee Login (Demo)</div>
+          <p class="login-subtitle">Inspiration Capital Management Limited</p>
         </div>
-        <div class="card-body p-6">
+        <div class="login-body">
           <form method="post" action="/employee-dummy-authenticate">
             ${csrfInput(req)}
             <div class="mb-4">
-              <label class="form-label">Email:</label>
+              <label class="form-label">Email</label>
               <input type="email" name="email" value="test.employee@company.com" required class="form-control">
               <div class="text-sm text-muted mt-1">Use any email for demo purposes</div>
             </div>
-            <button type="submit" class="btn btn-primary w-full">
-              Sign In (Demo)
-            </button>
+            <button type="submit" class="btn btn-primary w-full">Sign In (Demo)</button>
           </form>
         </div>
-      </div>
-
-      <div class="text-center mt-6">
-        <a href="/" class="link focus-ring">← Back to Home</a>
+        <div class="login-footer">
+          <a href="/" class="link">Back to Home</a>
+        </div>
       </div>
     </div>
   `;

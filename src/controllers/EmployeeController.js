@@ -142,22 +142,6 @@ class EmployeeController {
 
     const dashboardContent = `
       ${banner}
-      <style>
-        .radio-option {
-          display: inline-flex;
-          align-items: center;
-          cursor: pointer;
-          padding: 0.25rem 0;
-        }
-        .radio-option input[type="radio"] {
-          margin: 0;
-          margin-right: 0.5rem;
-          vertical-align: middle;
-        }
-        .radio-option span {
-          vertical-align: middle;
-        }
-      </style>
       <div class="card">
         <div class="card-header">
           <h3 class="card-title heading">Submit Trading Request</h3>
@@ -769,7 +753,7 @@ class EmployeeController {
             ← Back to Dashboard
           </a>
           <a href="/employee-export-history?${new URLSearchParams(req.query).toString()}" class="btn btn-outline text-decoration-none w-full-mobile focus-ring hover-lift">
-            📥 Export History (CSV)
+            Export History (CSV)
           </a>
         </div>
       </div>

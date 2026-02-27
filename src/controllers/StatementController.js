@@ -70,20 +70,17 @@ class StatementController {
               <form method="post" action="/upload-statement/${token}" enctype="multipart/form-data">
                 <div class="mb-6">
                   <label class="form-label">Brokerage Account</label>
-                  <select name="brokerage_select" class="form-control">
+                  <select name="brokerage_select" class="form-control brokerage-select">
                     <option value="">Select account...</option>
                     ${accountOptions}
                     <option value="__new__">+ Other (type below)</option>
                   </select>
                 </div>
-                <div class="mb-6" id="new-brokerage-row" style="display:none">
+                <div class="mb-6 new-brokerage-field">
                   <label class="form-label">Brokerage Name</label>
                   <input type="text" name="brokerage_new" placeholder="e.g., Interactive Brokers — U12345678"
                          class="form-control" maxlength="255">
                 </div>
-                <style>
-                  select:has(option[value="__new__"]:checked) ~ #new-brokerage-row { display: block !important; }
-                </style>
                 <div class="mb-6">
                   <label class="form-label">Statement File</label>
                   <div class="file-input-wrapper">

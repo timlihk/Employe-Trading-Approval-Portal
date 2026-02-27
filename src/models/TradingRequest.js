@@ -259,6 +259,33 @@ class TradingRequest extends BaseModel {
     });
   }
 
+  static countByStatus(status) {
+    return new Promise((resolve, reject) => {
+      const sql = 'SELECT COUNT(*) as count FROM trading_requests WHERE status = $1';
+      this.get(sql, [status]).then(row => {
+        resolve(parseInt(row.count, 10));
+      }).catch(reject);
+    });
+  }
+
+  static countEscalated() {
+    return new Promise((resolve, reject) => {
+      const sql = 'SELECT COUNT(*) as count FROM trading_requests WHERE escalated = true AND status = $1';
+      this.get(sql, ['pending']).then(row => {
+        resolve(parseInt(row.count, 10));
+      }).catch(reject);
+    });
+  }
+
+  static countToday() {
+    return new Promise((resolve, reject) => {
+      const sql = "SELECT COUNT(*) as count FROM trading_requests WHERE created_at >= (CURRENT_DATE AT TIME ZONE 'Asia/Hong_Kong')";
+      this.get(sql, []).then(row => {
+        resolve(parseInt(row.count, 10));
+      }).catch(reject);
+    });
+  }
+
   static getHistorySummary(filters) {
     return new Promise((resolve, reject) => {
       // Build filter clauses using helper
