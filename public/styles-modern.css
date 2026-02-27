@@ -3241,3 +3241,311 @@ textarea.form-control {
   opacity: 1;
   padding: 0.75rem;
 }
+
+/* =============================================
+   Statement Request Styles
+   ============================================= */
+
+/* Stats Grid — overview cards for statement dashboard */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: var(--spacing-4);
+  padding: var(--spacing-2) 0;
+}
+
+.stat-item {
+  text-align: center;
+  padding: var(--spacing-4) var(--spacing-3);
+  background: var(--white);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--gray-200);
+  transition: all var(--transition-fast);
+}
+
+.stat-item:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow);
+  border-color: var(--gray-300);
+}
+
+.stat-value {
+  font-size: var(--font-size-3xl);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.stat-label {
+  font-size: var(--font-size-xs);
+  font-weight: 600;
+  color: var(--gray-500);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: var(--spacing-1);
+}
+
+.stat-value.stat-success { color: var(--success-dark); }
+.stat-value.stat-warning { color: var(--warning-dark); }
+.stat-value.stat-danger  { color: var(--danger-dark); }
+.stat-value.stat-info    { color: var(--info-dark); }
+.stat-value.stat-muted   { color: var(--gray-500); }
+
+/* Statement status badges */
+.table-status.uploaded {
+  background: var(--success-light);
+  color: var(--success-dark);
+  border: 1px solid var(--success);
+}
+
+.table-status.overdue {
+  background: var(--danger-light);
+  color: var(--danger-dark);
+  border: 1px solid var(--danger);
+}
+
+.table-status.skipped {
+  background: var(--gray-100);
+  color: var(--gray-500);
+  border: 1px solid var(--gray-300);
+}
+
+/* Upload page — centered layout */
+.upload-container {
+  max-width: 540px;
+  margin: var(--spacing-8) auto;
+}
+
+.upload-container .card {
+  border: 1px solid var(--gray-200);
+}
+
+.upload-container .card:hover {
+  transform: none;
+}
+
+.upload-meta {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--spacing-2) var(--spacing-4);
+  align-items: baseline;
+  padding: var(--spacing-4);
+  background: var(--gray-50);
+  border-radius: var(--radius-lg);
+  margin-bottom: var(--spacing-6);
+}
+
+.upload-meta dt {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--gray-500);
+}
+
+.upload-meta dd {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--secondary);
+  margin: 0;
+}
+
+/* File input styling */
+.file-input-wrapper {
+  position: relative;
+  border: 2px dashed var(--gray-300);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-8) var(--spacing-6);
+  text-align: center;
+  transition: all var(--transition-base);
+  background: var(--gray-50);
+  cursor: pointer;
+}
+
+.file-input-wrapper:hover {
+  border-color: var(--primary);
+  background: var(--primary-light);
+}
+
+.file-input-wrapper input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.file-input-icon {
+  font-size: var(--font-size-3xl);
+  display: block;
+  margin-bottom: var(--spacing-2);
+}
+
+.file-input-text {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--gray-600);
+}
+
+.file-input-hint {
+  font-size: var(--font-size-xs);
+  color: var(--gray-400);
+  margin-top: var(--spacing-1);
+}
+
+/* Upload success card */
+.upload-success {
+  text-align: center;
+  padding: var(--spacing-8) var(--spacing-6);
+}
+
+.upload-success-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--success-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-3xl);
+  margin: 0 auto var(--spacing-4);
+}
+
+.upload-success h3 {
+  color: var(--success-dark);
+  margin-bottom: var(--spacing-2);
+}
+
+.upload-success p {
+  color: var(--gray-500);
+  font-size: var(--font-size-sm);
+}
+
+/* Action bar for admin statement pages */
+.action-bar {
+  display: flex;
+  gap: var(--spacing-3);
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: var(--spacing-6);
+}
+
+/* Period selector */
+.period-selector {
+  display: flex;
+  gap: var(--spacing-3);
+  align-items: center;
+  margin-bottom: var(--spacing-6);
+}
+
+.period-selector .form-label {
+  margin: 0;
+  white-space: nowrap;
+}
+
+.period-selector .form-control {
+  max-width: 220px;
+}
+
+/* Scheduler status panel */
+.scheduler-panel {
+  display: grid;
+  gap: var(--spacing-4);
+}
+
+.scheduler-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-3) 0;
+  border-bottom: 1px solid var(--gray-200);
+}
+
+.scheduler-row:last-child {
+  border-bottom: none;
+}
+
+.scheduler-label {
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: var(--gray-500);
+}
+
+.scheduler-value {
+  font-weight: 600;
+  color: var(--secondary);
+}
+
+.status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.status-dot-success {
+  background: var(--success);
+  box-shadow: 0 0 6px var(--success);
+}
+
+.status-dot-danger {
+  background: var(--danger);
+  box-shadow: 0 0 6px var(--danger);
+}
+
+/* Config hint block */
+.config-hint {
+  background: var(--gray-50);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-5);
+  margin: var(--spacing-6) 0;
+}
+
+.config-hint h4 {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: var(--gray-600);
+  margin-bottom: var(--spacing-3);
+}
+
+.config-hint code {
+  font-size: var(--font-size-xs);
+  background: var(--white);
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--gray-200);
+}
+
+@media (max-width: 768px) {
+  .stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .action-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .period-selector {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .period-selector .form-control {
+    max-width: none;
+  }
+
+  .upload-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .scheduler-row {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-1);
+  }
+}
