@@ -131,10 +131,11 @@ SET session_replication_role = 'replica';
             sr.notes ? `'${sr.notes.replace(/'/g, "''")}'` : 'NULL',
             sr.reminder_count || 0,
             sr.last_reminder_at ? `'${sr.last_reminder_at}'` : 'NULL',
+            sr.brokerage_name ? `'${sr.brokerage_name.replace(/'/g, "''")}'` : 'NULL',
             `'${sr.created_at}'`,
             sr.updated_at ? `'${sr.updated_at}'` : 'NULL'
           ];
-          sqlContent += `INSERT INTO statement_requests (uuid, period_year, period_month, employee_email, employee_name, status, upload_token, email_sent_at, email_message_id, deadline_at, uploaded_at, sharepoint_item_id, sharepoint_file_url, original_filename, file_size_bytes, file_content_type, notes, reminder_count, last_reminder_at, created_at, updated_at) VALUES (${values.join(', ')});\n`;
+          sqlContent += `INSERT INTO statement_requests (uuid, period_year, period_month, employee_email, employee_name, status, upload_token, email_sent_at, email_message_id, deadline_at, uploaded_at, sharepoint_item_id, sharepoint_file_url, original_filename, file_size_bytes, file_content_type, notes, reminder_count, last_reminder_at, brokerage_name, created_at, updated_at) VALUES (${values.join(', ')});\n`;
         }
         sqlContent += '\n';
       }

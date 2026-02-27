@@ -22,10 +22,10 @@ class StatementRequest extends BaseModel {
     const sql = `
       INSERT INTO statement_requests (
         uuid, period_year, period_month, employee_email, employee_name,
-        status, upload_token, deadline_at, email_sent_at
+        status, upload_token, deadline_at, email_sent_at, brokerage_name
       )
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-      ON CONFLICT (period_year, period_month, employee_email) DO NOTHING
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      ON CONFLICT (period_year, period_month, employee_email, brokerage_name) DO NOTHING
       RETURNING *
     `;
     const params = [
@@ -37,7 +37,8 @@ class StatementRequest extends BaseModel {
       'pending',
       uploadToken,
       deadline.toISOString(),
-      new Date().toISOString()
+      new Date().toISOString(),
+      data.brokerage_name || null
     ];
 
     const rows = await this.query(sql, params);
@@ -166,6 +167,18 @@ class StatementRequest extends BaseModel {
   }
 
   /**
+   * Update the brokerage name on a statement request.
+   */
+  static async updateBrokerage(uuid, brokerageName) {
+    const sql = `
+      UPDATE statement_requests
+      SET brokerage_name = $2, updated_at = NOW()
+      WHERE uuid = $1
+    `;
+    return await this.run(sql, [uuid, brokerageName]);
+  }
+
+  /**
    * Increment the reminder count and update the last reminder timestamp.
    */
   static async incrementReminderCount(uuid) {
@@ -235,6 +248,56 @@ class StatementRequest extends BaseModel {
       ORDER BY deadline_at ASC
     `;
     return await this.query(sql, []);
+  }
+
+  /**
+   * Get distinct brokerage names used by a specific employee.
+   * Used to populate the brokerage dropdown on the upload form.
+   */
+  static async getDistinctBrokerages(email) {
+    if (!email) return [];
+    const sql = `
+      SELECT DISTINCT brokerage_name
+      FROM statement_requests
+      WHERE employee_email = $1
+        AND brokerage_name IS NOT NULL
+        AND brokerage_name != ''
+      ORDER BY brokerage_name ASC
+    `;
+    const rows = await this.query(sql, [email.toLowerCase()]);
+    return rows.map(r => r.brokerage_name);
+  }
+
+  /**
+   * Create a self-service statement request (employee-initiated upload).
+   * No email sent, no deadline — the employee uploads directly.
+   */
+  static async createSelfServiceRequest(data) {
+    const uuid = uuidv4();
+    const sql = `
+      INSERT INTO statement_requests (
+        uuid, period_year, period_month, employee_email, employee_name,
+        status, brokerage_name
+      )
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      ON CONFLICT (period_year, period_month, employee_email, brokerage_name) DO NOTHING
+      RETURNING *
+    `;
+    const params = [
+      uuid,
+      data.period_year,
+      data.period_month,
+      data.employee_email.toLowerCase(),
+      data.employee_name || null,
+      'pending',
+      data.brokerage_name || null
+    ];
+
+    const rows = await this.query(sql, params);
+    if (rows && rows.length > 0) {
+      return rows[0];
+    }
+    return null;
   }
 }
 

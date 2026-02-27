@@ -43,6 +43,12 @@ class StatementController {
       : 'N/A';
     const isOverdue = request.deadline_at && new Date(request.deadline_at) < new Date();
 
+    // Get historical brokerages for this employee
+    const brokerages = await StatementRequest.getDistinctBrokerages(request.employee_email);
+    const brokerageOptions = brokerages.map(b =>
+      `<option value="${b}">${b}</option>`
+    ).join('');
+
     const content = `
         ${banner}
         <div class="upload-container">
@@ -61,6 +67,22 @@ class StatementController {
               </dl>
 
               <form method="post" action="/upload-statement/${token}" enctype="multipart/form-data">
+                <div class="mb-6">
+                  <label class="form-label">Brokerage</label>
+                  <select name="brokerage_select" class="form-control">
+                    <option value="">Select brokerage...</option>
+                    ${brokerageOptions}
+                    <option value="__new__">+ Add new brokerage</option>
+                  </select>
+                </div>
+                <div class="mb-6" id="new-brokerage-row" style="display:none">
+                  <label class="form-label">New Brokerage Name</label>
+                  <input type="text" name="brokerage_new" placeholder="e.g., Interactive Brokers, Charles Schwab..."
+                         class="form-control" maxlength="255">
+                </div>
+                <style>
+                  select:has(option[value="__new__"]:checked) ~ #new-brokerage-row { display: block !important; }
+                </style>
                 <div class="mb-6">
                   <label class="form-label">Statement File</label>
                   <div class="file-input-wrapper">
@@ -95,14 +117,22 @@ class StatementController {
   processUpload = catchAsync(async (req, res) => {
     const { token } = req.params;
     const file = req.file;
-    const { notes } = req.body;
+    const { notes, brokerage_select, brokerage_new } = req.body;
 
     if (!file) {
       return res.redirect(`/upload-statement/${token}?error=${encodeURIComponent('Please select a file to upload')}`);
     }
 
+    // Determine brokerage name
+    let brokerageName = '';
+    if (brokerage_select === '__new__' && brokerage_new && brokerage_new.trim()) {
+      brokerageName = brokerage_new.trim();
+    } else if (brokerage_select && brokerage_select !== '__new__') {
+      brokerageName = brokerage_select;
+    }
+
     try {
-      const result = await StatementRequestService.processUpload(token, file, notes);
+      const result = await StatementRequestService.processUpload(token, file, notes, brokerageName);
 
       const content = `
         <div class="upload-container">
@@ -191,7 +221,7 @@ class StatementController {
     `);
 
     // Requests table
-    const tableHeaders = ['Employee', 'Status', 'Email Sent', 'Uploaded', 'File', 'Actions'];
+    const tableHeaders = ['Employee', 'Brokerage', 'Status', 'Email Sent', 'Uploaded', 'File', 'Actions'];
     const tableRows = (requests || []).map(r => {
       const emailSentDate = r.email_sent_at
         ? new Date(r.email_sent_at).toLocaleDateString('en-GB')
@@ -217,6 +247,7 @@ class StatementController {
           <span class="font-weight-600">${r.employee_name || r.employee_email}</span><br>
           <span class="text-muted text-sm">${r.employee_email}</span>
         </td>
+        <td class="text-sm">${r.brokerage_name || '-'}</td>
         <td><span class="table-status ${r.status}">${r.status.toUpperCase()}</span></td>
         <td class="table-date">${emailSentDate}</td>
         <td class="table-date">${uploadedDate}</td>

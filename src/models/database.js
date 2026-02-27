@@ -124,10 +124,11 @@ class Database {
           reminder_count INTEGER DEFAULT 0,
           last_reminder_at TIMESTAMP,
           deadline_at TIMESTAMP,
+          brokerage_name VARCHAR(255),
           notes TEXT,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-          UNIQUE(period_year, period_month, employee_email)
+          UNIQUE(period_year, period_month, employee_email, brokerage_name)
         )
       `);
 

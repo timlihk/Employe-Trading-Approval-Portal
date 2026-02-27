@@ -705,6 +705,8 @@ app.get('/employee-dashboard', requireEmployee, EmployeeController.getDashboard)
 app.get('/employee-history', requireEmployee, EmployeeController.getHistory);
 app.get('/employee-export-history', requireEmployee, EmployeeController.exportHistory);
 app.get('/escalate-form/:id', requireEmployee, EmployeeController.getEscalationForm);
+app.get('/employee-upload-statement', requireEmployee, EmployeeController.getUploadStatementPage);
+app.post('/employee-upload-statement', requireEmployee, uploadStatement.single('statement'), verifyCsrfToken, EmployeeController.processStatementUpload);
 
 // ===========================================
 // TRADING REQUEST ROUTES

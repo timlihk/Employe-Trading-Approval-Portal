@@ -191,28 +191,70 @@ class StatementRequestService {
   }
 
   /**
-   * Process a file upload from an employee.
-   * 1. Validate the upload token
-   * 2. Build SharePoint folder path with period subfolder
-   * 3. Upload file to SharePoint
-   * 4. Update DB record
-   * 5. Audit log
+   * Process a file upload from an employee (token-based flow).
    */
-  async processUpload(uploadToken, file, notes) {
+  async processUpload(uploadToken, file, notes, brokerageName) {
     const request = await this.validateUploadToken(uploadToken);
     if (!request) {
       throw new AppError('Invalid or expired upload link', 400);
     }
 
+    // Save brokerage name if provided
+    if (brokerageName) {
+      await StatementRequest.updateBrokerage(request.uuid, brokerageName);
+    }
+
+    return await this._uploadToSharePointAndMark(request, file, notes);
+  }
+
+  /**
+   * Process a self-service upload from a logged-in employee.
+   * Creates the statement_request record and uploads in one step.
+   */
+  async processEmployeeUpload(employee, file, period, brokerageName, notes) {
+    // Create or find the statement_request record
+    let request = await StatementRequest.createSelfServiceRequest({
+      period_year: period.year,
+      period_month: period.month,
+      employee_email: employee.email,
+      employee_name: employee.name,
+      brokerage_name: brokerageName || null
+    });
+
+    if (!request) {
+      // Already exists for this period+brokerage — check if already uploaded
+      const existing = await StatementRequest.query(
+        `SELECT * FROM statement_requests WHERE period_year = $1 AND period_month = $2 AND employee_email = $3 AND brokerage_name = $4 LIMIT 1`,
+        [period.year, period.month, employee.email.toLowerCase(), brokerageName || null]
+      );
+      if (existing && existing.length > 0 && existing[0].status === 'uploaded') {
+        throw new AppError(`You have already uploaded a statement for this period and brokerage.`, 400);
+      }
+      request = existing?.[0];
+      if (!request) {
+        throw new AppError('Failed to create statement request record.', 500);
+      }
+    }
+
+    return await this._uploadToSharePointAndMark(request, file, notes);
+  }
+
+  /**
+   * Shared upload logic: upload to SharePoint and mark record as uploaded.
+   */
+  async _uploadToSharePointAndMark(request, file, notes) {
     const monthStr = String(request.period_month).padStart(2, '0');
     const periodStr = `${request.period_year}-${monthStr}`;
     const baseFolderPath = process.env.SHAREPOINT_FOLDER_PATH || 'Trading Statements';
     const folderPath = `${baseFolderPath}/${periodStr}`;
 
-    // Build filename: email_timestamp_originalname
+    // Build filename: email_brokerage_timestamp_originalname
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').substring(0, 19);
     const emailPrefix = request.employee_email.split('@')[0];
-    const uploadFilename = `${emailPrefix}_${timestamp}_${file.originalname}`;
+    const brokeragePart = request.brokerage_name
+      ? `_${request.brokerage_name.replace(/[^a-zA-Z0-9]/g, '_')}`
+      : '';
+    const uploadFilename = `${emailPrefix}${brokeragePart}_${timestamp}_${file.originalname}`;
 
     let sharepointResult;
     try {
@@ -244,7 +286,7 @@ class StatementRequestService {
     await AuditLog.logActivity(
       request.employee_email, 'employee', 'statement_uploaded',
       'statement_request', request.uuid,
-      `Uploaded ${file.originalname} (${file.size} bytes) for ${periodStr}`
+      `Uploaded ${file.originalname} (${file.size} bytes) for ${periodStr}${request.brokerage_name ? ` [${request.brokerage_name}]` : ''}`
     );
 
     const monthName = new Date(request.period_year, request.period_month - 1)

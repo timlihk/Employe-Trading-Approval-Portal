@@ -1,4 +1,5 @@
 const TradingRequestService = require('../services/TradingRequestService');
+const StatementRequestService = require('../services/StatementRequestService');
 const StatementRequest = require('../models/StatementRequest');
 const { catchAsync } = require('../middleware/errorHandler');
 const { renderEmployeePage, generateNotificationBanner } = require('../utils/templates');
@@ -49,6 +50,7 @@ class EmployeeController {
       const isOverdue = r.status === 'overdue' || (r.deadline_at && new Date(r.deadline_at) < new Date());
       return `<tr>
         <td><span class="font-weight-600">${monthName} ${r.period_year}</span></td>
+        <td class="text-sm">${r.brokerage_name || '-'}</td>
         <td>${deadlineStr}${isOverdue ? ' <span class="table-status overdue">Overdue</span>' : ''}</td>
         <td><a href="/upload-statement/${r.upload_token}" class="btn btn-sm btn-primary">Upload</a></td>
       </tr>`;
@@ -63,6 +65,7 @@ class EmployeeController {
         : '-';
       return `<tr>
         <td><span class="font-weight-600">${monthName} ${r.period_year}</span></td>
+        <td class="text-sm">${r.brokerage_name || '-'}</td>
         <td class="text-sm">${r.original_filename || '-'}</td>
         <td class="table-date">${uploadedDate}</td>
         <td><span class="table-status uploaded">Uploaded</span></td>
@@ -76,7 +79,7 @@ class EmployeeController {
         <h4 class="mb-3">Pending Uploads</h4>
         <div class="table-container">
           <table class="modern-table">
-            <thead><tr><th>Period</th><th>Deadline</th><th>Action</th></tr></thead>
+            <thead><tr><th>Period</th><th>Brokerage</th><th>Deadline</th><th>Action</th></tr></thead>
             <tbody>${pendingRows}</tbody>
           </table>
         </div>`;
@@ -87,13 +90,13 @@ class EmployeeController {
         <h4 class="mb-3">Recent Uploads</h4>
         <div class="table-container">
           <table class="modern-table">
-            <thead><tr><th>Period</th><th>File</th><th>Uploaded</th><th>Status</th></tr></thead>
+            <thead><tr><th>Period</th><th>Brokerage</th><th>File</th><th>Uploaded</th><th>Status</th></tr></thead>
             <tbody>${uploadedRows}</tbody>
           </table>
         </div>`;
     }
     if (statementRequests.length === 0) {
-      statementCardContent = '<p class="text-muted text-center p-4">No statement requests at this time.</p>';
+      statementCardContent = '<p class="text-muted text-center p-4">No statement uploads yet.</p>';
     }
 
     const statementCard = `
@@ -102,6 +105,9 @@ class EmployeeController {
           <h3 class="card-title heading">Monthly Trading Statements</h3>
         </div>
         <div class="card-body">
+          <div class="mb-4">
+            <a href="/employee-upload-statement" class="btn btn-primary">Upload Statement</a>
+          </div>
           ${statementCardContent}
         </div>
       </div>`;
@@ -199,6 +205,172 @@ class EmployeeController {
 
     const html = renderEmployeePage('Employee Dashboard', dashboardContent, req.session.employee.name, req.session.employee.email);
     res.send(html);
+  });
+
+  /**
+   * GET /employee-upload-statement
+   * Show the self-service statement upload form.
+   */
+  getUploadStatementPage = catchAsync(async (req, res) => {
+    if (!req.session.employee || !req.session.employee.email) {
+      return res.redirect('/?error=authentication_required');
+    }
+
+    const banner = generateNotificationBanner(req.query);
+    const employeeEmail = req.session.employee.email;
+
+    // Get historical brokerages for dropdown
+    const brokerages = await StatementRequest.getDistinctBrokerages(employeeEmail);
+
+    // Build month/year options (last 12 months)
+    const now = new Date();
+    const periodOptions = [];
+    for (let i = 1; i <= 12; i++) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const y = d.getFullYear();
+      const m = d.getMonth() + 1;
+      const mName = d.toLocaleString('en-US', { month: 'long' });
+      periodOptions.push(`<option value="${y}-${m}">${mName} ${y}</option>`);
+    }
+
+    // Build brokerage options
+    const brokerageOptions = brokerages.map(b =>
+      `<option value="${b}">${b}</option>`
+    ).join('');
+
+    const content = `
+      ${banner}
+      <div class="card">
+        <div class="card-header">
+          <h3 class="card-title heading">Upload Trading Statement</h3>
+        </div>
+        <div class="card-body p-6">
+          <form method="post" action="/employee-upload-statement" enctype="multipart/form-data">
+            ${req.csrfInput()}
+
+            <div class="grid grid-auto gap-4 grid-mobile-stack">
+              <div>
+                <label class="form-label">Statement Period</label>
+                <select name="period" required class="form-control">
+                  <option value="">Select month...</option>
+                  ${periodOptions.join('')}
+                </select>
+              </div>
+
+              <div>
+                <label class="form-label">Brokerage</label>
+                <select name="brokerage_select" class="form-control" id="brokerage-select">
+                  <option value="">Select brokerage...</option>
+                  ${brokerageOptions}
+                  <option value="__new__">+ Add new brokerage</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="mt-4" id="new-brokerage-wrapper" style="display:none">
+              <label class="form-label">New Brokerage Name</label>
+              <input type="text" name="brokerage_new" placeholder="e.g., Interactive Brokers, Charles Schwab..."
+                     class="form-control" maxlength="255">
+            </div>
+
+            <style>
+              #brokerage-select:has(option[value="__new__"]:checked) ~ #new-brokerage-wrapper,
+              .show-new-brokerage { display: block !important; }
+            </style>
+
+            <div class="mt-4">
+              <label class="form-label">Statement File</label>
+              <div class="file-input-wrapper">
+                <input type="file" name="statement" required
+                       accept=".pdf,.png,.jpg,.jpeg,.csv,.xlsx">
+                <span class="file-input-icon">&#128196;</span>
+                <span class="file-input-text">Click to select a file</span>
+                <span class="file-input-hint">PDF, PNG, JPG, CSV, XLSX — max 10 MB</span>
+              </div>
+            </div>
+
+            <div class="mt-4">
+              <label class="form-label">Notes (optional)</label>
+              <textarea name="notes" rows="3"
+                        placeholder="Any additional notes about this statement..."
+                        class="form-control resize-vertical"></textarea>
+            </div>
+
+            <div class="mt-6 text-center">
+              <button type="submit" class="btn btn-primary w-full-mobile">
+                Upload Statement
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <div class="mt-4">
+        <a href="/employee-dashboard" class="btn btn-secondary">Back to Dashboard</a>
+      </div>
+    `;
+
+    res.send(renderEmployeePage('Upload Statement', content, req.session.employee.name, req.session.employee.email));
+  });
+
+  /**
+   * POST /employee-upload-statement
+   * Process the self-service statement upload.
+   */
+  processStatementUpload = catchAsync(async (req, res) => {
+    if (!req.session.employee || !req.session.employee.email) {
+      return res.redirect('/?error=authentication_required');
+    }
+
+    const file = req.file;
+    const { period, brokerage_select, brokerage_new, notes } = req.body;
+
+    if (!file) {
+      return res.redirect('/employee-upload-statement?error=' + encodeURIComponent('Please select a file to upload'));
+    }
+
+    if (!period) {
+      return res.redirect('/employee-upload-statement?error=' + encodeURIComponent('Please select a statement period'));
+    }
+
+    // Parse period "YYYY-M"
+    const [yearStr, monthStr] = period.split('-');
+    const year = parseInt(yearStr);
+    const month = parseInt(monthStr);
+    if (!year || !month || month < 1 || month > 12) {
+      return res.redirect('/employee-upload-statement?error=' + encodeURIComponent('Invalid period selected'));
+    }
+
+    // Determine brokerage name
+    let brokerageName = '';
+    if (brokerage_select === '__new__' && brokerage_new && brokerage_new.trim()) {
+      brokerageName = brokerage_new.trim();
+    } else if (brokerage_select && brokerage_select !== '__new__') {
+      brokerageName = brokerage_select;
+    }
+
+    if (!brokerageName) {
+      return res.redirect('/employee-upload-statement?error=' + encodeURIComponent('Please select or enter a brokerage name'));
+    }
+
+    const employee = {
+      email: req.session.employee.email,
+      name: req.session.employee.name
+    };
+
+    try {
+      await StatementRequestService.processEmployeeUpload(
+        employee,
+        file,
+        { year, month },
+        brokerageName,
+        notes
+      );
+
+      res.redirect('/employee-dashboard?message=' + encodeURIComponent('Statement uploaded successfully'));
+    } catch (error) {
+      res.redirect('/employee-upload-statement?error=' + encodeURIComponent(error.message));
+    }
   });
 
   /**
