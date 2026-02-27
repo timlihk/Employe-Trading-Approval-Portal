@@ -78,7 +78,8 @@ async function runMigrations() {
       console.log('ℹ️  UUID columns already exist - migration previously completed');
     } else {
       console.error('Full error:', error);
-      process.exit(1);
+      // Throw instead of process.exit so caller can handle gracefully
+      throw error;
     }
   } finally {
     // Always close the migration pool since it's dedicated for this process

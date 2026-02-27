@@ -184,6 +184,11 @@ class Database {
       await this.pool.query("UPDATE restricted_stocks SET instrument_type = 'equity' WHERE instrument_type IS NULL OR instrument_type = ''");
       await this.pool.query("UPDATE restricted_stock_changelog SET instrument_type = 'equity' WHERE instrument_type IS NULL OR instrument_type = ''");
 
+      // Drop functional indexes that are incompatible with TIMESTAMPTZ
+      // (AT TIME ZONE is STABLE, not IMMUTABLE — cannot be used in functional indexes)
+      try { await this.pool.query('DROP INDEX IF EXISTS idx_tr_created_at_hk_func'); } catch (e) { /* ignore */ }
+      try { await this.pool.query('DROP INDEX IF EXISTS idx_audit_created_at_hk_func'); } catch (e) { /* ignore */ }
+
       // Upgrade existing TIMESTAMP columns to TIMESTAMPTZ (safe: existing data is UTC)
       const timestampUpgrades = [
         `ALTER TABLE trading_requests ALTER COLUMN created_at TYPE TIMESTAMPTZ USING created_at AT TIME ZONE 'UTC'`,

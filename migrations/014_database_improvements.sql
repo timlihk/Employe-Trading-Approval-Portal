@@ -4,6 +4,15 @@
 -- 3. Sargable date queries (handled in application code)
 
 -- ============================================================
+-- STEP 0: Drop functional indexes from migration 010 that are
+-- incompatible with TIMESTAMPTZ (AT TIME ZONE is STABLE, not
+-- IMMUTABLE, so functional indexes using it cannot be rebuilt).
+-- These are replaced by sargable queries in application code.
+-- ============================================================
+DROP INDEX IF EXISTS idx_tr_created_at_hk_func;
+DROP INDEX IF EXISTS idx_audit_created_at_hk_func;
+
+-- ============================================================
 -- STEP 1: Upgrade TIMESTAMP columns to TIMESTAMPTZ
 -- Existing data is UTC (from CURRENT_TIMESTAMP on UTC servers)
 -- ============================================================
