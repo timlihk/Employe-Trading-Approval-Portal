@@ -774,6 +774,12 @@ select.brokerage-select:has(option[value="__new__"]:checked) ~ .new-brokerage-fi
   cursor: pointer;
 }
 
+.file-input-icon,
+.file-input-text,
+.file-input-hint {
+  pointer-events: none;
+}
+
 .file-input-icon {
   display: block;
   font-size: var(--font-xl);
