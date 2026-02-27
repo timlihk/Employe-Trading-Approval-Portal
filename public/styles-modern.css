@@ -923,15 +923,11 @@ select.brokerage-select:has(option[value="__new__"]:checked) ~ .new-brokerage-fi
   vertical-align: middle;
 }
 
-/* Align first/last table columns with card header padding */
-.card-body.p-0 .modern-table thead th:first-child,
-.card-body.p-0 .modern-table tbody td:first-child {
-  padding-left: var(--space-6);
-}
-
-.card-body.p-0 .modern-table thead th:last-child,
-.card-body.p-0 .modern-table tbody td:last-child {
-  padding-right: var(--space-6);
+/* Remove nested border when table-container is inside a card */
+.card-body .table-container,
+.card-body .table-responsive {
+  border: none;
+  border-radius: 0;
 }
 
 /* Sortable table headers */
