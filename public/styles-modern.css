@@ -54,13 +54,11 @@
   /* Typography */
   --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
   --font-mono: 'SF Mono', 'Monaco', 'Inconsolata', 'Roboto Mono', monospace;
-  --font-xs: 0.5625rem;
   --font-sm: 0.625rem;
   --font-base: 0.6875rem;
-  --font-md: 0.8125rem;
-  --font-lg: 0.9375rem;
-  --font-xl: 1.125rem;
-  --font-2xl: 1.375rem;
+  --font-md: 0.875rem;
+  --font-lg: 1.125rem;
+  --font-xl: 1.375rem;
 
   /* Spacing */
   --space-1: 0.25rem;
@@ -166,9 +164,9 @@ h1, h2, h3, h4, h5, h6 {
   margin: 0 0 var(--space-4) 0;
 }
 
-h1 { font-size: var(--font-2xl); }
-h2 { font-size: var(--font-xl); }
-h3 { font-size: var(--font-lg); }
+h1 { font-size: var(--font-xl); }
+h2 { font-size: var(--font-lg); }
+h3 { font-size: var(--font-md); }
 h4 { font-size: var(--font-md); }
 h5 { font-size: var(--font-base); }
 h6 { font-size: var(--font-sm); }
@@ -291,7 +289,7 @@ nav, .nav {
 .site-footer {
   border-top: 1px solid var(--color-border-light);
   padding: var(--space-4) var(--space-6);
-  font-size: var(--font-xs);
+  font-size: var(--font-sm);
   color: var(--color-text-muted);
   text-align: center;
 }
@@ -373,7 +371,7 @@ nav, .nav {
 }
 
 .dashboard-icon {
-  font-size: var(--font-xl);
+  font-size: var(--font-lg);
   margin-bottom: var(--space-3);
   display: block;
 }
@@ -392,14 +390,14 @@ nav, .nav {
 }
 
 .metric-value {
-  font-size: var(--font-lg);
+  font-size: var(--font-md);
   font-weight: 700;
   color: var(--color-text);
   margin-bottom: var(--space-1);
 }
 
 .metric-label {
-  font-size: var(--font-xs);
+  font-size: var(--font-sm);
   color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -436,7 +434,7 @@ nav, .nav {
 
 .action-arrow {
   color: var(--color-text-muted);
-  font-size: var(--font-lg);
+  font-size: var(--font-md);
 }
 
 /* ----------------------------------------------------------
@@ -653,7 +651,7 @@ select.form-control {
 
 .form-control-xs {
   height: 2rem;
-  font-size: var(--font-xs);
+  font-size: var(--font-sm);
   padding: 0 var(--space-2);
 }
 
@@ -664,7 +662,7 @@ select.form-control {
 
 .form-text {
   display: block;
-  font-size: var(--font-xs);
+  font-size: var(--font-sm);
   color: var(--color-text-muted);
   margin-top: var(--space-1);
 }
@@ -705,7 +703,7 @@ select.form-control {
   align-items: center;
   gap: var(--space-1);
   cursor: pointer;
-  font-size: var(--font-xs);
+  font-size: var(--font-sm);
   color: var(--color-accent);
   font-weight: 500;
 }
@@ -722,7 +720,7 @@ select.form-control {
   border-radius: var(--radius);
   padding: var(--space-3);
   margin-top: var(--space-2);
-  font-size: var(--font-xs);
+  font-size: var(--font-sm);
   color: var(--color-text-secondary);
   line-height: 1.6;
   border: 1px solid var(--color-border-light);
@@ -806,7 +804,7 @@ select.brokerage-select:has(option[value="__new__"]:checked) ~ .new-brokerage-fi
 
 .file-input-icon {
   display: block;
-  font-size: var(--font-lg);
+  font-size: var(--font-md);
   margin-bottom: var(--space-2);
 }
 
@@ -819,7 +817,7 @@ select.brokerage-select:has(option[value="__new__"]:checked) ~ .new-brokerage-fi
 
 .file-input-hint {
   display: block;
-  font-size: var(--font-xs);
+  font-size: var(--font-sm);
   color: var(--color-text-muted);
 }
 
@@ -841,7 +839,7 @@ select.brokerage-select:has(option[value="__new__"]:checked) ~ .new-brokerage-fi
 }
 
 .file-input-selected-icon {
-  font-size: var(--font-lg);
+  font-size: var(--font-md);
   display: block;
   margin-bottom: var(--space-2);
 }
@@ -951,7 +949,7 @@ select.brokerage-select:has(option[value="__new__"]:checked) ~ .new-brokerage-fi
   display: inline-block;
   padding: 0.15rem 0.5rem;
   border-radius: var(--radius-sm);
-  font-size: var(--font-xs);
+  font-size: var(--font-sm);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.02em;
@@ -1025,7 +1023,7 @@ select.brokerage-select:has(option[value="__new__"]:checked) ~ .new-brokerage-fi
   display: inline-block;
   padding: 0.15rem 0.5rem;
   border-radius: var(--radius-sm);
-  font-size: var(--font-xs);
+  font-size: var(--font-sm);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.02em;
@@ -1063,9 +1061,9 @@ select.brokerage-select:has(option[value="__new__"]:checked) ~ .new-brokerage-fi
 
 /* Status badges (alternative names) */
 .status-badge { display: inline-flex; align-items: center; }
-.status-approved { background: var(--color-success-bg); color: var(--color-success); padding: var(--space-1) var(--space-2); border-radius: var(--radius-sm); font-weight: 600; text-transform: uppercase; font-size: var(--font-xs); }
-.status-rejected { background: var(--color-danger-bg); color: var(--color-danger); padding: var(--space-1) var(--space-2); border-radius: var(--radius-sm); font-weight: 600; text-transform: uppercase; font-size: var(--font-xs); }
-.status-pending { background: var(--color-warning-bg); color: var(--color-warning); padding: var(--space-1) var(--space-2); border-radius: var(--radius-sm); font-weight: 600; text-transform: uppercase; font-size: var(--font-xs); }
+.status-approved { background: var(--color-success-bg); color: var(--color-success); padding: var(--space-1) var(--space-2); border-radius: var(--radius-sm); font-weight: 600; text-transform: uppercase; font-size: var(--font-sm); }
+.status-rejected { background: var(--color-danger-bg); color: var(--color-danger); padding: var(--space-1) var(--space-2); border-radius: var(--radius-sm); font-weight: 600; text-transform: uppercase; font-size: var(--font-sm); }
+.status-pending { background: var(--color-warning-bg); color: var(--color-warning); padding: var(--space-1) var(--space-2); border-radius: var(--radius-sm); font-weight: 600; text-transform: uppercase; font-size: var(--font-sm); }
 
 /* ----------------------------------------------------------
    9. ALERTS
@@ -1211,7 +1209,7 @@ select.brokerage-select:has(option[value="__new__"]:checked) ~ .new-brokerage-fi
   border-radius: 50%;
   background: var(--color-success-bg);
   color: var(--color-success);
-  font-size: var(--font-lg);
+  font-size: var(--font-md);
   margin-bottom: var(--space-4);
 }
 
@@ -1244,13 +1242,13 @@ select.brokerage-select:has(option[value="__new__"]:checked) ~ .new-brokerage-fi
 }
 
 .stat-value {
-  font-size: var(--font-lg);
+  font-size: var(--font-md);
   font-weight: 700;
   color: var(--color-text);
 }
 
 .stat-label {
-  font-size: var(--font-xs);
+  font-size: var(--font-sm);
   color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.03em;
@@ -1361,7 +1359,7 @@ select.brokerage-select:has(option[value="__new__"]:checked) ~ .new-brokerage-fi
 }
 
 .login-title {
-  font-size: var(--font-lg);
+  font-size: var(--font-md);
   font-weight: 700;
   color: var(--color-text);
   margin: 0 0 var(--space-1);
@@ -1455,10 +1453,10 @@ select.brokerage-select:has(option[value="__new__"]:checked) ~ .new-brokerage-fi
 /* Text */
 .text-center { text-align: center; }
 .text-right { text-align: right; }
-.text-sm { font-size: var(--font-sm); }
-.text-xs { font-size: var(--font-xs); }
+.text-sm,
+.text-xs { font-size: var(--font-sm); }
+.text-lg { font-size: var(--font-lg); }
 .text-xl { font-size: var(--font-xl); }
-.text-2xl { font-size: var(--font-2xl); }
 .text-uppercase { text-transform: uppercase; }
 .text-monospace { font-family: var(--font-mono); }
 .text-decoration-none { text-decoration: none; }
