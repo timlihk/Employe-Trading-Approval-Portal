@@ -1,227 +1,251 @@
 # CLAUDE.md - Project Memory & Guidelines
 
-## 🏗️ Project Overview
+## Project Overview
 
-**Employee Trading Approval Portal** - A compliance-focused web application for managing employee stock/bond trading requests with automatic approval/rejection based on restricted lists.
+**Employee Trading Approval Portal** — A compliance-focused web application for managing employee stock/bond trading requests with automatic approval/rejection based on restricted lists, brokerage account management, monthly statement collection, and automated backups.
 
-### Key Architecture
-- **Backend**: Node.js + Express.js (traditional server, NOT serverless)
-- **Database**: PostgreSQL with session storage
-- **Frontend**: Server-side rendering with template strings (no React/Vue)
-- **Authentication**: Email-based + Microsoft 365 SSO (optional)
-- **Deployment**: Railway (NOT Vercel - see deployment notes)
+### Architecture
+- **Backend**: Node.js 20+ with Express.js 5 (traditional server, NOT serverless)
+- **Database**: PostgreSQL with UUID primary keys and TIMESTAMPTZ columns
+- **Frontend**: Server-side rendering with template strings (no React/Vue/JS)
+- **Authentication**: Microsoft 365 SSO (optional) + email-based demo mode
+- **Email**: Microsoft Graph API for statement request emails
+- **Storage**: SharePoint REST API for statements and backups
+- **Scheduling**: node-cron for automated backups and statement requests
+- **Deployment**: Railway (NOT Vercel — stateful, long-running processes)
 
 ---
 
-## 🔒 Critical Security Constraints
+## Critical Security Constraints
 
-### **STRICT Content Security Policy (CSP)**
+### STRICT Content Security Policy (CSP)
 ```javascript
-// src/app.js lines 164-183
+// src/app.js
 contentSecurityPolicy: {
-  scriptSrc: ["'none'"],        // ❌ NO JavaScript allowed AT ALL
-  styleSrc: ["'self'"],         // ❌ NO inline styles
+  scriptSrc: ["'none'"],              // NO JavaScript allowed AT ALL
+  styleSrc: ["'self'", "https://fonts.googleapis.com"],
+  fontSrc: ["'self'", "https:", "data:"],
   defaultSrc: ["'self'"],
   objectSrc: ["'none'"]
 }
 ```
 
-### **⚠️ NEVER ADD:**
-- Inline JavaScript (`onclick`, `onchange`, etc.)
+### NEVER ADD:
+- Inline JavaScript (`onclick`, `onchange`, `<script>`)
 - External JavaScript libraries
 - `javascript:` links
-- `<script>` tags with code
-- Inline `style` attributes
+- Inline `style` attributes — use CSS classes only
 
-### **✅ ALLOWED APPROACHES:**
-- Pure CSS solutions with `:checked`, `:hover`, etc.
-- CSS-only animations and interactions
+### ALLOWED APPROACHES:
+- Pure CSS solutions (`:checked`, `:hover`, `:target`, etc.)
 - Hidden checkboxes + labels for toggles
-- Server-side form handling
+- Server-side form handling with redirects
+- CSS-only animations and interactions
 
 ---
 
-## 🎨 UI/UX Guidelines
-
-### Form Components
-- Use collapsible help sections (CSS-only with checkboxes)
-- Radio buttons need proper spacing (0.5rem margin-right)
-- All validation errors redirect with user-friendly messages
-- No raw JSON displayed to users
-
-### Error Handling
-- Invalid tickers show friendly messages, not "Pretty-print JSON"
-- Form data preserved in query params after errors
-- Validation happens in `src/middleware/validation.js`
-
-### Current Working Solutions
-```css
-/* Toggle pattern - works with strict CSP */
-.help-checkbox { display: none; }
-.help-checkbox:checked ~ .help-content { display: block; }
-.help-checkbox:checked + .help-toggle::before { transform: rotate(90deg); }
-```
-
----
-
-## 📁 Project Structure
+## Project Structure
 
 ```
 src/
-├── app.js                    # Main server file with CSP config
-├── controllers/              # Route handlers
-│   ├── EmployeeController.js # Dashboard, history, forms
-│   ├── AdminController.js    # Admin panel, user management
-│   └── TradingRequestController.js # Request processing
-├── services/                 # Business logic
-│   ├── TradingRequestService.js # Core trading logic
-│   ├── BackupService.js      # Database backups
-│   └── CurrencyService.js    # Currency conversion
-├── models/                   # Database models
-├── middleware/               # Security, validation, auth
-│   └── validation.js         # Form validation with user-friendly errors
-└── utils/                    # Helpers, templates, formatters
+├── app.js                              # Main server (routes, middleware, startup)
+├── config/
+│   └── msalConfig.js                   # Azure AD OAuth configuration
+├── controllers/
+│   ├── AdminController.js              # Admin dashboard, requests, stocks, audit
+│   ├── EmployeeController.js           # Employee dashboard, history, brokerage, onboarding
+│   ├── TradingRequestController.js     # Trade preview, submit, escalation
+│   └── StatementController.js          # Statement requests and uploads
+├── middleware/
+│   ├── errorHandler.js                 # AppError class, catchAsync, global handler
+│   ├── security.js                     # Rate limiting (general, auth, admin)
+│   ├── upload.js                       # Multer file upload middleware
+│   └── validation.js                   # express-validator rules
+├── models/
+│   ├── database.js                     # PostgreSQL pool, schema init, query helpers
+│   ├── BaseModel.js                    # Base class with query/get/run/findById
+│   ├── TradingRequest.js               # Trading requests CRUD + filtering
+│   ├── RestrictedStock.js              # Restricted instruments list
+│   ├── RestrictedStockChangelog.js      # Restricted list audit trail
+│   ├── AuditLog.js                     # Activity logging with filters
+│   ├── BrokerageAccount.js             # Employee brokerage account registry
+│   ├── EmployeeProfile.js              # Onboarding + monthly confirmation
+│   └── StatementRequest.js             # Monthly statement tracking
+├── services/
+│   ├── TradingRequestService.js        # Core trading logic (validation, approval)
+│   ├── AdminService.js                 # Admin authentication
+│   ├── BackupService.js                # SQL backup generation
+│   ├── CurrencyService.js              # Exchange rate fetching + caching
+│   ├── GraphAPIService.js              # Microsoft Graph (email, SharePoint, AD)
+│   ├── ISINService.js                  # Bond ISIN validation
+│   ├── ScheduledBackupService.js       # Cron-based backup scheduling
+│   ├── ScheduledStatementService.js    # Monthly statement email scheduler
+│   ├── StatementRequestService.js      # Statement workflow logic
+│   └── MockDataService.js              # Demo data generation
+├── routes/
+│   ├── authRoutes.js                   # Auth endpoint definitions
+│   └── systemRoutes.js                 # Health + metrics endpoints
+└── utils/
+    ├── templates.js                    # HTML page rendering (base, admin, employee)
+    ├── formatters.js                   # Date/number formatting
+    ├── logger.js                       # Winston structured logging
+    ├── metrics.js                      # Application metrics tracking
+    ├── simpleCache.js                  # LRU cache with TTL
+    └── retryBreaker.js                 # Circuit breaker + retry logic
 ```
 
 ---
 
-## 🗄️ Database Details
+## Database
 
-### Core Tables
-- `trading_requests` - Main transaction records
-- `restricted_stocks` - Blacklisted tickers/ISINs
-- `sessions` - User session storage
-- `audit_logs` - Complete activity tracking
+### Tables
+| Table | Key columns |
+|-------|-------------|
+| `trading_requests` | uuid, employee_email, ticker, shares, trading_type, status, instrument_type |
+| `restricted_stocks` | uuid, ticker, company_name, instrument_type |
+| `restricted_stock_changelog` | uuid, ticker, action (added/removed), admin_email |
+| `audit_logs` | uuid, user_email, user_type, action, target_type, details |
+| `brokerage_accounts` | uuid, employee_email, firm_name, account_number |
+| `employee_profiles` | uuid, employee_email, accounts_confirmed_at |
+| `statement_requests` | uuid, employee_email, period_year/month, status, upload_token |
+| `session` | sid, sess, expire |
 
-### Important Features
-- **UUID primary keys** (not auto-increment IDs)
-- **Automatic approval/rejection** based on restricted list
-- **Audit logging** for all actions (required for compliance)
-- **Backup system** with scheduled exports
+### Key patterns
+- **UUID primary keys** everywhere (not auto-increment)
+- **TIMESTAMPTZ** for all date columns (timezone-aware)
+- **Sargable queries**: Use `created_at >= ($1::date AT TIME ZONE 'Asia/Hong_Kong')` instead of `DATE(created_at AT TIME ZONE ...)`
+- **BaseModel** uses `WHERE uuid = $1` for findById/update/delete
+- **database.run()** auto-appends `RETURNING uuid` to INSERTs — models using `RETURNING *` should use `query()` instead
 
----
-
-## 🚀 Deployment & Environment
-
-### Railway (Current Platform)
-```env
-NODE_ENV=production
-DATABASE_URL=postgresql://...  # Provided by Railway
-SESSION_SECRET=<generate-strong-secret>
-ADMIN_USERNAME=admin
-ADMIN_PASSWORD_HASH=<bcrypt-hash>
-# Microsoft SSO optional (can be disabled)
-```
-
-### ❌ Why NOT Vercel
-- App is stateful (sessions, persistent connections)
-- Long-running processes (backups, migrations)
-- Traditional Express server architecture
-- Would require 70% rewrite for serverless
-
-### Testing Commands
-```bash
-npm start                     # Start development server
-npm run lint                  # Code quality check
-npm run typecheck            # Type validation
-```
+### Schema initialization
+- `database.js` constructor calls `init()` (async, not awaited) to CREATE tables, ADD columns, CREATE indexes
+- `run-migrations.js` runs SQL migration files on production startup
+- Both are idempotent (IF NOT EXISTS, try/catch for already-applied changes)
 
 ---
 
-## 🧪 Common Fixes & Patterns
+## Middleware Chain (Employee Routes)
 
-### Adding New Features
-1. ✅ Check if CSP allows the approach
-2. ✅ Use server-side rendering with templates
-3. ✅ Handle validation in middleware with redirects
-4. ✅ Add audit logging for admin actions
-5. ✅ Test with form validation edge cases
+```
+requireEmployee → requireBrokerageSetup → handler
 
-### UI Components
+requireEmployee: checks req.session.employee exists
+requireBrokerageSetup:
+  - 0 accounts → redirect /employee-brokerage-accounts?setup=required
+  - Not confirmed in 30 days → redirect /employee-brokerage-accounts?confirm=required
+  - Error → graceful degradation (next())
+```
+
+Exempt from `requireBrokerageSetup`: brokerage CRUD routes, confirm-accounts, logout.
+
+---
+
+## UI Patterns
+
+### CSS classes (from styles-modern.css)
+- Alerts: `alert-success alert`, `alert-error alert`, `alert-info alert`, `alert-warning alert`
+- Status badges: `status-approved`, `status-rejected`, `status-pending`
+- Cards: `card`, `card-header`, `card-body`, `card-title`
+- Tables: `modern-table`, `table-container`
+- Layout: `container`, `main-content`, `site-header`, `site-footer`
+- Navigation: `nav`, `nav-link`, `nav-link.active`
+- Forms: `form-group`, `form-label`, `form-input`, `form-select`
+- Buttons: `btn`, `btn-primary`, `btn-danger`, `btn-secondary`
+- Utility: `mb-6`, `mt-2`, `p-6`, `text-center`, `text-muted`, `font-sm`
+
+### Template helpers (src/utils/templates.js)
+- `renderBasePage(title, subtitle, content, navigation)`
+- `renderAdminPage(title, content)` — includes admin nav with active state
+- `renderEmployeePage(title, content, name, email)` — includes employee nav
+- `renderPublicPage(title, content)` — no navigation
+- `generateNotificationBanner(query)` — reads `?message=` or `?error=` from URL
+- `renderCard(title, content, subtitle)` — card component
+- `renderTable(headers, rows, emptyMessage)` — table with thead/tbody
+
+### Notification messages (via query params)
+Success (`?message=`): `stock_added`, `stock_removed`, `request_approved`, `request_rejected`, `escalation_submitted`, `statement_uploaded`, `accounts_confirmed`, `database_cleared`, `statement_emails_sent`, `statement_email_resent`, `admin_logged_out`
+
+Error (`?error=`): `authentication_required`, `invalid_credentials`, `invalid_ticker`, `stock_already_exists`, `ticker_required`, `add_failed`, `export_failed`
+
+---
+
+## Environment Variables
+
+### Required
+- `SESSION_SECRET` — 32+ char random string
+- `ADMIN_USERNAME` — admin login
+- `ADMIN_PASSWORD_HASH` — bcrypt hash (or `ADMIN_PASSWORD` plaintext for dev)
+- `DATABASE_URL` — PostgreSQL connection string
+
+### Microsoft 365 (enables SSO, email, SharePoint)
+- `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_TENANT_ID`
+- `REDIRECT_URI`, `POST_LOGOUT_REDIRECT_URI`
+- `AZURE_AD_EMPLOYEE_GROUP_ID` — optional group filter
+
+### Features
+- `STATEMENT_SENDER_EMAIL` — enables statement collection
+- `STATEMENT_REQUEST_SCHEDULE` — cron (default: `0 0 9 7 * *`)
+- `STATEMENT_UPLOAD_DEADLINE_DAYS` — default: 14
+- `BACKUP_SCHEDULE` — cron (default: `0 0 * * * *` hourly)
+- `DISABLE_SCHEDULED_BACKUPS` / `DISABLE_STATEMENT_REQUESTS` — set `true` to disable
+- `SHAREPOINT_SITE_URL`, `SHAREPOINT_LIBRARY_NAME`, `SHAREPOINT_FOLDER_PATH`, `SHAREPOINT_BACKUP_FOLDER_PATH`
+
+### Deployment
+- `NODE_ENV`, `PORT`, `LOG_LEVEL`, `FRONTEND_URL`
+- `SESSION_STORE_NO_FALLBACK` — exit if DB sessions fail
+- `RAILWAY_VOLUME_MOUNT_PATH` — persistent backup storage
+
+---
+
+## Common Patterns
+
+### Adding a new POST route
+1. Add CSRF token to form: `<input type="hidden" name="csrf_token" value="${req.session.csrfToken}">`
+2. Route: `app.post('/path', requireEmployee, verifyCsrfToken, Controller.method)`
+3. Handler uses `catchAsync` wrapper for async error handling
+4. Redirect with query param on success: `res.redirect('/page?message=success_key')`
+5. Add success_key to `generateNotificationBanner` switch in templates.js
+
+### Adding a new model
+1. Extend `BaseModel` for table name and static methods
+2. Use `this.query()` for SELECT, `this.get()` for single row, `this.run()` for INSERT/UPDATE/DELETE
+3. If INSERT has `RETURNING *`, use `this.query()` not `this.run()` (avoids double RETURNING)
+4. Add table creation to `database.js` init()
+5. Add migration file in `/migrations/`
+6. Add to `BackupService.createSQLBackup()`
+
+### Error handling
 ```javascript
-// ✅ Collapsible sections (CSS-only)
-<input type="checkbox" id="help-toggle" class="help-checkbox">
-<label for="help-toggle" class="help-toggle">
-  <span class="show-text">Show details</span>
-  <span class="hide-text">Hide details</span>
-</label>
-<div class="help-content">Content here</div>
+// In controllers — use catchAsync wrapper
+methodName = catchAsync(async (req, res) => {
+  // throws become 500 responses via globalErrorHandler
+});
 
-// ✅ Radio buttons with proper spacing
-<label class="radio-option">
-  <input type="radio" name="type" value="buy">
-  <span>BUY</span>
-</label>
-```
-
-### Error Messages
-```javascript
-// ✅ In middleware/validation.js
-if (req.path === '/preview-trade') {
-  const errorMsg = `Invalid ticker format: "${ticker}". Please use only letters, numbers, dots, and hyphens`;
-  return res.redirect(`/employee-dashboard?error=${encodeURIComponent(errorMsg)}`);
-}
+// In services — throw AppError for known errors
+throw new AppError('User-friendly message', 400);
 ```
 
 ---
 
-## 📋 Feature Status
+## Known Gotchas
 
-### ✅ Completed
-- Ticker validation with Yahoo Finance API
-- Bond/ISIN support alongside stocks
-- Automatic approval/rejection system
-- Admin panel with user management
-- Database backup system
-- Collapsible help sections (CSS-only)
-- User-friendly error messages
-
-### 🎯 Current State
-- Production-ready on Railway
-- Strict security implemented
-- Full audit compliance
-- Clean, professional UI
+1. **CSP blocks all JS** — use CSS-only solutions, no onclick/onchange
+2. **database.run() appends RETURNING uuid** — don't use with queries that already have RETURNING
+3. **database.init() is async but not awaited** — schema may not be ready when first requests arrive
+4. **run-migrations.js** throws on non-"already exists" errors — caller must catch
+5. **Functional indexes with AT TIME ZONE** are STABLE not IMMUTABLE — incompatible with TIMESTAMPTZ columns (dropped in migration 014)
+6. **Session store** falls back to memory if PostgreSQL unavailable — set `SESSION_STORE_NO_FALLBACK=true` in production
+7. **Railway port** — app defaults to PORT=3001, Railway sets PORT dynamically via env var
 
 ---
 
-## 🐛 Known Gotchas
+## Development Notes
 
-1. **CSP Violations**: Any JavaScript will be blocked - use CSS solutions
-2. **Form Validation**: Must redirect with errors, not return JSON
-3. **Session Storage**: Uses database, not Redis (works with Railway)
-4. **Backup Location**: Uses Railway volumes, not local filesystem
-5. **UUID Format**: Display IDs formatted for user-friendliness
+- **Version**: 3.0.0 (February 2026)
+- **Node.js**: >=20.0.0
+- **Testing**: Jest 30 with unit and integration tests (`npm test`)
+- **CSS**: `styles-modern.css` (3000+ lines) minified to `styles-modern.min.css`
+- **Compliance**: Full audit trail, data export, regulatory compliance
+- **Performance**: LRU caching, database indexes, circuit breakers, sargable queries
 
----
-
-## 📞 When Things Go Wrong
-
-### Common Issues
-- **"Show examples" not working**: Check for CSP violations, use CSS-only
-- **Pretty-print JSON errors**: Check validation middleware redirects
-- **Session lost**: Verify DATABASE_URL and session configuration
-- **Backup failures**: Check Railway volume permissions
-
-### Debug Commands
-```bash
-# Check logs
-railway logs
-
-# Verify environment
-node -e "console.log(process.env.DATABASE_URL ? 'DB OK' : 'DB MISSING')"
-
-# Test ticker validation
-node -e "require('./src/services/TradingRequestService').validateTicker('AAPL').then(console.log)"
-```
-
----
-
-## 📝 Development Notes
-
-- **Version**: 2.2 (August 2025)
-- **Last Major Update**: UI improvements and error handling fixes
-- **Security Level**: Enterprise-grade with strict CSP
-- **Compliance**: Full audit trail implemented
-- **Performance**: Optimized for 1-1000 concurrent users
-
-**Remember**: This is a compliance-focused financial application. Security and audit requirements take precedence over convenience features.
+**Remember**: This is a compliance-focused financial application. Security and audit requirements take precedence over convenience features. No inline JavaScript. No inline styles.

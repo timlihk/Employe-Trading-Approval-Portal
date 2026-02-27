@@ -1,123 +1,134 @@
 # Security Policy
 
-## Environment Variables
-
-### Required Security Variables
-
-- `SESSION_SECRET` - **REQUIRED** in production. Cryptographically secure random string for session signing.
-- `ADMIN_USERNAME` - **REQUIRED** in production. Administrator login username.
-- `ADMIN_PASSWORD` - **REQUIRED** in production. Administrator login password.
-
-### Session Store Configuration
-
-- `SESSION_STORE_NO_FALLBACK` - Optional. Set to `'true'` to disable memory store fallback in strict production environments.
-
-## Session Management
-
-### PostgreSQL Session Store (Production)
-
-The application uses PostgreSQL-backed sessions in production for persistence across deployments:
-
-- **Steady State**: PostgreSQL sessions with automatic table creation
-- **Retry Logic**: 3 attempts with exponential backoff (1s/2s/4s) for database connectivity
-- **Cleanup**: Automatic session pruning every 15 minutes
-- **Table**: `session` table with recommended index on `expire` column
-
-### Fallback Behavior
-
-When PostgreSQL session store initialization fails:
-
-1. **Default Behavior**: Falls back to memory store with loud warnings
-   - Logs `SESSION_STORE_FALLBACK_TO_MEMORY` event for monitoring
-   - Sessions will not persist across deployments
-   - Requires immediate investigation
-
-2. **Strict Mode**: Set `SESSION_STORE_NO_FALLBACK=true` to:
-   - Exit application immediately if PostgreSQL sessions fail
-   - Prevent silent degradation to memory store
-   - Recommended for critical production environments
-
-### Cookie Security
-
-Production session cookies are configured with:
-- `Secure`: true (HTTPS only)
-- `HttpOnly`: true (no JavaScript access)
-- `SameSite`: 'lax' (CSRF protection)
-- `MaxAge`: 24 hours
-
-## CSRF Protection
-
-Manual CSRF token implementation:
-- Tokens generated using `crypto.randomBytes(24)`
-- Required for all POST requests via hidden `csrf_token` field
-- Token rotation after successful validation
-- Security event logging for failed validations
-
 ## Content Security Policy (CSP)
 
-Strict CSP configuration:
-- `script-src`: 'none' (no JavaScript execution)
-- `style-src`: 'self' + 'unsafe-inline' (TODO: remove unsafe-inline)
-- `default-src`: 'self' (same-origin only)
-- Additional security headers: HSTS, referrer policy, frame guards
+Strict CSP enforced via Helmet:
+- `script-src`: `'none'` — no JavaScript execution
+- `style-src`: `'self'`, `https://fonts.googleapis.com`
+- `font-src`: `'self'`, `https:`, `data:`
+- `default-src`: `'self'`
+- `object-src`: `'none'`
+- `form-action`: `'self'`
+- `frame-ancestors`: `'self'`
 
-## Database Security
-
-- SSL/TLS connections required in production (`rejectUnauthorized: false` for Railway)
-- Connection pooling with timeouts
-- No hardcoded credentials (environment variables only)
-- Parameterized queries to prevent SQL injection
-
-## Logging Security
-
-- No sensitive data in logs (bodies, headers, cookies redacted)
-- Security events logged with correlation IDs
-- Request tracking without PII exposure
+No inline styles or scripts allowed. All interactivity is CSS-only or server-side.
 
 ## Authentication
 
 ### Employee Authentication
-- Microsoft 365 SSO integration (optional)
-- Session-based authentication
-- Unauthorized access logging
+- Microsoft 365 SSO via Azure AD OAuth 2.0 (optional)
+- Demo mode with email-based login when SSO not configured
+- Session-based with automatic expiration (24 hours)
+- Mandatory brokerage account onboarding before dashboard access
+- Monthly account confirmation (30-day cycle)
 
 ### Administrator Authentication
-- Username/password authentication
-- Rate limiting on auth endpoints
-- Session timeout enforcement
+- Username/password with bcrypt password hashing
+- Rate limiting: 5 attempts per 15 minutes
+- `ADMIN_PASSWORD_HASH` (bcrypt) preferred over plaintext `ADMIN_PASSWORD`
+
+## Session Management
+
+### PostgreSQL Session Store (Production)
+- `connect-pg-simple` with automatic table creation
+- Retry logic: 3 attempts with exponential backoff (1s/2s/4s)
+- Automatic session pruning every 15 minutes
+- Recommended index: `CREATE INDEX idx_session_expire ON session(expire);`
+
+### Cookie Security
+- `Secure`: true (HTTPS only, production)
+- `HttpOnly`: true (no JavaScript access)
+- `SameSite`: 'lax' (CSRF protection)
+- `MaxAge`: 24 hours
+
+### Fallback Behavior
+- **Default**: Falls back to memory store with `SESSION_STORE_FALLBACK_TO_MEMORY` warning
+- **Strict mode**: Set `SESSION_STORE_NO_FALLBACK=true` to exit on failure
+
+## CSRF Protection
+
+- Tokens generated using `crypto.randomBytes(32).toString('hex')`
+- Required on all POST routes via `verifyCsrfToken` middleware
+- Timing-safe comparison to prevent timing attacks
+- Token rotation after successful validation
+- Security event logging for failed validations
+
+## Rate Limiting
+
+| Endpoint Type | Limit | Window |
+|---------------|-------|--------|
+| General | 1000 requests | 15 minutes |
+| Authentication | 5 attempts | 15 minutes |
+| Admin actions | 10 actions | 1 minute |
+
+## Input Validation
+
+- `express-validator` for form field validation
+- Parameterized SQL queries throughout (no string interpolation)
+- Ticker format: letters, numbers, dots, hyphens
+- ISIN format: 12-character alphanumeric
+- File upload: size limits and content-type validation via Multer
+
+## Database Security
+
+- SSL/TLS connections in production (`rejectUnauthorized: false` for Railway)
+- Connection pooling with automatic cleanup
+- No hardcoded credentials (environment variables only)
+- UUID primary keys (non-guessable identifiers)
+
+## Audit Logging
+
+All user actions logged to `audit_logs` table with:
+- User email and type (admin/employee)
+- Action performed and target resource
+- IP address and user agent
+- Session ID for correlation
+- Timestamp (TIMESTAMPTZ)
+
+## Logging Security
+
+- No sensitive data in logs (request bodies, headers, cookies redacted)
+- Security events logged with structured fields
+- Request ID tracking for correlation across log entries
+
+## Required Environment Variables
+
+| Variable | Purpose | Required |
+|----------|---------|----------|
+| `SESSION_SECRET` | Session signing (32+ chars) | Yes |
+| `ADMIN_USERNAME` | Admin login | Yes |
+| `ADMIN_PASSWORD_HASH` | Bcrypt hash of admin password | Yes (prod) |
+| `DATABASE_URL` | PostgreSQL connection string | Yes |
 
 ## Monitoring Events
 
-Key security events for monitoring:
-- `CSRF_VALIDATION_FAILED` - Failed CSRF token validation
-- `UNAUTHORIZED_ADMIN_ACCESS` - Unauthorized admin access attempt  
-- `UNAUTHORIZED_EMPLOYEE_ACCESS` - Unauthorized employee access attempt
-- `SESSION_STORE_FALLBACK_TO_MEMORY` - Critical session store fallback
-- `SESSION_STORE_STRICT_MODE_EXIT` - Application exit due to strict mode
+Key security events to monitor in logs:
+
+| Event | Description |
+|-------|-------------|
+| `CSRF_VALIDATION_FAILED` | Failed CSRF token on POST request |
+| `UNAUTHORIZED_ADMIN_ACCESS` | Access attempt without admin session |
+| `UNAUTHORIZED_EMPLOYEE_ACCESS` | Access attempt without employee session |
+| `SESSION_STORE_FALLBACK_TO_MEMORY` | PostgreSQL session store failed |
+| `SESSION_STORE_STRICT_MODE_EXIT` | App exited due to strict session mode |
 
 ## Recommendations
 
-### Immediate Actions
-1. Set up monitoring alerts for `SESSION_STORE_FALLBACK_TO_MEMORY` events
-2. Create database index: `CREATE INDEX idx_session_expire ON session(expire);`
-3. Configure `SESSION_STORE_NO_FALLBACK=true` for strict production environments
-4. Monitor CSRF validation failure rates
+### Production Deployment
+1. Set `SESSION_STORE_NO_FALLBACK=true` to prevent memory store fallback
+2. Use `ADMIN_PASSWORD_HASH` (bcrypt) instead of plaintext password
+3. Monitor `SESSION_STORE_FALLBACK_TO_MEMORY` events for alerts
+4. Create session table index: `CREATE INDEX idx_session_expire ON session(expire);`
+5. Rotate `SESSION_SECRET` periodically
+6. Enable HTTPS (automatic on Railway)
 
-### Future Improvements
-1. Remove 'unsafe-inline' from CSP style-src directive
-2. Implement proper database migrations instead of boot-time DDL
-3. Add automated security testing in CI/CD pipeline
-4. Implement session table cleanup monitoring
+### Compliance
+- Complete audit trail for all trading requests and admin actions
+- CSV export for regulatory reporting
+- IP address tracking for forensics
+- Data retention: all records retained permanently
+- Database backups with SharePoint off-site storage
 
 ## Vulnerability Reporting
 
 For security issues, please contact the development team immediately through internal channels.
-
-## Compliance
-
-This application implements security controls for:
-- Session management and persistence
-- Cross-Site Request Forgery (CSRF) protection  
-- Content Security Policy (CSP) enforcement
-- Secure cookie handling
-- Authentication and authorization logging

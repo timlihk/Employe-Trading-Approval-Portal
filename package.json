@@ -1,6 +1,6 @@
 {
   "name": "employee-pre-trading-approval-request",
-  "version": "2.5.1",
+  "version": "3.0.0",
   "description": "Employee Pre-Trading Approval Request System with Microsoft 365 authentication",
   "main": "src/app.js",
   "engines": {

@@ -1,238 +1,178 @@
-# Railway Deployment Guide - Enterprise Architecture
+# Railway Deployment Guide
 
-## Step-by-Step Railway Deployment Instructions
+## Prerequisites
 
-This guide covers deployment of the enterprise-grade Trading Compliance Portal with layered architecture, comprehensive security, and PostgreSQL database.
-
-### Prerequisites
 1. GitHub account with the repository
-2. Railway account (sign up at railway.app)
-3. Basic understanding of environment variables
-4. Understanding of PostgreSQL (Railway provides this automatically)
+2. Railway account ([railway.app](https://railway.app))
+3. PostgreSQL database (Railway provides automatically)
+4. Optional: Azure AD app registration for Microsoft 365 SSO
 
-### Step 1: Connect to Railway
+## Step 1: Connect to Railway
 
-1. **Visit Railway**: Go to [railway.app](https://railway.app)
-2. **Sign in**: Use your GitHub account to sign in
-3. **New Project**: Click "New Project"
-4. **Deploy from GitHub**: Select "Deploy from GitHub repo"
-5. **Select Repository**: Choose your trading approval repository
-6. **Deploy**: Click "Deploy Now"
+1. Go to [railway.app](https://railway.app) and sign in with GitHub
+2. Click "New Project" → "Deploy from GitHub repo"
+3. Select your trading approval repository
+4. Click "Deploy Now"
 
-Railway will automatically:
-- Detect it's a Node.js application
-- Use the `nixpacks.toml` configuration
-- Install dependencies with `npm ci --only=production`
-- Start the app with `npm start`
+Railway automatically detects Node.js, installs dependencies, and starts the app.
 
-### Step 2: Configure Environment Variables
+## Step 2: Add PostgreSQL
 
-In your Railway project dashboard:
+1. In your Railway project, click "New" → "Database" → "PostgreSQL"
+2. Railway automatically sets `DATABASE_URL` for your service
+3. The app creates all tables on first startup
 
-1. **Go to Variables tab**
-2. **Add the following variables**:
+## Step 3: Configure Environment Variables
 
-#### Required Variables:
-```
-# Core Application Settings
+In your Railway service → Variables tab, add:
+
+### Required
+
+```bash
 NODE_ENV=production
-SESSION_SECRET=your-super-secure-random-key-at-least-32-chars
+SESSION_SECRET=<generate: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))">
 ADMIN_USERNAME=admin
-ADMIN_PASSWORD_HASH=your-bcrypt-hash-here
-DATABASE_URL=postgresql://[auto-provided-by-railway]
-
-# Legacy (deprecated - use ADMIN_PASSWORD_HASH instead)
-# ADMIN_PASSWORD=your-secure-admin-password-here
-
-# Optional Application Settings  
-PORT=3000
-LOG_LEVEL=info
-FRONTEND_URL=https://your-app-name.up.railway.app
-SESSION_STORE_NO_FALLBACK=true
+ADMIN_PASSWORD_HASH=<generate: node -e "require('bcryptjs').hash('your-password', 12, (e,h) => console.log(h))">
+FRONTEND_URL=https://your-app.up.railway.app
 ```
 
-**⚠️ CRITICAL**: Railway automatically provides `DATABASE_URL` for PostgreSQL - do not set this manually.
+`DATABASE_URL` is auto-provided by Railway — do not set manually.
 
-#### Optional Microsoft 365 Integration:
-```
-AZURE_CLIENT_ID=your-azure-client-id
-AZURE_CLIENT_SECRET=your-azure-client-secret
-AZURE_TENANT_ID=your-azure-tenant-id
-REDIRECT_URI=https://your-app-name.up.railway.app/api/auth/microsoft/callback
-POST_LOGOUT_REDIRECT_URI=https://your-app-name.up.railway.app
-```
+### Optional: Microsoft 365 SSO
 
-#### Optional Email Configuration:
-```
-EMAIL_USER=your-email@company.com
-EMAIL_PASS=your-app-password
-EMAIL_FROM=compliance@company.com
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-```
-
-### Step 3: Generate Secure Secrets
-
-For `SESSION_SECRET`, generate a secure random string:
 ```bash
-# Using Node.js
-node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
-
-# Or use online generator (use a trusted one)
-# Or create your own: minimum 32 characters, mix of letters, numbers, symbols
+AZURE_CLIENT_ID=<from-azure-portal>
+AZURE_CLIENT_SECRET=<from-azure-portal>
+AZURE_TENANT_ID=<from-azure-portal>
+REDIRECT_URI=https://your-app.up.railway.app/api/auth/microsoft/callback
+POST_LOGOUT_REDIRECT_URI=https://your-app.up.railway.app
 ```
 
-For `ADMIN_PASSWORD_HASH`, generate a bcrypt hash of your admin password:
+Azure AD setup:
+1. Go to [portal.azure.com](https://portal.azure.com) → App registrations
+2. Create new registration with redirect URI (Web): your callback URL
+3. Create client secret in Certificates & secrets
+4. Copy Client ID, Client Secret, Tenant ID to Railway variables
+
+### Optional: Statement Collection (requires Microsoft 365)
+
 ```bash
-# Using Node.js with bcryptjs (run this locally)
-node -e "const bcrypt = require('bcryptjs'); bcrypt.hash('your-admin-password', 12, (err, hash) => console.log('ADMIN_PASSWORD_HASH=' + hash));"
-
-# Or use the built-in utility
-node -e "const AdminService = require('./src/services/AdminService'); AdminService.generatePasswordHash('your-admin-password').then(hash => console.log('ADMIN_PASSWORD_HASH=' + hash));"
+STATEMENT_SENDER_EMAIL=compliance@company.com
+STATEMENT_REQUEST_SCHEDULE=0 0 9 7 * *
+STATEMENT_UPLOAD_DEADLINE_DAYS=14
+AZURE_AD_EMPLOYEE_GROUP_ID=<group-id>
 ```
 
-**⚠️ SECURITY**: Never commit the plaintext password. Only use the bcrypt hash in production.
+### Optional: SharePoint Integration (requires Microsoft 365)
 
-### Step 4: Get Your App URL
+```bash
+SHAREPOINT_SITE_URL=https://company.sharepoint.com/sites/compliance
+SHAREPOINT_LIBRARY_NAME=Documents
+SHAREPOINT_FOLDER_PATH=Trading Statements
+SHAREPOINT_BACKUP_FOLDER_PATH=Database_Backups
+```
 
-1. **In Railway Dashboard**: Your app URL will be shown in the deployment section
-2. **Format**: Usually `https://your-app-name.up.railway.app`
-3. **Custom Domain**: You can add a custom domain in the Settings tab
+### Optional: Backups
 
-### Step 5: Microsoft 365 Setup (Optional)
+```bash
+BACKUP_SCHEDULE=0 0 * * * *
+DISABLE_SCHEDULED_BACKUPS=false
+```
 
-If you want Single Sign-On:
+For persistent backup storage, see [RAILWAY_VOLUME_SETUP.md](./RAILWAY_VOLUME_SETUP.md).
 
-1. **Azure Portal**: Go to [portal.azure.com](https://portal.azure.com)
-2. **App Registrations**: Create new registration
-3. **Redirect URI**: Add your Railway URL + `/api/auth/microsoft/callback`
-4. **Certificates & Secrets**: Create a client secret
-5. **Copy Values**: Client ID, Client Secret, Tenant ID to Railway environment variables
+### Optional: Strict Mode
 
-### Step 6: First Access
+```bash
+SESSION_STORE_NO_FALLBACK=true    # Exit if PostgreSQL sessions fail
+LOG_LEVEL=info                     # debug/info/warn/error
+```
 
-1. **Visit Your App**: Go to your Railway URL
-2. **Admin Login**: Use the credentials you set in environment variables
-3. **Change Passwords**: Immediately change default admin password
-4. **Add Restricted Stocks**: Use admin panel to add any restricted stocks
-5. **Test Employee Flow**: Create a test trading request
+## Step 4: Verify Deployment
 
-### Step 7: Monitoring
+1. Check deployment logs for successful startup
+2. Visit your app URL — landing page should load
+3. Test health endpoint: `https://your-app.up.railway.app/health`
+4. Log in as admin with configured credentials
+5. Test employee login (SSO or demo mode)
+
+## Step 5: Initial Setup
+
+1. **Admin login**: Use configured credentials
+2. **Add restricted stocks**: Admin → Restricted Stocks → Add instruments
+3. **Test employee flow**: Submit a trading request → verify approval/rejection
+4. **Verify audit log**: Admin → Audit Log → confirm actions are logged
+
+## Database Management
+
+- **Auto-initialization**: Tables created on first startup
+- **Migrations**: Run automatically on production startup via `run-migrations.js`
+- **Backups**: Configurable schedule (default: hourly) with SharePoint upload
+- **Manual backup**: Admin dashboard → Download database backup
+- **Health check**: `/health` endpoint reports database status
+
+## Monitoring
 
 Railway provides:
-- **Logs**: View application logs in real-time
+- **Logs**: Real-time application logs
 - **Metrics**: CPU, memory, network usage
-- **Health Checks**: Automatic monitoring via `/health` endpoint
-- **Deployments**: History of all deployments
+- **Health checks**: Automatic monitoring via `/health`
+- **Deployments**: History with rollback capability
 
-### Step 8: Database Management
+Application provides:
+- `/health` — database status, uptime
+- `/metrics` — query counts, cache stats, error rates (no PII)
+- Admin audit log — complete activity tracking
 
-Railway provides managed PostgreSQL database:
-- **PostgreSQL Instance**: Automatically provisioned and managed
-- **Automatic Backups**: Railway handles database backups
-- **Data Persistence**: All data persists between deployments
-- **Auto-initialization**: Database schema created on first run
-- **Built-in Backup**: App includes `/admin-backup-database` endpoint for manual exports
-- **High Availability**: Railway ensures database uptime and performance
+## Troubleshooting
 
-### Step 9: Application Architecture Features
+### App won't start / health check fails
+- Check logs for error messages
+- Verify `DATABASE_URL` is set (auto-provided by Railway PostgreSQL)
+- Check for migration errors in logs (e.g., "functions in index expression must be marked IMMUTABLE")
+- Ensure `SESSION_SECRET` is set
 
-This deployment includes enterprise-grade features:
+### Microsoft 365 login fails
+- Verify redirect URI matches exactly (including trailing slash)
+- Check Azure AD app registration is configured correctly
+- Ensure client secret hasn't expired
 
-#### 🏗️ **Layered Architecture**
-- Controllers handle HTTP requests/responses
-- Services contain business logic  
-- Models manage database operations
-- Middleware handles security, validation, logging
+### Backups not working
+- Verify SharePoint variables are set if using SharePoint upload
+- Check Railway volume is mounted if using persistent storage
+- Review logs for "backup" related errors
 
-#### 🔒 **Security Features**
-- Rate limiting to prevent brute force attacks
-- Comprehensive input validation and sanitization
-- Centralized error handling with proper logging
-- Audit trail for all user actions
-- Session security with configurable expiration
+### Statement emails not sending
+- Requires `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_TENANT_ID`
+- Requires `STATEMENT_SENDER_EMAIL` (must be a licensed M365 mailbox)
+- Check `DISABLE_STATEMENT_REQUESTS` is not `true`
+- Review logs for Graph API errors
 
-#### 📊 **Monitoring & Logging**
-- Winston structured logging with request correlation IDs
-- Health check endpoint at `/health` for Railway monitoring
-- Database status endpoint at `/db-status` (admin only)
-- Complete audit logging for compliance requirements
-
-#### 🔍 **Advanced Reporting Features**
-- **Dynamic Sorting**: All reporting tables support sorting by Request ID, Date, or Ticker
-- **Real-time Updates**: Tables update instantly when changing sort options
-- **CSV Exports**: Full data export with current sorting and filtering applied
-- **Advanced Filtering**: Date ranges, ticker search, trading type selection
-- **Visual Indicators**: Clear display of current sort field and direction
-- **URL Parameters**: Sorting state preserved in URLs for bookmarking
+### Database issues
+- Railway PostgreSQL is managed — check Railway dashboard for DB status
+- App creates tables automatically — no manual schema setup needed
+- For schema issues, check migration logs on startup
 
 ## Security Checklist
 
 Before going live:
 
-- [ ] Set strong SESSION_SECRET (32+ characters, cryptographically secure)
-- [ ] Configure secure ADMIN_USERNAME and ADMIN_PASSWORD
-- [ ] Verify HTTPS is enabled (automatic on Railway)
-- [ ] Test rate limiting on authentication endpoints
-- [ ] Verify input validation is working on all forms
-- [ ] Test Microsoft 365 integration if enabled
-- [ ] Add restricted stocks as needed via admin panel
-- [ ] Test complete employee workflow (request → approval/rejection)
-- [ ] Verify audit logging is capturing all actions
-- [ ] Test database backup functionality
-- [ ] Test dynamic sorting functionality on admin and employee tables
-- [ ] Verify CSV export includes correct sorting and filtering
-- [ ] Review application logs for any security warnings
+- [ ] Strong `SESSION_SECRET` (32+ chars, cryptographically secure)
+- [ ] `ADMIN_PASSWORD_HASH` set (bcrypt, not plaintext)
+- [ ] HTTPS enabled (automatic on Railway)
+- [ ] `SESSION_STORE_NO_FALLBACK=true` for strict environments
+- [ ] Microsoft 365 redirect URIs match deployment URL
+- [ ] Rate limiting active (default configuration)
+- [ ] Audit logging confirmed working
+- [ ] Backup schedule configured
+- [ ] Test complete employee workflow
+- [ ] Test admin approval/rejection workflow
+- [ ] Review application logs for warnings
 
-## Troubleshooting
+## Architecture Notes
 
-### Common Issues:
-
-1. **App won't start**: Check environment variables are set correctly
-2. **Microsoft 365 login fails**: Verify redirect URIs match exactly
-3. **Database issues**: Check logs for PostgreSQL/SQLite errors
-4. **Health check fails**: Ensure `/health` endpoint responds
-5. **Sorting not working**: Check that JavaScript is enabled and CSP allows inline scripts
-6. **Tables not updating**: Verify network connection and check browser console for errors
-
-### Checking Logs:
-
-1. Go to Railway dashboard
-2. Click on your project
-3. Select "Deployments" tab
-4. Click "View Logs" on latest deployment
-
-### Getting Help:
-
-- Check Railway documentation
-- Review application logs
-- Verify environment variable values
-- Test health check endpoint: `https://your-app.railway.app/health`
-
-## Production Checklist
-
-- [ ] Application deployed successfully
-- [ ] Health check endpoint responding
-- [ ] Admin login working
-- [ ] Environment variables configured
-- [ ] Microsoft 365 integration tested (if enabled)
-- [ ] Admin password changed from default
-- [ ] Restricted stocks configured
-- [ ] Employee workflow tested
-- [ ] Admin approval/rejection workflow tested  
-- [ ] Audit logging working
-- [ ] CSV export functional
-- [ ] Dynamic sorting working on all reporting tables
-- [ ] Advanced filtering operational in employee history
-- [ ] Table sorting indicators displaying correctly
-
-## Support
-
-If you encounter issues during deployment:
-
-1. Check the Railway logs first
-2. Verify all environment variables
-3. Test the health endpoint
-4. Review the application logs for specific errors
-
-Your Trading Compliance Portal is now ready for production use on Railway!
+This application requires a traditional server (NOT serverless) because:
+- Stateful sessions with PostgreSQL backing
+- Long-running scheduled tasks (backups, statement emails)
+- Persistent database connections with connection pooling
+- File upload handling with temporary storage
