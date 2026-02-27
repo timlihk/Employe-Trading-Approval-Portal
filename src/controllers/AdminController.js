@@ -1144,6 +1144,9 @@ csvContent += `"${sanitizeCsv(getDisplayId(request))}","${sanitizeCsv(createdDat
               <div class="info-item">
                 <strong>Next Run:</strong> ${status.nextRun ? new Date(status.nextRun).toLocaleString('en-US', { timeZone: 'Asia/Hong_Kong' }) : 'N/A'}
               </div>
+              <div class="info-item">
+                <strong>SharePoint Backup:</strong> ${status.sharepointEnabled ? 'Enabled' : 'Not configured (local only)'}
+              </div>
             </div>
             
             <div class="alert alert-info mt-4">

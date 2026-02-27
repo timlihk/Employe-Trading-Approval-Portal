@@ -1,5 +1,6 @@
 const cron = require('node-cron');
 const BackupService = require('./BackupService');
+const GraphAPIService = require('./GraphAPIService');
 const TradingRequest = require('../models/TradingRequest');
 const RestrictedStock = require('../models/RestrictedStock');
 const AuditLog = require('../models/AuditLog');
@@ -16,9 +17,9 @@ class ScheduledBackupService {
    * Default schedule: Daily at 2 AM (Hong Kong time)
    */
   static initialize(schedule = null) {
-    // Use provided schedule or default to 2 AM daily
+    // Use provided schedule or default to every hour
     // Cron format: second minute hour day month day-of-week
-    const cronSchedule = schedule || process.env.BACKUP_SCHEDULE || '0 0 2 * * *';
+    const cronSchedule = schedule || process.env.BACKUP_SCHEDULE || '0 0 * * * *';
     
     // Validate cron expression
     if (!cron.validate(cronSchedule)) {
@@ -88,18 +89,39 @@ class ScheduledBackupService {
       }
 
       // Store backup locally
-      const result = await BackupService.storeBackupLocally(backupData, 7); // Keep 7 days of automatic backups
-      
+      const result = await BackupService.storeBackupLocally(backupData, 7); // Keep last 7 local backups
+
+      // Upload SQL backup to SharePoint (if configured)
+      let sharepointResult = null;
+      if (process.env.SHAREPOINT_SITE_URL) {
+        try {
+          const sqlBackup = await BackupService.createSQLBackup();
+          const buffer = Buffer.from(sqlBackup.content, 'utf-8');
+          const now = new Date();
+          const yearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+          const folderPath = `${process.env.SHAREPOINT_BACKUP_FOLDER_PATH || 'Database_Backups'}/${yearMonth}`;
+          const timestamp = now.toISOString().slice(0, 19).replace(/:/g, '-');
+          const filename = `db_backup_${timestamp}.sql`;
+
+          sharepointResult = await GraphAPIService.uploadToSharePoint(buffer, filename, folderPath);
+          logger.info(`Backup uploaded to SharePoint: ${folderPath}/${filename}`);
+        } catch (spError) {
+          logger.error('SharePoint backup upload failed:', spError.message);
+        }
+      }
+
       const duration = Date.now() - startTime;
-      
+
       // Log the successful backup
+      const details = `Automatic backup completed: ${result.filename} (${Math.round(result.size / 1024)} KB) in ${duration}ms` +
+        (sharepointResult ? ` | SharePoint: ${sharepointResult.webUrl}` : '');
       await AuditLog.logActivity(
         'SYSTEM',
         'admin',
         'scheduled_backup_completed',
         'system',
         null,
-        `Automatic backup completed: ${result.filename} (${Math.round(result.size / 1024)} KB) in ${duration}ms`,
+        details,
         '127.0.0.1'
       );
 
@@ -107,6 +129,7 @@ class ScheduledBackupService {
         filename: result.filename,
         size: `${Math.round(result.size / 1024)} KB`,
         duration: `${duration}ms`,
+        sharepoint: sharepointResult ? 'uploaded' : 'skipped',
         recordCounts: {
           trading_requests: backupData.trading_requests?.length || 0,
           restricted_stocks: backupData.restricted_stocks?.length || 0,
@@ -115,7 +138,7 @@ class ScheduledBackupService {
         }
       });
 
-      // Clean up old automatic backups (keep last 7 days)
+      // Clean up old local backups
       await this.cleanupOldBackups();
       
     } catch (error) {
@@ -193,8 +216,9 @@ class ScheduledBackupService {
   static getStatus() {
     return {
       isRunning: this.isRunning,
-      schedule: process.env.BACKUP_SCHEDULE || '0 0 2 * * *',
+      schedule: process.env.BACKUP_SCHEDULE || '0 0 * * * *',
       timezone: 'Asia/Hong_Kong',
+      sharepointEnabled: !!process.env.SHAREPOINT_SITE_URL,
       nextRun: this.cronJob ? this.getNextScheduledTime() : null
     };
   }
@@ -203,7 +227,7 @@ class ScheduledBackupService {
    * Calculate next scheduled time (approximate)
    */
   static getNextScheduledTime(schedule = null) {
-    const cronSchedule = schedule || process.env.BACKUP_SCHEDULE || '0 0 2 * * *';
+    const cronSchedule = schedule || process.env.BACKUP_SCHEDULE || '0 0 * * * *';
     
     // Parse the cron expression to determine next run
     // For daily at 2 AM, calculate next 2 AM

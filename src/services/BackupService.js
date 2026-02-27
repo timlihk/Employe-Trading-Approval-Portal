@@ -105,8 +105,42 @@ SET session_replication_role = 'replica';
         sqlContent += '\n';
       }
 
+      // Backup statement_requests table
+      const statementRequests = await database.query('SELECT * FROM statement_requests ORDER BY created_at');
+      if (statementRequests.length > 0) {
+        sqlContent += '-- Statement Requests\n';
+        sqlContent += 'DELETE FROM statement_requests;\n';
+        for (const sr of statementRequests) {
+          const values = [
+            `'${sr.uuid}'`,
+            sr.period_year,
+            sr.period_month,
+            `'${sr.employee_email}'`,
+            sr.employee_name ? `'${sr.employee_name.replace(/'/g, "''")}'` : 'NULL',
+            `'${sr.status}'`,
+            `'${sr.upload_token}'`,
+            sr.email_sent_at ? `'${sr.email_sent_at}'` : 'NULL',
+            sr.email_message_id ? `'${sr.email_message_id}'` : 'NULL',
+            sr.deadline_at ? `'${sr.deadline_at}'` : 'NULL',
+            sr.uploaded_at ? `'${sr.uploaded_at}'` : 'NULL',
+            sr.sharepoint_item_id ? `'${sr.sharepoint_item_id}'` : 'NULL',
+            sr.sharepoint_file_url ? `'${sr.sharepoint_file_url.replace(/'/g, "''")}'` : 'NULL',
+            sr.original_filename ? `'${sr.original_filename.replace(/'/g, "''")}'` : 'NULL',
+            sr.file_size_bytes || 'NULL',
+            sr.file_content_type ? `'${sr.file_content_type}'` : 'NULL',
+            sr.notes ? `'${sr.notes.replace(/'/g, "''")}'` : 'NULL',
+            sr.reminder_count || 0,
+            sr.last_reminder_at ? `'${sr.last_reminder_at}'` : 'NULL',
+            `'${sr.created_at}'`,
+            sr.updated_at ? `'${sr.updated_at}'` : 'NULL'
+          ];
+          sqlContent += `INSERT INTO statement_requests (uuid, period_year, period_month, employee_email, employee_name, status, upload_token, email_sent_at, email_message_id, deadline_at, uploaded_at, sharepoint_item_id, sharepoint_file_url, original_filename, file_size_bytes, file_content_type, notes, reminder_count, last_reminder_at, created_at, updated_at) VALUES (${values.join(', ')});\n`;
+        }
+        sqlContent += '\n';
+      }
+
       sqlContent += "-- Re-enable foreign key checks\nSET session_replication_role = 'origin';\n";
-      
+
       return {
         content: sqlContent,
         filename: `trading_approval_backup_${timestamp}.sql`,
