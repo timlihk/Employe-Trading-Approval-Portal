@@ -27,40 +27,37 @@ class GuidesController {
         <li><a href="#faq" class="action-item"><span>Frequently Asked Questions</span><span class="action-arrow" aria-hidden="true">&#8250;</span></a></li>
       </ul>`;
 
-    // Employee Guides
+    // ── Employee Guides ──
     const employeeContent = `
       ${collapsible('emp-trade', 'Submitting a Trading Request', `
         <img src="/images/guides/employee-dashboard.png" alt="Employee Dashboard — Submit Trading Request form" class="guide-screenshot">
         <ol>
-          <li><strong>Navigate to Dashboard</strong> &mdash; After logging in, you will land on the Employee Dashboard.</li>
-          <li><strong>Enter the ticker symbol</strong> &mdash; Type the stock ticker (e.g. AAPL, MSFT) or ISIN for bonds into the Ticker/ISIN field. Use the "Show examples" toggle for format guidance.</li>
+          <li><strong>Enter the ticker symbol</strong> &mdash; Type the stock ticker (e.g. AAPL, MSFT) or ISIN for bonds into the Ticker/ISIN field.</li>
           <li><strong>Enter the number of shares</strong> &mdash; Specify how many shares or units you intend to trade.</li>
           <li><strong>Select trade type</strong> &mdash; Choose BUY or SELL.</li>
-          <li><strong>Select your brokerage account</strong> &mdash; Pick the account where the trade will be executed.</li>
-          <li><strong>Click "Submit Trading Request"</strong> &mdash; This takes you to the Preview page.</li>
-          <li><strong>Review the preview</strong> &mdash; Verify all details are correct. Read and accept the compliance declaration.</li>
-          <li><strong>Submit for approval</strong> &mdash; Your request will be automatically checked against the restricted stocks list.</li>
+          <li><strong>Click "Preview Trading Request"</strong> &mdash; Review the details and accept the compliance declaration before final submission.</li>
         </ol>
       `)}
 
       ${collapsible('emp-result', 'Understanding Your Trading Result', `
         <img src="/images/guides/trade-result-approved.png" alt="Trading Result — Approved status page" class="guide-screenshot">
-        <p>After submitting, your request receives one of three statuses:</p>
-        <ul>
-          <li><strong>Approved</strong> &mdash; The stock is not on the restricted list. You may proceed with your trade within the approval validity period.</li>
-          <li><strong>Rejected</strong> &mdash; The stock is on the restricted list. You may not execute this trade. If you believe this is an error, you can escalate the request.</li>
-          <li><strong>Escalated</strong> &mdash; Your rejected request has been sent to an administrator for manual review. You will be notified of the outcome.</li>
-        </ul>
+        <p>After submitting, the result page shows:</p>
+        <ol>
+          <li><strong>Status banner</strong> &mdash; Green for Approved, red for Rejected. This tells you the outcome at a glance.</li>
+          <li><strong>Trade details</strong> &mdash; Full details of your request including stock, action, shares, and estimated total.</li>
+          <li><strong>Next steps</strong> &mdash; Links to return to the dashboard or view your full request history.</li>
+        </ol>
+        <p>If rejected, you may escalate the request for manual review by an administrator.</p>
       `)}
 
       ${collapsible('emp-history', 'Viewing Your Trading History', `
         <img src="/images/guides/employee-history.png" alt="Trading History — filters, table, and export" class="guide-screenshot">
-        <p>Navigate to <strong>My History</strong> from the top navigation bar to see all your past trading requests.</p>
-        <ul>
-          <li><strong>Filter by status</strong> &mdash; Use the status filter to show only approved, rejected, or escalated requests.</li>
-          <li><strong>Search</strong> &mdash; Search by ticker symbol to find specific requests.</li>
-          <li><strong>Export to CSV</strong> &mdash; Click the Export button to download your trading history as a spreadsheet.</li>
-        </ul>
+        <p>Navigate to <strong>My History</strong> from the top navigation bar.</p>
+        <ol>
+          <li><strong>Filter controls</strong> &mdash; Filter by date range, ticker, trade type, status, or instrument. Click "Apply Filters" to narrow results.</li>
+          <li><strong>History table</strong> &mdash; Shows all your requests with date, ticker, type, shares, value, and current status.</li>
+          <li><strong>Export to CSV</strong> &mdash; Click "Export History (CSV)" to download your trading history as a spreadsheet.</li>
+        </ol>
       `)}
 
       ${collapsible('emp-brokerage', 'Managing Brokerage Accounts', `
@@ -68,10 +65,10 @@ class GuidesController {
         <p>Before submitting your first trading request, you must set up your brokerage accounts.</p>
         <ol>
           <li><strong>Navigate to Accounts</strong> &mdash; Click "Accounts" in the top navigation bar.</li>
-          <li><strong>Add your accounts</strong> &mdash; Enter the brokerage name and account number for each account you use.</li>
-          <li><strong>Confirm your accounts</strong> &mdash; Once all accounts are added, click "Confirm Accounts" to finalize your setup.</li>
+          <li><strong>Enter the firm name</strong> &mdash; Type the name of your brokerage firm (e.g. Interactive Brokers, Charles Schwab).</li>
+          <li><strong>Enter the account number</strong> &mdash; Type your brokerage account number, then click "Add Account".</li>
         </ol>
-        <p>You can edit or remove accounts at any time before confirming. After confirmation, contact your administrator to make changes.</p>
+        <p>Once all accounts are added, click "Confirm Accounts" to finalize your setup. You can edit or remove accounts before confirming.</p>
       `)}
 
       ${collapsible('emp-statement', 'Uploading Monthly Statements', `
@@ -93,50 +90,49 @@ class GuidesController {
         </ol>
       `)}`;
 
-    // Admin Guides
+    // ── Admin Guides ──
     const adminContent = `
       ${collapsible('adm-dashboard', 'Dashboard Overview', `
         <img src="/images/guides/admin-dashboard.png" alt="Admin Dashboard — metric cards and quick actions" class="guide-screenshot">
         <p>The admin dashboard shows key metrics at a glance:</p>
-        <ul>
-          <li><strong>Pending Requests</strong> &mdash; Number of trading requests awaiting review (escalated requests).</li>
+        <ol>
+          <li><strong>Pending Requests</strong> &mdash; Number of trading requests awaiting review.</li>
           <li><strong>Escalated</strong> &mdash; Requests that employees have escalated for manual review.</li>
           <li><strong>Submitted Today</strong> &mdash; Total requests received today.</li>
           <li><strong>Restricted Stocks</strong> &mdash; Number of stocks currently on the restricted list.</li>
-        </ul>
-        <p>Below the metrics, use the Quick Actions list to navigate to common tasks.</p>
+          <li><strong>Quick Actions</strong> &mdash; Shortcuts to common tasks like reviewing requests, managing stocks, and viewing logs.</li>
+        </ol>
       `)}
 
       ${collapsible('adm-restricted', 'Managing Restricted Stocks', `
         <img src="/images/guides/admin-restricted-stocks.png" alt="Restricted Stocks — add and remove restricted tickers" class="guide-screenshot">
         <p>The restricted stocks list determines which trades are automatically rejected.</p>
-        <ul>
-          <li><strong>Add a stock</strong> &mdash; Enter a ticker symbol (e.g. AAPL) or ISIN. The system validates the ticker against market data before adding.</li>
-          <li><strong>Remove a stock</strong> &mdash; Click Remove next to any stock in the list. This takes effect immediately for future requests.</li>
-        </ul>
+        <ol>
+          <li><strong>Add a stock</strong> &mdash; Enter a ticker symbol (e.g. AAPL) or ISIN into the input field and click "Add". The system validates the ticker against market data before adding.</li>
+          <li><strong>Restricted list</strong> &mdash; View all currently restricted instruments. Click "Remove" next to any stock to remove it. Changes take effect immediately.</li>
+        </ol>
         <p>All changes to the restricted list are recorded in the audit log.</p>
       `)}
 
       ${collapsible('adm-requests', 'Reviewing Trading Requests', `
         <img src="/images/guides/admin-requests.png" alt="Trading Requests — review, approve, and reject" class="guide-screenshot">
         <p>Navigate to <strong>Trading Requests</strong> to see all submitted requests.</p>
-        <ul>
-          <li><strong>Filter by escalated</strong> &mdash; Use the filter to show only escalated requests that need manual review.</li>
-          <li><strong>Approve</strong> &mdash; Click Approve to grant the employee permission to trade.</li>
-          <li><strong>Reject</strong> &mdash; Click Reject, provide a reason, and the employee will be notified.</li>
-          <li><strong>Export</strong> &mdash; Download all trading requests as a CSV file for compliance records.</li>
-        </ul>
+        <ol>
+          <li><strong>Filter controls</strong> &mdash; Filter by employee, date range, ticker, status, or escalation state.</li>
+          <li><strong>Request table</strong> &mdash; View all requests with employee details, ticker, type, shares, and value. Approve or reject directly from the table.</li>
+          <li><strong>Export CSV</strong> &mdash; Download all trading requests as a CSV file for compliance records.</li>
+        </ol>
       `)}
 
       ${collapsible('adm-statements', 'Statement Management', `
         <img src="/images/guides/admin-statements.png" alt="Statement Management — send requests and track compliance" class="guide-screenshot">
         <p>Navigate to <strong>Statements</strong> to manage the monthly statement request process.</p>
-        <ul>
-          <li><strong>Send monthly requests</strong> &mdash; Trigger statement request emails to all employees. This can also be automated via the scheduler.</li>
-          <li><strong>Track compliance</strong> &mdash; View which employees have submitted their statements and which are overdue.</li>
-          <li><strong>Resend emails</strong> &mdash; Resend the upload link to individual employees who may have missed it.</li>
-          <li><strong>Scheduler</strong> &mdash; View and manage the automatic statement request schedule.</li>
-        </ul>
+        <ol>
+          <li><strong>Send Monthly Emails</strong> &mdash; Trigger statement request emails to all employees at once.</li>
+          <li><strong>Scheduler Settings</strong> &mdash; View and manage the automatic statement request schedule.</li>
+          <li><strong>Period selector</strong> &mdash; Choose which month to view. The stats cards show totals, emails sent, uploaded, pending, and overdue.</li>
+          <li><strong>Compliance table</strong> &mdash; Track which employees have submitted their statements and which are overdue. Resend emails to individual employees.</li>
+        </ol>
       `)}
 
       ${collapsible('adm-backup', 'Database and Backup Operations', `
@@ -148,7 +144,7 @@ class GuidesController {
         </ul>
       `)}`;
 
-    // FAQ
+    // ── FAQ ──
     const faqContent = `
       ${collapsible('faq-restricted', 'What happens if my stock is on the restricted list?', `
         <p>Your trading request will be automatically rejected. You will see the rejection reason on the result page. If you believe the restriction does not apply to your situation, you can escalate the request for manual review by an administrator.</p>
