@@ -19,6 +19,7 @@ const AdminController = require('./controllers/AdminController');
 const EmployeeController = require('./controllers/EmployeeController');
 const TradingRequestController = require('./controllers/TradingRequestController');
 const StatementController = require('./controllers/StatementController');
+const GuidesController = require('./controllers/GuidesController');
 
 // Upload middleware
 const { uploadStatement } = require('./middleware/upload');
@@ -503,6 +504,7 @@ app.get('/', (req, res) => {
         </div>
         <div class="login-footer">
           <a href="/admin-login" class="link">Administrator sign-in</a>
+          <a href="/guides" class="link">User Guide</a>
         </div>
       </div>
     </div>
@@ -667,6 +669,12 @@ app.get('/admin-logout', (req, res) => {
     res.redirect('/?message=logged_out');
   });
 });
+
+// ===========================================
+// PUBLIC GUIDES (adapts layout based on session)
+// ===========================================
+
+app.get('/guides', GuidesController.getGuides);
 
 // ===========================================
 // ADMIN ROUTES

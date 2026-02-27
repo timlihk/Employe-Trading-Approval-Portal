@@ -47,6 +47,7 @@ function renderAdminPage(title, content) {
         <a href="/admin-restricted-stocks" class="nav-link ${title === 'Restricted Stocks' ? 'active' : ''}">Restricted Stocks</a>
         <a href="/admin-requests" class="nav-link ${title === 'Trading Requests' || title === 'Reject Trading Request' ? 'active' : ''}">Trading Requests</a>
         <a href="/admin-statements" class="nav-link ${title === 'Statement Requests' || title === 'Statement Scheduler' ? 'active' : ''}">Statements</a>
+        <a href="/guides" class="nav-link ${title === 'Guides' ? 'active' : ''}">Guides</a>
         <a href="/admin-logout" class="nav-link">Logout</a>
     </nav>`;
 
@@ -59,6 +60,7 @@ function renderEmployeePage(title, content, employeeName = '', employeeEmail = '
         <a href="/employee-dashboard" class="nav-link ${title === 'Employee Dashboard' || title === 'Trading Request Preview' || title === 'Trading Request Result' ? 'active' : ''}">Dashboard</a>
         <a href="/employee-history" class="nav-link ${title === 'Trading History' || title === 'Request History' ? 'active' : ''}">My History</a>
         <a href="/employee-brokerage-accounts" class="nav-link ${title === 'Brokerage Accounts' ? 'active' : ''}">Accounts</a>
+        <a href="/guides" class="nav-link ${title === 'Guides' ? 'active' : ''}">Guides</a>
         <a href="/employee-logout" class="nav-link">Logout</a>
     </nav>`;
 
