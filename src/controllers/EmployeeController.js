@@ -750,7 +750,7 @@ class EmployeeController {
       <!-- Results Card -->
       <div class="card">
         <div class="card-header">
-          <h3 class="card-title text-xl">Trading Request History</h3>
+          <h3 class="card-title">Trading Request History</h3>
           <p class="mt-2 m-0 text-muted text-sm">${pagination ? `${pagination.total} total, showing ${requests.length}` : `${requests.length} requests`} · Page ${pagination?.page || 1} of ${pagination?.pages || 1}</p>
         </div>
         <div class="card-body p-0">

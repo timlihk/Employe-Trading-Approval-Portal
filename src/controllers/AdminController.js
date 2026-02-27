@@ -612,7 +612,7 @@ class AdminController {
 
       <div class="card mt-6">
         <div class="card-header">
-          <h3 class="card-title text-xl">Restricted Instruments List</h3>
+          <h3 class="card-title">Restricted Instruments List</h3>
           <p class="mt-2 m-0 text-muted text-sm">${restrictedStocks.length} instruments restricted</p>
           ${restrictedStocks.length > 0 ? `
             <div class="mt-4">
@@ -643,7 +643,7 @@ class AdminController {
 
       <div class="card mt-6">
         <div class="card-header">
-          <h3 class="card-title text-xl">Recent Changes</h3>
+          <h3 class="card-title">Recent Changes</h3>
           <p class="mt-2 m-0 text-muted text-sm">Last 20 modifications</p>
         </div>
         <div class="card-body p-0">
@@ -1501,7 +1501,7 @@ csvContent += `"${sanitizeCsv(createdDate)}","${sanitizeCsv(createdTime)}","${sa
 
       <div class="card mt-6">
         <div class="card-header">
-          <h3 class="card-title text-xl">Audit Log Results</h3>
+          <h3 class="card-title">Audit Log Results</h3>
           <p class="mt-2 m-0 text-muted text-sm">${auditLogs.length} entries found</p>
         </div>
         <div class="card-body p-0">

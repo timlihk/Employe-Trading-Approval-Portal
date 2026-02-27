@@ -68,7 +68,7 @@ class TradingRequestController {
       // Render preview page with compliance declaration
       const previewContent = `
         <div class="max-w-lg mx-auto">
-          <h2 class="text-center mb-6 text-2xl heading">Review Trading Request</h2>
+          <h2 class="text-center mb-6 heading">Review Trading Request</h2>
           
           ${expectedOutcome}
 
