@@ -1,4 +1,5 @@
 // Statement upload page template
+const { escapeHtml } = require('../../utils/formatters');
 
 /**
  * @param {object} data
@@ -21,7 +22,7 @@ function renderUploadStatement(data) {
   // Build account options
   const accountOptionsHtml = accounts.map(a => {
     const selected = a.uuid === selectedAccountUuid ? 'selected' : '';
-    return `<option value="${a.uuid}" ${selected}>${a.firm_name} — ${a.account_number}</option>`;
+    return `<option value="${a.uuid}" ${selected}>${escapeHtml(a.firm_name)} — ${escapeHtml(a.account_number)}</option>`;
   }).join('');
 
   // Build period options

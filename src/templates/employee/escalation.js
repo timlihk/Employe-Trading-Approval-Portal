@@ -1,7 +1,7 @@
 // Escalation form template
 
 const { formatHongKongTime } = require('../shared/formatters');
-const { getDisplayId } = require('../../utils/formatters');
+const { getDisplayId, escapeHtml } = require('../../utils/formatters');
 
 /**
  * @param {object} data
@@ -30,7 +30,7 @@ function renderEscalation(data) {
         <div class="bg-muted p-4 border-radius mb-6">
           <h4 class="m-0 mb-3">Request Details:</h4>
           <div class="grid gap-2">
-            <div><strong>${request.instrument_type === 'bond' ? 'Bond' : 'Stock'}:</strong> ${request.stock_name} (${request.ticker})</div>
+            <div><strong>${request.instrument_type === 'bond' ? 'Bond' : 'Stock'}:</strong> ${escapeHtml(request.stock_name)} (${escapeHtml(request.ticker)})</div>
             <div><strong>Type:</strong> ${request.trading_type.toUpperCase()}</div>
             <div><strong>${request.instrument_type === 'bond' ? 'Units' : 'Shares'}:</strong> ${parseInt(request.shares).toLocaleString()}</div>
             <div><strong>Estimated Value:</strong> $${parseFloat(request.total_value_usd || request.total_value || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</div>

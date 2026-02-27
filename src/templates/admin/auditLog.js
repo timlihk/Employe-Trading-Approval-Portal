@@ -1,4 +1,5 @@
 const { formatHongKongTime } = require('../shared/formatters');
+const { escapeHtml } = require('../../utils/formatters');
 
 /**
  * Render audit log viewer page
@@ -15,15 +16,15 @@ function auditLogTemplate({ auditLogs, pagination, filters }) {
   const auditRows = auditLogs.map(log => `
       <tr>
         <td class="td-center">${formatHongKongTime(new Date(log.created_at), true)}</td>
-        <td>${log.user_email}</td>
+        <td>${escapeHtml(log.user_email)}</td>
         <td class="td-center">
           <span class="badge ${log.user_type === 'admin' ? 'badge-danger' : 'badge-info'}">${log.user_type.toUpperCase()}</span>
         </td>
-        <td>${log.action}</td>
-        <td class="td-center">${log.target_type}</td>
-        <td class="td-center">${log.target_id || 'N/A'}</td>
-        <td class="max-w-200 break-word">${log.details || 'N/A'}</td>
-        <td class="td-center text-monospace text-xs">${log.ip_address || 'N/A'}</td>
+        <td>${escapeHtml(log.action)}</td>
+        <td class="td-center">${escapeHtml(log.target_type)}</td>
+        <td class="td-center">${escapeHtml(log.target_id) || 'N/A'}</td>
+        <td class="max-w-200 break-word">${escapeHtml(log.details) || 'N/A'}</td>
+        <td class="td-center text-monospace text-xs">${escapeHtml(log.ip_address) || 'N/A'}</td>
       </tr>
     `).join('');
 
@@ -37,7 +38,7 @@ function auditLogTemplate({ auditLogs, pagination, filters }) {
             <div class="grid grid-auto gap-4 grid-mobile-stack">
               <div>
                 <label class="form-label">User Email:</label>
-                <input type="text" name="user_email" value="${user_email || ''}"
+                <input type="text" name="user_email" value="${escapeHtml(user_email) || ''}"
                        placeholder="Filter by email" class="form-control-sm">
               </div>
               <div>

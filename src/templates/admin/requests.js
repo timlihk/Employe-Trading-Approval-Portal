@@ -1,6 +1,6 @@
 const { formatHongKongTime } = require('../shared/formatters');
 const { generateSortingControls } = require('../shared/sorting');
-const { getDisplayId } = require('../../utils/formatters');
+const { getDisplayId, escapeHtml } = require('../../utils/formatters');
 
 /**
  * Render admin trading requests page
@@ -48,7 +48,7 @@ function requestsTemplate({
     } else if (request.escalated) {
       actionCell = `
           <strong class="text-warning">ESCALATED</strong><br>
-          <small class="text-warning">${request.escalation_reason || 'N/A'}</small>
+          <small class="text-warning">${escapeHtml(request.escalation_reason) || 'N/A'}</small>
         `;
     } else {
       // No further actions available - show dash instead of duplicating status
@@ -59,9 +59,9 @@ function requestsTemplate({
         <tr ${rowClass}>
           <td class="text-center">${getDisplayId(request)}</td>
           <td class="text-center">${formatHongKongTime(new Date(request.created_at))}</td>
-          <td>${request.employee_email}</td>
-          <td>${request.stock_name || 'N/A'}</td>
-          <td class="text-center font-weight-600">${request.ticker}</td>
+          <td>${escapeHtml(request.employee_email)}</td>
+          <td>${escapeHtml(request.stock_name) || 'N/A'}</td>
+          <td class="text-center font-weight-600">${escapeHtml(request.ticker)}</td>
           <td class="text-center">
             <span class="badge ${request.instrument_type === 'bond' ? 'badge-info' : 'badge-secondary'}">
               ${request.instrument_type === 'bond' ? 'Bond' : 'Equity'}
@@ -102,7 +102,7 @@ function requestsTemplate({
             <div class="grid grid-auto gap-4 grid-mobile-stack">
               <div>
                 <label class="form-label">Employee Email:</label>
-                <input type="email" name="employee_email" value="${employee_email || ''}" placeholder="john@company.com"
+                <input type="email" name="employee_email" value="${escapeHtml(employee_email) || ''}" placeholder="john@company.com"
                        class="form-control-sm">
               </div>
               <div>
@@ -117,7 +117,7 @@ function requestsTemplate({
               </div>
               <div>
                 <label class="form-label">Ticker/ISIN:</label>
-                <input type="text" name="ticker" value="${ticker || ''}" placeholder="e.g., AAPL or US1234567890"
+                <input type="text" name="ticker" value="${escapeHtml(ticker) || ''}" placeholder="e.g., AAPL or US1234567890"
                        class="form-control-sm text-uppercase">
               </div>
               <div>

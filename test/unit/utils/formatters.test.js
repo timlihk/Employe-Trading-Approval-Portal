@@ -1,6 +1,44 @@
-const { formatUuid, getDisplayId } = require('../../../src/utils/formatters');
+const { escapeHtml, formatUuid, getDisplayId } = require('../../../src/utils/formatters');
 
 describe('formatters', () => {
+  describe('escapeHtml', () => {
+    test('should escape & < > " and single quote', () => {
+      expect(escapeHtml('&<>"\'')).toBe('&amp;&lt;&gt;&quot;&#39;');
+    });
+
+    test('should return empty string for null', () => {
+      expect(escapeHtml(null)).toBe('');
+    });
+
+    test('should return empty string for undefined', () => {
+      expect(escapeHtml(undefined)).toBe('');
+    });
+
+    test('should convert numbers to string', () => {
+      expect(escapeHtml(42)).toBe('42');
+    });
+
+    test('should leave safe strings unchanged', () => {
+      expect(escapeHtml('hello world')).toBe('hello world');
+    });
+
+    test('should escape a script tag', () => {
+      expect(escapeHtml('<script>alert("xss")</script>')).toBe(
+        '&lt;script&gt;alert(&quot;xss&quot;)&lt;/script&gt;'
+      );
+    });
+
+    test('should escape attribute injection', () => {
+      expect(escapeHtml('" onmouseover="alert(1)"')).toBe(
+        '&quot; onmouseover=&quot;alert(1)&quot;'
+      );
+    });
+
+    test('should handle empty string', () => {
+      expect(escapeHtml('')).toBe('');
+    });
+  });
+
   describe('formatUuid', () => {
     test('should return "N/A" for null input', () => {
       expect(formatUuid(null)).toBe('N/A');

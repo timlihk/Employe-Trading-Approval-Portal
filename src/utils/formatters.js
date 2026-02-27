@@ -3,6 +3,21 @@
  */
 
 /**
+ * Escape HTML special characters to prevent XSS
+ * @param {*} str - Value to escape
+ * @returns {string} HTML-safe string
+ */
+function escapeHtml(str) {
+  if (str == null) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/**
  * Format UUID for display - shows first 8 characters
  * @param {string} uuid - Full UUID string
  * @returns {string} Formatted UUID for display
@@ -37,6 +52,7 @@ function getDisplayId(request) {
 }
 
 module.exports = {
+  escapeHtml,
   formatUuid,
   getDisplayId
 };

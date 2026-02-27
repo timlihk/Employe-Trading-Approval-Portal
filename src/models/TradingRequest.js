@@ -39,9 +39,9 @@ class TradingRequest extends BaseModel {
           uuid, employee_email, stock_name, ticker, shares,
           share_price, total_value, currency, share_price_usd,
           total_value_usd, exchange_rate, trading_type, status,
-          rejection_reason, processed_at
+          rejection_reason, processed_at, instrument_type
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
         RETURNING uuid
       `;
 
@@ -52,7 +52,8 @@ class TradingRequest extends BaseModel {
         total_value_usd || finalTotalValue, exchange_rate || 1, trading_type,
         requestData.status || 'pending',
         requestData.rejection_reason || null,
-        requestData.processed_at || new Date().toISOString()
+        requestData.processed_at || new Date().toISOString(),
+        instrument_type
       ];
 
       // Use query() instead of run() to avoid double RETURNING clause

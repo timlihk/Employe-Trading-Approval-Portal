@@ -1,4 +1,4 @@
-const { getDisplayId } = require('../../utils/formatters');
+const { getDisplayId, escapeHtml } = require('../../utils/formatters');
 
 /**
  * Render rejection form for a trading request
@@ -18,8 +18,8 @@ function rejectFormTemplate({ requestUuid, request, csrfInput }) {
           <div class="card-body">
             <div class="bg-muted p-4 rounded mb-4">
               <h4>Request Details:</h4>
-              <p><strong>Employee:</strong> ${request.employee_email}</p>
-              <p><strong>Stock:</strong> ${request.stock_name} (${request.ticker})</p>
+              <p><strong>Employee:</strong> ${escapeHtml(request.employee_email)}</p>
+              <p><strong>Stock:</strong> ${escapeHtml(request.stock_name)} (${escapeHtml(request.ticker)})</p>
               <p><strong>Action:</strong> ${request.trading_type.toUpperCase()}</p>
               <p><strong>Shares:</strong> ${parseInt(request.shares).toLocaleString()}</p>
               <p><strong>Estimated Value:</strong> $${parseFloat(request.total_value_usd || request.total_value || 0).toLocaleString('en-US', {minimumFractionDigits: 2})}</p>

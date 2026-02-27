@@ -1,6 +1,7 @@
 // HTML Template utilities to eliminate duplicate HTML across routes
 
 const APP_VERSION = require('../../package.json').version || '0';
+const { escapeHtml } = require('./formatters');
 
 function renderBasePage(title, subtitle, content, navigation = '') {
   return `
@@ -89,7 +90,7 @@ function generateNotificationBanner(query) {
       case 'stock_added':
         message = 'Stock added successfully';
         if (query.ticker && query.company) {
-          message = `${decodeURIComponent(query.ticker)} (${decodeURIComponent(query.company)}) has been added to the restricted stocks list.`;
+          message = `${escapeHtml(decodeURIComponent(query.ticker))} (${escapeHtml(decodeURIComponent(query.company))}) has been added to the restricted stocks list.`;
         }
         break;
       case 'stock_removed':
@@ -123,7 +124,7 @@ function generateNotificationBanner(query) {
         message = 'Your brokerage accounts have been confirmed. Thank you!';
         break;
       default:
-        message = decodeURIComponent(query.message);
+        message = escapeHtml(decodeURIComponent(query.message));
     }
   }
 
@@ -140,13 +141,13 @@ function generateNotificationBanner(query) {
       case 'invalid_ticker':
         message = 'Invalid ticker format or ticker not found';
         if (query.ticker) {
-          message += `: ${decodeURIComponent(query.ticker)}`;
+          message += `: ${escapeHtml(decodeURIComponent(query.ticker))}`;
         }
         break;
       case 'stock_already_exists':
         message = 'Stock is already in the restricted list';
         if (query.ticker) {
-          message += `: ${decodeURIComponent(query.ticker)}`;
+          message += `: ${escapeHtml(decodeURIComponent(query.ticker))}`;
         }
         break;
       case 'ticker_required':
@@ -155,14 +156,14 @@ function generateNotificationBanner(query) {
       case 'add_failed':
         message = 'Failed to add stock to restricted list';
         if (query.details) {
-          message += `: ${decodeURIComponent(query.details)}`;
+          message += `: ${escapeHtml(decodeURIComponent(query.details))}`;
         }
         break;
       case 'export_failed':
         message = 'Failed to export trading history. Please try again or contact support if the problem persists.';
         break;
       default:
-        message = decodeURIComponent(query.error);
+        message = escapeHtml(decodeURIComponent(query.error));
     }
   }
 

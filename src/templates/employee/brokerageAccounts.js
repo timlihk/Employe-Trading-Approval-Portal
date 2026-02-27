@@ -1,4 +1,5 @@
 // Brokerage accounts management template
+const { escapeHtml } = require('../../utils/formatters');
 
 /**
  * @param {object} data
@@ -36,8 +37,8 @@ function renderBrokerageAccounts(data) {
 
   const accountRows = accounts.map(a => `
     <tr>
-      <td class="font-weight-600">${a.firm_name}</td>
-      <td>${a.account_number}</td>
+      <td class="font-weight-600">${escapeHtml(a.firm_name)}</td>
+      <td>${escapeHtml(a.account_number)}</td>
       <td>
         <a href="/employee-brokerage-accounts?edit=${a.uuid}" class="btn btn-sm btn-secondary">Edit</a>
         <form method="post" action="/employee-remove-brokerage" class="d-inline">
@@ -84,13 +85,13 @@ function renderBrokerageAccounts(data) {
             <div>
               <label class="form-label">Firm Name</label>
               <input type="text" name="firm_name" required placeholder="e.g., Interactive Brokers"
-                     value="${editAccount ? editAccount.firm_name : ''}"
+                     value="${editAccount ? escapeHtml(editAccount.firm_name) : ''}"
                      class="form-control" maxlength="255">
             </div>
             <div>
               <label class="form-label">Account Number</label>
               <input type="text" name="account_number" required placeholder="e.g., U12345678"
-                     value="${editAccount ? editAccount.account_number : ''}"
+                     value="${editAccount ? escapeHtml(editAccount.account_number) : ''}"
                      class="form-control" maxlength="100">
             </div>
           </div>

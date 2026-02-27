@@ -1,4 +1,5 @@
 // Employee dashboard template — trading form + statement card
+const { escapeHtml } = require('../../utils/formatters');
 
 /**
  * @param {object} data
@@ -33,7 +34,7 @@ function renderDashboard(data) {
     const isOverdue = r.status === 'overdue' || (r.deadline_at && new Date(r.deadline_at) < new Date());
     return `<tr>
       <td><span class="font-weight-600">${monthName} ${r.period_year}</span></td>
-      <td class="text-sm">${r.brokerage_name || '-'}</td>
+      <td class="text-sm">${escapeHtml(r.brokerage_name) || '-'}</td>
       <td>${deadlineStr}${isOverdue ? ' <span class="table-status overdue">Overdue</span>' : ''}</td>
       <td><a href="${r.upload_token ? '/upload-statement/' + r.upload_token : '/employee-upload-statement'}" class="btn btn-sm btn-primary">Upload</a></td>
     </tr>`;
@@ -45,13 +46,13 @@ function renderDashboard(data) {
     const uploadedDate = r.uploaded_at
       ? new Date(r.uploaded_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
       : '-';
-    const fileInfo = r.original_filename || '-';
+    const fileInfo = escapeHtml(r.original_filename) || '-';
     const fileLink = r.sharepoint_item_id
       ? `<a href="/statement-file/${r.uuid}" target="_blank" rel="noopener">${fileInfo}</a>`
       : fileInfo;
     return `<tr>
       <td><span class="font-weight-600">${monthName} ${r.period_year}</span></td>
-      <td class="text-sm">${r.brokerage_name || '-'}</td>
+      <td class="text-sm">${escapeHtml(r.brokerage_name) || '-'}</td>
       <td class="text-sm">${fileLink}</td>
       <td class="table-date">${uploadedDate}</td>
       <td><span class="table-status uploaded">Uploaded</span></td>
@@ -61,8 +62,8 @@ function renderDashboard(data) {
   // Build brokerage accounts list
   const accountRows = brokerageAccounts.map(a =>
     `<tr>
-      <td class="font-weight-600">${a.firm_name}</td>
-      <td class="text-sm">${a.account_number}</td>
+      <td class="font-weight-600">${escapeHtml(a.firm_name)}</td>
+      <td class="text-sm">${escapeHtml(a.account_number)}</td>
       <td><a href="/employee-upload-statement?account=${a.uuid}" class="btn btn-sm btn-primary">Upload</a></td>
     </tr>`
   ).join('');

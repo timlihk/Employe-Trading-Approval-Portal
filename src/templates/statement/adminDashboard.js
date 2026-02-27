@@ -2,6 +2,7 @@
 // Receives a plain data object, returns an HTML string
 
 const { generateNotificationBanner, renderCard, renderTable } = require('../../utils/templates');
+const { escapeHtml } = require('../../utils/formatters');
 
 /**
  * @param {object} data
@@ -68,7 +69,7 @@ function renderAdminDashboard(data) {
     const uploadedDate = r.uploaded_at
       ? new Date(r.uploaded_at).toLocaleDateString('en-GB')
       : '-';
-    const fileInfo = r.original_filename || '-';
+    const fileInfo = r.original_filename ? escapeHtml(r.original_filename) : '-';
     const fileLink = r.sharepoint_item_id
       ? `<a href="/statement-file/${r.uuid}" target="_blank" rel="noopener">${fileInfo}</a>`
       : fileInfo;
@@ -83,10 +84,10 @@ function renderAdminDashboard(data) {
 
     return `<tr>
         <td>
-          <span class="font-weight-600">${r.employee_name || r.employee_email}</span><br>
-          <span class="text-muted text-sm">${r.employee_email}</span>
+          <span class="font-weight-600">${escapeHtml(r.employee_name || r.employee_email)}</span><br>
+          <span class="text-muted text-sm">${escapeHtml(r.employee_email)}</span>
         </td>
-        <td class="text-sm">${r.brokerage_name || '-'}</td>
+        <td class="text-sm">${r.brokerage_name ? escapeHtml(r.brokerage_name) : '-'}</td>
         <td><span class="table-status ${r.status}">${r.status.toUpperCase()}</span></td>
         <td class="table-date">${emailSentDate}</td>
         <td class="table-date">${uploadedDate}</td>

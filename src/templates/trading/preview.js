@@ -1,6 +1,8 @@
 // Template: Trade preview/confirmation page
 // Receives a plain data object, returns an HTML string
 
+const { escapeHtml } = require('../../utils/formatters');
+
 /**
  * @param {object} data
  * @param {string} data.ticker
@@ -41,7 +43,7 @@ function renderPreview(data) {
     expectedOutcome = `
           <div class="bg-warning border rounded p-4 mb-4">
             <h4 class="m-0 text-warning">Restricted ${instrumentTypeDisplay} Warning</h4>
-            <p class="mt-2 m-0 text-warning">${ticker.toUpperCase()} is on the restricted trading list. This request will be <strong>automatically rejected</strong> upon submission, but you will have the option to escalate with a business justification.</p>
+            <p class="mt-2 m-0 text-warning">${escapeHtml(ticker.toUpperCase())} is on the restricted trading list. This request will be <strong>automatically rejected</strong> upon submission, but you will have the option to escalate with a business justification.</p>
           </div>`;
   }
 
@@ -59,7 +61,7 @@ function renderPreview(data) {
               <div class="grid gap-4">
                 <div class="d-flex justify-content-between p-3 bg-muted rounded">
                   <span class="font-weight-600">${instrumentType === 'bond' ? 'Bond:' : 'Stock:'}</span>
-                  <span>${instrumentName} (<strong>${ticker.toUpperCase()}</strong>)</span>
+                  <span>${escapeHtml(instrumentName)} (<strong>${escapeHtml(ticker.toUpperCase())}</strong>)</span>
                 </div>
                 ${instrumentType === 'bond' ? `
                 <div class="d-flex justify-content-between p-3 bg-muted rounded">
@@ -79,7 +81,7 @@ function renderPreview(data) {
                   <span>
                     ${instrumentCurrency === 'USD'
                       ? `$${sharePrice.toFixed(2)} USD`
-                      : `${sharePrice.toFixed(2)} ${instrumentCurrency} (~$${sharePriceUSD.toFixed(2)} USD)`
+                      : `${sharePrice.toFixed(2)} ${escapeHtml(instrumentCurrency)} (~$${sharePriceUSD.toFixed(2)} USD)`
                     }
                   </span>
                 </div>
@@ -88,13 +90,13 @@ function renderPreview(data) {
                   <span class="font-weight-600">
                     ${instrumentCurrency === 'USD'
                       ? `$${estimatedValue.toLocaleString('en-US', {minimumFractionDigits: 2})} USD`
-                      : `${estimatedValue.toLocaleString('en-US', {minimumFractionDigits: 2})} ${instrumentCurrency} (~$${estimatedValueUSD.toLocaleString('en-US', {minimumFractionDigits: 2})} USD)`
+                      : `${estimatedValue.toLocaleString('en-US', {minimumFractionDigits: 2})} ${escapeHtml(instrumentCurrency)} (~$${estimatedValueUSD.toLocaleString('en-US', {minimumFractionDigits: 2})} USD)`
                     }
                   </span>
                 </div>${instrumentCurrency !== 'USD' ? `
                 <div class="d-flex justify-content-between p-3 rounded alert-info">
                   <span class="font-weight-600">Exchange Rate:</span>
-                  <span>1 ${instrumentCurrency} = $${exchangeRate.toFixed(4)} USD</span>
+                  <span>1 ${escapeHtml(instrumentCurrency)} = $${exchangeRate.toFixed(4)} USD</span>
                 </div>` : ''}
               </div>
             </div>
@@ -107,9 +109,9 @@ function renderPreview(data) {
             <div class="card-body p-6">
               <form method="post" action="/submit-trade">
                 ${csrfInput}
-                <input type="hidden" name="ticker" value="${ticker}">
-                <input type="hidden" name="shares" value="${shares}">
-                <input type="hidden" name="trading_type" value="${trading_type}">
+                <input type="hidden" name="ticker" value="${escapeHtml(ticker)}">
+                <input type="hidden" name="shares" value="${escapeHtml(shares)}">
+                <input type="hidden" name="trading_type" value="${escapeHtml(trading_type)}">
 
                 <div class="mb-4">
                   <label class="d-flex align-items-start gap-2 cursor-pointer">

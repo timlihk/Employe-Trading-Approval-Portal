@@ -1,5 +1,6 @@
 const { formatHongKongTime } = require('../shared/formatters');
 const { generateSortableHeader, generateRestrictedStocksSortingControls } = require('../shared/sorting');
+const { escapeHtml } = require('../../utils/formatters');
 
 /**
  * Render restricted stocks management page
@@ -17,13 +18,13 @@ function restrictedStocksTemplate({ banner, restrictedStocks, changelog, csrfInp
   // Build table rows
   const stockRows = restrictedStocks.map(stock => `
       <tr>
-        <td class="td-center font-weight-600">${stock.ticker}</td>
-        <td>${stock.company_name}</td>
+        <td class="td-center font-weight-600">${escapeHtml(stock.ticker)}</td>
+        <td>${escapeHtml(stock.company_name)}</td>
         <td class="td-center">${formatHongKongTime(new Date(stock.created_at))}</td>
         <td class="td-center">
           <form method="post" action="/admin-remove-stock" class="d-inline">
             ${csrfInput}
-            <input type="hidden" name="ticker" value="${stock.ticker}">
+            <input type="hidden" name="ticker" value="${escapeHtml(stock.ticker)}">
             <button type="submit" class="btn btn-danger btn-sm">Remove</button>
           </form>
         </td>
@@ -38,15 +39,15 @@ function restrictedStocksTemplate({ banner, restrictedStocks, changelog, csrfInp
     return `
         <tr>
           <td class="td-center">${formatHongKongTime(new Date(change.created_at), true)}</td>
-          <td class="td-center font-weight-600">${change.ticker}</td>
-          <td>${change.company_name}</td>
+          <td class="td-center font-weight-600">${escapeHtml(change.ticker)}</td>
+          <td>${escapeHtml(change.company_name)}</td>
           <td class="td-center">
             <span class="${actionClass} font-weight-600">
               ${actionIcon} ${change.action.toUpperCase()}
             </span>
           </td>
-          <td class="td-center">${change.admin_email}</td>
-          <td class="td-center">${change.reason || 'N/A'}</td>
+          <td class="td-center">${escapeHtml(change.admin_email)}</td>
+          <td class="td-center">${escapeHtml(change.reason) || 'N/A'}</td>
         </tr>
       `;
   }).join('');

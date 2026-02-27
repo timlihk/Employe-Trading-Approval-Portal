@@ -1,6 +1,8 @@
 // Template: Upload completion page
 // Receives a plain data object, returns an HTML string
 
+const { escapeHtml } = require('../../utils/formatters');
+
 /**
  * @param {object} data
  * @param {string} data.period - display period string (e.g., "January 2026")
@@ -17,8 +19,8 @@ function renderUploadComplete(data) {
               <div class="upload-success">
                 <div class="upload-success-icon">&#10003;</div>
                 <h3>Statement Uploaded</h3>
-                <p class="mb-4">Your <strong>${period}</strong> trading statement has been received and securely stored.</p>
-                <p class="mb-6"><strong>File:</strong> ${originalFilename}</p>
+                <p class="mb-4">Your <strong>${escapeHtml(period)}</strong> trading statement has been received and securely stored.</p>
+                <p class="mb-6"><strong>File:</strong> ${escapeHtml(originalFilename)}</p>
                 <a href="/" class="btn btn-primary">Go to Portal</a>
               </div>
             </div>

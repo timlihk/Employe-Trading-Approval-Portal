@@ -1,7 +1,7 @@
 // Employee trading history template — filters, table, pagination
 
 const { formatHongKongTime } = require('../shared/formatters');
-const { getDisplayId } = require('../../utils/formatters');
+const { getDisplayId, escapeHtml } = require('../../utils/formatters');
 
 /**
  * @param {object} data
@@ -41,8 +41,8 @@ function renderHistory(data) {
       <tr>
         <td class="text-center">${getDisplayId(request)}</td>
         <td class="text-center">${date}</td>
-        <td>${request.stock_name || 'N/A'}</td>
-        <td class="text-center font-weight-600">${request.ticker}</td>
+        <td>${escapeHtml(request.stock_name) || 'N/A'}</td>
+        <td class="text-center font-weight-600">${escapeHtml(request.ticker)}</td>
         <td class="text-center">
           <span class="badge ${request.instrument_type === 'bond' ? 'badge-info' : 'badge-secondary'}">
             ${request.instrument_type === 'bond' ? 'Bond' : 'Equity'}
@@ -58,7 +58,7 @@ function renderHistory(data) {
         </td>
         <td class="text-center">
           ${request.status === 'rejected' && request.rejection_reason ?
-            `<span class="text-danger cursor-help text-sm" title="${request.rejection_reason}">View Reason</span>` :
+            `<span class="text-danger cursor-help text-sm" title="${escapeHtml(request.rejection_reason)}">View Reason</span>` :
             (request.status === 'pending' && !request.escalated ?
               `<a href="/escalate-form/${request.uuid}" class="btn btn-outline btn-sm text-decoration-none">Escalate</a>` :
               (request.escalated ?
@@ -112,7 +112,7 @@ function renderHistory(data) {
             </div>
             <div>
               <label class="form-label">Ticker:</label>
-              <input type="text" name="ticker" value="${filters.ticker || ''}" placeholder="e.g., AAPL"
+              <input type="text" name="ticker" value="${escapeHtml(filters.ticker) || ''}" placeholder="e.g., AAPL"
                      class="form-control-sm text-uppercase">
             </div>
             <div>

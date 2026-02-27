@@ -1,3 +1,5 @@
+const { escapeHtml } = require('../../utils/formatters');
+
 /**
  * Render backup list / management page
  * @param {Object} data
@@ -60,7 +62,7 @@ function backupListTemplate({ notification, backups, schedulerStatus, csrfInput,
               <ul class="mb-0 mt-2">
                 <li><strong>JSON</strong>: Human-readable, easy to inspect and modify</li>
                 <li><strong>SQL</strong>: Can be imported directly via psql, more portable</li>
-                <li><strong>Server Storage</strong>: ${storageDescription}</li>
+                <li><strong>Server Storage</strong>: ${escapeHtml(storageDescription)}</li>
                 <li><strong>Automatic Backups</strong>: Run daily at 2 AM HKT by default</li>
               </ul>
             </div>
@@ -89,7 +91,7 @@ function backupListTemplate({ notification, backups, schedulerStatus, csrfInput,
                   <tbody>
                     ${backups.map(backup => `
                       <tr>
-                        <td><code>${backup.filename}</code></td>
+                        <td><code>${escapeHtml(backup.filename)}</code></td>
                         <td>${new Date(backup.created).toLocaleString('en-US', { timeZone: 'Asia/Hong_Kong' })}</td>
                         <td>${Math.round(backup.size / 1024)} KB</td>
                         <td>

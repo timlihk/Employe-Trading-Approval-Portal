@@ -1,7 +1,7 @@
 // Template: Trade submission result page
 // Receives a plain data object, returns an HTML string
 
-const { getDisplayId } = require('../../utils/formatters');
+const { getDisplayId, escapeHtml } = require('../../utils/formatters');
 
 /**
  * @param {object} data
@@ -54,7 +54,7 @@ function renderResult(data) {
               </div>
               <div class="confirmation-item">
                 <span class="confirmation-label">Stock:</span>
-                <span>${request.stock_name} (<strong>${request.ticker}</strong>)</span>
+                <span>${escapeHtml(request.stock_name)} (<strong>${escapeHtml(request.ticker)}</strong>)</span>
               </div>
               <div class="confirmation-item">
                 <span class="confirmation-label">Action:</span>
@@ -75,7 +75,7 @@ function renderResult(data) {
               ${request.rejection_reason ? `
               <div class="alert-danger">
                 <span class="text-danger">Rejection Reason:</span>
-                <p class="mt-1 mb-0 text-danger">${request.rejection_reason}</p>
+                <p class="mt-1 mb-0 text-danger">${escapeHtml(request.rejection_reason)}</p>
               </div>` : ''}
             </div>
           </div>

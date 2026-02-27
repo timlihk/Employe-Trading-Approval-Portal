@@ -1,6 +1,8 @@
 // Template: Statement upload form page
 // Receives a plain data object, returns an HTML string
 
+const { escapeHtml } = require('../../utils/formatters');
+
 /**
  * @param {object} data
  * @param {string} data.banner - pre-rendered notification banner HTML
@@ -35,11 +37,11 @@ function renderUploadForm(data) {
             <div class="card-body">
               <dl class="upload-meta">
                 <dt>Period</dt>
-                <dd>${monthName} ${periodYear}</dd>
+                <dd>${escapeHtml(monthName)} ${escapeHtml(periodYear)}</dd>
                 <dt>Employee</dt>
-                <dd>${employeeDisplay}</dd>
+                <dd>${escapeHtml(employeeDisplay)}</dd>
                 <dt>Deadline</dt>
-                <dd>${deadlineStr}${isOverdue ? ' <span class="table-status overdue">Overdue</span>' : ''}</dd>
+                <dd>${escapeHtml(deadlineStr)}${isOverdue ? ' <span class="table-status overdue">Overdue</span>' : ''}</dd>
               </dl>
 
               <form method="post" action="/upload-statement/${token}" enctype="multipart/form-data">
