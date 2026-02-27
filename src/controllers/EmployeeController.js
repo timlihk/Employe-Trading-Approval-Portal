@@ -66,10 +66,14 @@ class EmployeeController {
       const uploadedDate = r.uploaded_at
         ? new Date(r.uploaded_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
         : '-';
+      const fileInfo = r.original_filename || '-';
+      const fileLink = r.sharepoint_file_url
+        ? `<a href="${r.sharepoint_file_url}" target="_blank" rel="noopener">${fileInfo}</a>`
+        : fileInfo;
       return `<tr>
         <td><span class="font-weight-600">${monthName} ${r.period_year}</span></td>
         <td class="text-sm">${r.brokerage_name || '-'}</td>
-        <td class="text-sm">${r.original_filename || '-'}</td>
+        <td class="text-sm">${fileLink}</td>
         <td class="table-date">${uploadedDate}</td>
         <td><span class="table-status uploaded">Uploaded</span></td>
       </tr>`;
