@@ -50,6 +50,7 @@ contentSecurityPolicy: {
 src/
 ├── app.js                              # Main server (routes, middleware, startup)
 ├── config/
+│   ├── constants.js                    # Named constants (AUTO_APPROVE, CACHE TTLs, HTTP timeouts)
 │   └── msalConfig.js                   # Azure AD OAuth configuration
 ├── controllers/
 │   ├── AdminController.js              # Admin dashboard, requests, stocks, audit
@@ -129,6 +130,7 @@ src/
 - **Sargable queries**: Use `created_at >= ($1::date AT TIME ZONE 'Asia/Hong_Kong')` instead of `DATE(created_at AT TIME ZONE ...)`
 - **BaseModel** uses `WHERE uuid = $1` for findById/update/delete
 - **database.run()** auto-appends `RETURNING uuid` to INSERTs — models using `RETURNING *` should use `query()` instead
+- **Transactions**: Use `database.withTransaction(async (client) => { ... })` for multi-step writes; model write methods accept an optional `client` parameter — always pass it inside a transaction callback to keep operations atomic
 
 ### Schema initialization
 - `database.js` constructor calls `init()` (async, not awaited) to CREATE tables, ADD columns, CREATE indexes
@@ -257,9 +259,28 @@ Error (`?error=`): `authentication_required`, `invalid_credentials`, `invalid_ti
 1. Extend `BaseModel` for table name and static methods
 2. Use `this.query()` for SELECT, `this.get()` for single row, `this.run()` for INSERT/UPDATE/DELETE
 3. If INSERT has `RETURNING *`, use `this.query()` not `this.run()` (avoids double RETURNING)
-4. Add table creation to `database.js` init()
-5. Add migration file in `/migrations/`
-6. Add to `BackupService.createSQLBackup()`
+4. Add `client = null` parameter to write methods and forward it: `this.run(sql, params, client)`
+5. Add table creation to `database.js` init()
+6. Add migration file in `/migrations/`
+7. Add to `BackupService.createSQLBackup()`
+
+### Multi-step writes (transactions)
+Wrap any service operation that touches multiple tables atomically:
+```javascript
+const database = require('../models/database');
+
+// Reads stay outside — pre-checks only, no writes
+const existing = await Model.getByTicker(ticker);
+if (existing) throw new AppError('Already exists', 409);
+
+// All writes inside the transaction
+return database.withTransaction(async (client) => {
+  const record = await Model.add(ticker, name, null, type, client);
+  await Changelog.logChange({ ticker, action: 'added', ... }, client);
+  await AuditLog.logActivity(email, 'admin', 'add_...', ..., client);
+  return record;
+});
+```
 
 ### Error handling
 ```javascript
@@ -288,6 +309,8 @@ throw new AppError('User-friendly message', 400);
 10. **SharePoint site/drive IDs** are cached in static fields — persist until server restart
 11. **Auto-approve setTimeout** — if server restarts, escalated trades stay `pending` and require manual admin approval
 12. **Section-toggle collapsible** — use `help-toggle section-toggle` class for heading-style collapsible sections (vs small helper text style)
+13. **withTransaction client propagation** — model write methods accept `client = null`; when `client` is null they use the pool directly (BaseModel passes client conditionally, so existing call sites without a client work unchanged)
+14. **INTERVAL queries** — use `make_interval(days => $N)` not `INTERVAL '${n} days'` (string interpolation prevents index use even with parseInt sanitization)
 
 ---
 
@@ -314,12 +337,12 @@ const { escapeHtml } = require('../../utils/formatters');
 
 ## Development Notes
 
-- **Version**: 3.4.1 (February 2026)
+- **Version**: 3.5.1 (February 2026)
 - **Node.js**: >=20.0.0
-- **Testing**: Jest 30 — 459 tests across 16 suites (`npm test`)
+- **Testing**: Jest 30 — 497 tests across 18 suites (`npm test`)
 - **CSS**: 16 modular files in `public/css/` → minified to `styles-modern.min.css` via `npm run css:build` (cache-busted via `?v=${APP_VERSION}`)
 - **Templates**: 23 template files in `src/templates/` (controllers reduced 52% from 3,691 to 1,778 lines)
-- **Compliance**: Full audit trail, data export, regulatory compliance
+- **Compliance**: Full audit trail, data export, regulatory compliance, atomic multi-step writes via `withTransaction()`
 - **Performance**: LRU caching, database indexes, circuit breakers, sargable queries, session-cached middleware, SharePoint ID caching
 
 **Remember**: This is a compliance-focused financial application. Security and audit requirements take precedence over convenience features. No inline JavaScript. No inline styles. Always escape user data with `escapeHtml()`.
