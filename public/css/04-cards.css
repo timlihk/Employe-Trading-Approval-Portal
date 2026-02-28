@@ -136,18 +136,6 @@
   font-size: var(--font-md);
 }
 
-/* Guide ToC buttons */
-.toc-nav-btns {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-
-.toc-nav-btn {
-  width: 100%;
-  justify-content: space-between;
-}
-
 /* FAQ section: hidden by default, revealed when toggle is checked */
 #faq {
   display: none;

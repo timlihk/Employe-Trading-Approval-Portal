@@ -19,14 +19,6 @@ class GuidesController {
   getGuides = (req, res) => {
     const title = 'Guides';
 
-    // Table of Contents
-    const tocContent = `
-      <div class="toc-nav-btns">
-        <a href="#employee-guides" class="btn btn-outline toc-nav-btn"><span>Employee Workflows</span><span class="action-arrow" aria-hidden="true">&#8250;</span></a>
-        <a href="#admin-guides" class="btn btn-outline toc-nav-btn"><span>Administrator Workflows</span><span class="action-arrow" aria-hidden="true">&#8250;</span></a>
-        <label for="faq-toggle" class="btn btn-outline toc-nav-btn"><span>Frequently Asked Questions</span><span class="action-arrow" aria-hidden="true">&#8250;</span></label>
-      </div>`;
-
     // ── Employee Guides ──
     const employeeContent = `
       ${collapsible('emp-trade', 'Submitting a Trading Request', `
@@ -165,8 +157,6 @@ class GuidesController {
     // Assemble page
     const content = `
       <input type="checkbox" id="faq-toggle" class="help-checkbox">
-
-      ${renderCard('User Guide', tocContent, 'Quick navigation to guide sections')}
 
       <div id="employee-guides">
         ${renderCard('Employee Workflows', employeeContent, 'Step-by-step guides for employees')}
