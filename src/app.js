@@ -227,12 +227,12 @@ if (process.env.NODE_ENV === 'production') {
 // Fallback to memory store only as emergency measure (with loud warnings)
 // Use SESSION_STORE_NO_FALLBACK=true to fail-fast in strict production environments
 
-function initSessionStoreSync() {
+async function initSessionStore() {
   let sessionStore = undefined;
-  
+
   if (process.env.NODE_ENV === 'production' && process.env.DATABASE_URL) {
     const PgSession = pgSessionFactory(session);
-    
+
     // Test database connectivity first with retries
     const maxRetries = 3;
     const retryDelays = [1000, 2000, 4000]; // 1s, 2s, 4s
@@ -257,11 +257,7 @@ function initSessionStoreSync() {
         });
         
         if (attempt < maxRetries - 1) {
-          // Simple blocking wait (not ideal but necessary for sync init)
-          const start = Date.now();
-          while (Date.now() - start < retryDelays[attempt]) {
-            // Blocking wait
-          }
+          await new Promise(resolve => setTimeout(resolve, retryDelays[attempt]));
         }
       }
     }
@@ -310,23 +306,23 @@ function initSessionStoreSync() {
   return sessionStore;
 }
 
-// Initialize session store synchronously before app configuration
-logger.info('🔄 Initializing session store...');
-const sessionStore = initSessionStoreSync();
-
-app.use(session({
+// Session middleware uses a mutable reference so the store can be swapped to
+// PostgreSQL asynchronously in startServerWithMigrations() before app.listen().
+// Starts as in-memory (works for tests and dev; no blocking required).
+const SESSION_COOKIE = {
+  secure: process.env.NODE_ENV === 'production',
+  httpOnly: true,
+  maxAge: 24 * 60 * 60 * 1000,
+  sameSite: 'lax'
+};
+let _sessionFn = session({
   secret: process.env.SESSION_SECRET,
   resave: false,
   saveUninitialized: false,
-  store: sessionStore,
-  cookie: {
-    secure: process.env.NODE_ENV === 'production',
-    httpOnly: true,
-    maxAge: 24 * 60 * 60 * 1000,
-    sameSite: 'lax'
-  },
+  cookie: SESSION_COOKIE,
   proxy: true
-}));
+});
+app.use((req, res, next) => _sessionFn(req, res, next));
 
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
@@ -756,6 +752,22 @@ const PORT = process.env.PORT || 3001;
 
 // Run migrations on startup (production only to avoid local issues)
 async function startServerWithMigrations() {
+  // Upgrade session store to PostgreSQL before accepting connections.
+  // app.listen() is called at the end of this function, so no requests arrive
+  // before _sessionFn is swapped — the in-memory fallback is only used in tests.
+  logger.info('🔄 Initializing session store...');
+  const sessionStore = await initSessionStore();
+  if (sessionStore) {
+    _sessionFn = session({
+      secret: process.env.SESSION_SECRET,
+      resave: false,
+      saveUninitialized: false,
+      store: sessionStore,
+      cookie: SESSION_COOKIE,
+      proxy: true
+    });
+  }
+
   if (process.env.NODE_ENV === 'production' && process.env.DATABASE_URL) {
     try {
       const { runMigrations } = require('../run-migrations');

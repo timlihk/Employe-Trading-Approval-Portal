@@ -9,6 +9,9 @@ const { catchAsync } = require('../middleware/errorHandler');
 const { renderAdminPage, generateNotificationBanner } = require('../utils/templates');
 const { getDisplayId } = require('../utils/formatters');
 const { formatHongKongTime } = require('../templates/shared/formatters');
+const { logger } = require('../utils/logger');
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 // Template imports
 const { dashboardTemplate } = require('../templates/admin/dashboard');
@@ -77,6 +80,9 @@ class AdminController {
    */
   approveRequest = catchAsync(async (req, res) => {
     const requestUuid = req.body.requestId || req.params.id; // Now UUID
+    if (!UUID_REGEX.test(requestUuid)) {
+      return res.redirect('/admin-requests?error=invalid_request');
+    }
     const adminEmail = req.session.admin.username;
     const ipAddress = req.ip;
 
@@ -90,6 +96,9 @@ class AdminController {
    */
   rejectRequest = catchAsync(async (req, res) => {
     const requestUuid = req.body.requestId || req.params.id; // Now UUID
+    if (!UUID_REGEX.test(requestUuid)) {
+      return res.redirect('/admin-requests?error=invalid_request');
+    }
     const { rejection_reason } = req.body;
     const adminEmail = req.session.admin.username;
     const ipAddress = req.ip;
@@ -176,6 +185,9 @@ class AdminController {
    */
   getRejectForm = catchAsync(async (req, res) => {
     const requestUuid = req.params.requestId; // Now UUID
+    if (!UUID_REGEX.test(requestUuid)) {
+      return res.redirect('/admin-requests?error=invalid_request');
+    }
 
     // Get the request details
     const request = await TradingRequest.getByUuid(requestUuid);
