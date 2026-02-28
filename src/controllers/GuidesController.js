@@ -21,11 +21,11 @@ class GuidesController {
 
     // Table of Contents
     const tocContent = `
-      <ul class="action-list">
-        <li><a href="#employee-guides" class="action-item"><span>Employee Workflows</span><span class="action-arrow" aria-hidden="true">&#8250;</span></a></li>
-        <li><a href="#admin-guides" class="action-item"><span>Administrator Workflows</span><span class="action-arrow" aria-hidden="true">&#8250;</span></a></li>
-        <li><a href="#faq" class="action-item"><span>Frequently Asked Questions</span><span class="action-arrow" aria-hidden="true">&#8250;</span></a></li>
-      </ul>`;
+      <div class="toc-nav-btns">
+        <a href="#employee-guides" class="btn btn-outline toc-nav-btn"><span>Employee Workflows</span><span class="action-arrow" aria-hidden="true">&#8250;</span></a>
+        <a href="#admin-guides" class="btn btn-outline toc-nav-btn"><span>Administrator Workflows</span><span class="action-arrow" aria-hidden="true">&#8250;</span></a>
+        <label for="faq-toggle" class="btn btn-outline toc-nav-btn"><span>Frequently Asked Questions</span><span class="action-arrow" aria-hidden="true">&#8250;</span></label>
+      </div>`;
 
     // ── Employee Guides ──
     const employeeContent = `
@@ -164,6 +164,8 @@ class GuidesController {
 
     // Assemble page
     const content = `
+      <input type="checkbox" id="faq-toggle" class="help-checkbox">
+
       ${renderCard('User Guide', tocContent, 'Quick navigation to guide sections')}
 
       <div id="employee-guides">
