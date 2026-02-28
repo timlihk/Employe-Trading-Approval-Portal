@@ -10,9 +10,10 @@ const { AppError } = require('../middleware/errorHandler');
 const { logger } = require('../utils/logger');
 const { SimpleCache } = require('../utils/simpleCache');
 const { CircuitBreaker, callWithResilience } = require('../utils/retryBreaker');
+const { AUTO_APPROVE, CACHE } = require('../config/constants');
 
 // Initialize ticker validation cache and circuit breaker
-const tickerCache = new SimpleCache(5 * 60 * 1000); // 5 minutes TTL
+const tickerCache = new SimpleCache(CACHE.TICKER_TTL_MS);
 const tickerCircuitBreaker = new CircuitBreaker({
   failureThreshold: 3,
   cooldownMs: 30000 // 30 seconds
@@ -443,8 +444,8 @@ class TradingRequestService {
       if (statusResult.autoEscalate && database.getPool()) {
         await TradingRequest.escalate(request.uuid, statusResult.escalationReason);
 
-        // Schedule auto-approve after random 30-60 minutes
-        const delayMinutes = 30 + Math.floor(Math.random() * 30);
+        // Schedule auto-approve after random delay within compliance window
+        const delayMinutes = AUTO_APPROVE.MIN_MINUTES + Math.floor(Math.random() * AUTO_APPROVE.RANGE_MINUTES);
         const delayMs = delayMinutes * 60 * 1000;
         const requestUuid = request.uuid;
         const email = employeeEmail;

@@ -5,24 +5,27 @@ class BaseModel {
     throw new Error('tableName must be defined by subclass');
   }
 
-  static query(sql, params = []) {
-    if (!database.getPool()) {
+  static query(sql, params = [], client = null) {
+    if (!client && !database.getPool()) {
       return Promise.resolve([]);
     }
+    if (client) return database.query(sql, params, client);
     return database.query(sql, params);
   }
 
-  static get(sql, params = []) {
-    if (!database.getPool()) {
+  static get(sql, params = [], client = null) {
+    if (!client && !database.getPool()) {
       return Promise.resolve(null);
     }
+    if (client) return database.get(sql, params, client);
     return database.get(sql, params);
   }
 
-  static run(sql, params = []) {
-    if (!database.getPool()) {
-      return Promise.resolve({ lastID: null, changes: 0 });
+  static run(sql, params = [], client = null) {
+    if (!client && !database.getPool()) {
+      return Promise.resolve({ uuid: null, changes: 0 });
     }
+    if (client) return database.run(sql, params, client);
     return database.run(sql, params);
   }
 
@@ -82,7 +85,7 @@ class BaseModel {
     });
   }
 
-  static create(data) {
+  static create(data, client = null) {
     return new Promise((resolve, reject) => {
       const keys = Object.keys(data);
       const values = Object.values(data);
@@ -93,8 +96,8 @@ class BaseModel {
         VALUES (${placeholders.join(', ')})
       `;
 
-      this.run(query, values).then(result => {
-        resolve({ id: result.lastID, ...data });
+      this.run(query, values, client).then(result => {
+        resolve({ uuid: result.uuid, ...data });
       }).catch(reject);
     });
   }

@@ -5,6 +5,7 @@ const { catchAsync } = require('../middleware/errorHandler');
 const { renderEmployeePage } = require('../utils/templates');
 const renderPreview = require('../templates/trading/preview');
 const renderResult = require('../templates/trading/result');
+const { logger } = require('../utils/logger');
 
 class TradingRequestController {
   /**
@@ -136,7 +137,7 @@ class TradingRequestController {
       const html = renderEmployeePage('Trading Request Result', resultContent, req.session.employee.name, req.session.employee.email);
       res.send(html);
     } catch (error) {
-      console.error('Error in showTradeResult:', error);
+      logger.error('Error in showTradeResult', { error: error.message });
       return res.redirect(`/employee-history?error=${encodeURIComponent('Unable to load trade result')}`);
     }
   });

@@ -5,7 +5,6 @@ class MockDatabase {
   constructor() {
     this.pool = null;
     this.query = jest.fn().mockImplementation(async (sql, params) => {
-      console.log('[mock] database.query called with:', { sql, params });
       return [];
     });
     this.run = jest.fn().mockResolvedValue({ uuid: null, changes: 0 });
@@ -14,6 +13,13 @@ class MockDatabase {
     this.poolStats = jest.fn().mockReturnValue({ total: 0, idle: 0, waiting: 0 });
     this.close = jest.fn().mockResolvedValue();
     this.init = jest.fn().mockResolvedValue();
+    this.withTransaction = jest.fn().mockImplementation(async (callback) => {
+      // Simulate transaction: run callback with a mock client; re-throw on error (rollback)
+      const mockClient = {
+        query: jest.fn().mockResolvedValue({ rows: [], rowCount: 0 })
+      };
+      return callback(mockClient);
+    });
   }
 }
 

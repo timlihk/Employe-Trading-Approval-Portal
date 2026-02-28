@@ -7,6 +7,7 @@ try {
   fetch = globalThis.fetch || require('node-fetch');
 }
 const retryBreaker = require('../utils/retryBreaker');
+const { logger } = require('../utils/logger');
 
 class ISINService {
   constructor() {
@@ -135,7 +136,7 @@ class ISINService {
       return result;
       
     } catch (error) {
-      console.error('Error validating ISIN:', error);
+      logger.error('Error validating ISIN', { error: error.message });
       return {
         valid: false,
         error: 'Unable to validate ISIN at this time',
@@ -174,7 +175,7 @@ class ISINService {
       };
       
     } catch (error) {
-      console.error('Error fetching bond info:', error);
+      logger.error('Error fetching bond info', { error: error.message });
       return bondInfo;
     }
   }
@@ -210,7 +211,7 @@ class ISINService {
         }
       }
     } catch (error) {
-      console.log('OpenFIGI API not available:', error.message);
+      logger.warn('OpenFIGI API not available', { error: error.message });
     }
     
     return null;

@@ -1,10 +1,11 @@
 const { Pool } = require('pg');
 const { metrics } = require('../utils/metrics');
+const { logger } = require('../utils/logger');
 
 class Database {
   constructor() {
     if (process.env.DATABASE_URL) {
-      console.log('🐘 Using PostgreSQL database');
+      logger.info('🐘 Using PostgreSQL database');
       this.pool = new Pool({
         connectionString: process.env.DATABASE_URL,
         ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
@@ -16,12 +17,12 @@ class Database {
         allowExitOnIdle: false
       });
       this.pool.on('error', (err) => {
-        console.error('Unexpected pool error:', err.message);
+        logger.error('Unexpected pool error', { error: err.message });
         metrics.database.connectionErrors = (metrics.database.connectionErrors || 0) + 1;
       });
     } else {
-      console.log('⚠️  No DATABASE_URL found - PostgreSQL not available');
-      console.log('📱 This might be expected during Railway initial deployment');
+      logger.warn('⚠️  No DATABASE_URL found - PostgreSQL not available');
+      logger.info('📱 This might be expected during Railway initial deployment');
       // For now, we'll use a minimal fallback that doesn't crash the app
       this.pool = null;
     }
@@ -32,16 +33,16 @@ class Database {
 
   async init() {
     if (!this.pool) {
-      console.log('⚠️  Skipping database initialization - no PostgreSQL connection available');
+      logger.warn('⚠️  Skipping database initialization - no PostgreSQL connection available');
       return;
     }
-    
+
     try {
-      console.log('🔄 Initializing PostgreSQL database schema...');
+      logger.info('🔄 Initializing PostgreSQL database schema...');
       
       // Enable UUID extension
       await this.pool.query(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`);
-      console.log('✅ UUID extension enabled');
+      logger.info('✅ UUID extension enabled');
       
       // Create tables for PostgreSQL (using TIMESTAMPTZ for proper timezone handling)
       await this.pool.query(`
@@ -168,7 +169,7 @@ class Database {
 
       // Drop unused compliance_settings table if it exists
       await this.pool.query('DROP TABLE IF EXISTS compliance_settings');
-      console.log('🗑️  Removed unused compliance_settings table');
+      logger.info('🗑️  Removed unused compliance_settings table');
 
       // Add instrument_type column for bond support
       await this.pool.query(`
@@ -219,7 +220,7 @@ class Database {
       for (const sql of timestampUpgrades) {
         try { await this.pool.query(sql); } catch (e) { /* already TIMESTAMPTZ */ }
       }
-      console.log('✅ TIMESTAMP columns upgraded to TIMESTAMPTZ');
+      logger.info('✅ TIMESTAMP columns upgraded to TIMESTAMPTZ');
 
       // Create indexes for performance
       await this.pool.query('CREATE INDEX IF NOT EXISTS idx_trading_requests_instrument_type ON trading_requests(instrument_type)');
@@ -247,24 +248,25 @@ class Database {
 
       await this.pool.query('CREATE INDEX IF NOT EXISTS idx_brokerage_accounts_employee_email ON brokerage_accounts(employee_email)');
 
-      console.log('✅ PostgreSQL database initialized with indexes and TIMESTAMPTZ support');
+      logger.info('✅ PostgreSQL database initialized with indexes and TIMESTAMPTZ support');
     } catch (error) {
-      console.error('❌ Error initializing PostgreSQL database:', error);
-      console.error('This might be a temporary issue during Railway deployment');
+      logger.error('❌ Error initializing PostgreSQL database', { error: error.message });
+      logger.warn('This might be a temporary issue during Railway deployment');
       // Don't throw the error to prevent app crash during deployment
       // Railway will retry the healthcheck
     }
   }
 
-  // Direct PostgreSQL query method
-  async query(sql, params = []) {
-    if (!this.pool) {
+  // Direct PostgreSQL query method; pass a transaction client to run within a transaction
+  async query(sql, params = [], client = null) {
+    const executor = client || this.pool;
+    if (!executor) {
       throw new Error('Database not available - PostgreSQL connection not established');
     }
     metrics.database.queryCount++;
     const startTime = Date.now();
     try {
-      const result = await this.pool.query(sql, params);
+      const result = await executor.query(sql, params);
       const duration = Date.now() - startTime;
       if (duration > 1000) { // Slow query threshold: 1 second
         metrics.database.slowQueryCount++;
@@ -276,9 +278,10 @@ class Database {
     }
   }
 
-  // PostgreSQL run method for INSERT/UPDATE/DELETE
-  async run(sql, params = []) {
-    if (!this.pool) {
+  // PostgreSQL run method for INSERT/UPDATE/DELETE; pass a transaction client to run within a transaction
+  async run(sql, params = [], client = null) {
+    const executor = client || this.pool;
+    if (!executor) {
       throw new Error('Database not available - PostgreSQL connection not established');
     }
     metrics.database.queryCount++;
@@ -288,7 +291,7 @@ class Database {
       if (sql.toLowerCase().includes('insert')) {
         sql += ' RETURNING uuid';
       }
-      const result = await this.pool.query(sql, params);
+      const result = await executor.query(sql, params);
       const duration = Date.now() - startTime;
       if (duration > 1000) { // Slow query threshold: 1 second
         metrics.database.slowQueryCount++;
@@ -304,15 +307,16 @@ class Database {
     }
   }
 
-  // PostgreSQL get method for single row
-  async get(sql, params = []) {
-    if (!this.pool) {
+  // PostgreSQL get method for single row; pass a transaction client to run within a transaction
+  async get(sql, params = [], client = null) {
+    const executor = client || this.pool;
+    if (!executor) {
       throw new Error('Database not available - PostgreSQL connection not established');
     }
     metrics.database.queryCount++;
     const startTime = Date.now();
     try {
-      const result = await this.pool.query(sql, params);
+      const result = await executor.query(sql, params);
       const duration = Date.now() - startTime;
       if (duration > 1000) { // Slow query threshold: 1 second
         metrics.database.slowQueryCount++;
@@ -321,6 +325,25 @@ class Database {
     } catch (error) {
       metrics.database.errorCount++;
       throw error;
+    }
+  }
+
+  // Run multiple operations atomically; callback receives a pg client for all queries
+  async withTransaction(callback) {
+    if (!this.pool) {
+      throw new Error('Database not available - PostgreSQL connection not established');
+    }
+    const client = await this.pool.connect();
+    try {
+      await client.query('BEGIN');
+      const result = await callback(client);
+      await client.query('COMMIT');
+      return result;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally {
+      client.release();
     }
   }
 

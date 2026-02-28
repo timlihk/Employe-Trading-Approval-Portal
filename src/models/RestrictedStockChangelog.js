@@ -5,7 +5,7 @@ class RestrictedStockChangelog extends BaseModel {
   static get tableName() {
     return 'restricted_stock_changelog';
   }
-  static logChange(changeData) {
+  static logChange(changeData, client = null) {
     return new Promise((resolve, reject) => {
       const {
         ticker,
@@ -35,7 +35,7 @@ class RestrictedStockChangelog extends BaseModel {
         ip_address, user_agent, session_id, instrument_type
       ];
       
-      this.query(sql, params).then(result => {
+      this.query(sql, params, client).then(result => {
         const insertedRow = Array.isArray(result) ? result[0] : result.rows?.[0];
         resolve({ uuid: insertedRow?.uuid || uuid, ...changeData });
       }).catch(reject);

@@ -1,5 +1,6 @@
 const BaseModel = require('./BaseModel');
 const { v4: uuidv4 } = require('uuid');
+const { logger } = require('../utils/logger');
 
 class TradingRequest extends BaseModel {
   static get tableName() {
@@ -72,7 +73,7 @@ class TradingRequest extends BaseModel {
       };
 
     } catch (error) {
-      console.error('TradingRequest.create error:', {
+      logger.error('TradingRequest.create error', {
         message: error.message,
         params: params?.length,
         sqlLength: sql?.length
@@ -81,15 +82,15 @@ class TradingRequest extends BaseModel {
     }
   }
 
-  static updateStatus(uuid, status, rejection_reason = null) {
+  static updateStatus(uuid, status, rejection_reason = null, client = null) {
     return new Promise((resolve, reject) => {
       const sql = `
-        UPDATE trading_requests 
+        UPDATE trading_requests
         SET status = $1, rejection_reason = $2, processed_at = CURRENT_TIMESTAMP
         WHERE uuid = $3
       `;
-      
-      this.run(sql, [status, rejection_reason, uuid]).then(result => {
+
+      this.run(sql, [status, rejection_reason, uuid], client).then(result => {
         resolve({ changes: result.changes });
       }).catch(err => {
         reject(err);
@@ -120,10 +121,10 @@ class TradingRequest extends BaseModel {
         AND ticker = $2
         AND trading_type = $3
         AND status = 'approved'
-        AND created_at >= NOW() - INTERVAL '${parseInt(days)} days'
+        AND created_at >= NOW() - make_interval(days => $4)
       ORDER BY created_at DESC
     `;
-    return this.query(sql, [employeeEmail.toLowerCase(), ticker.toUpperCase(), oppositeType]);
+    return this.query(sql, [employeeEmail.toLowerCase(), ticker.toUpperCase(), oppositeType, parseInt(days)]);
   }
 
   /**

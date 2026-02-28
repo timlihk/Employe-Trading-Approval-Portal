@@ -5,10 +5,10 @@ class AuditLog extends BaseModel {
   static get tableName() {
     return 'audit_logs';
   }
-  static logActivity(userEmail, userType, action, targetType, targetId = null, details = null, ipAddress = null, userAgent = null, sessionId = null) {
+  static logActivity(userEmail, userType, action, targetType, targetId = null, details = null, ipAddress = null, userAgent = null, sessionId = null, client = null) {
     return new Promise((resolve, reject) => {
       const uuid = uuidv4();
-      
+
       const sql = `
         INSERT INTO audit_logs (
           uuid, user_email, user_type, action, target_type, target_id,
@@ -17,7 +17,7 @@ class AuditLog extends BaseModel {
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
         RETURNING uuid
       `;
-      
+
       const params = [
         uuid,
         userEmail.toLowerCase(),
@@ -30,8 +30,8 @@ class AuditLog extends BaseModel {
         userAgent,
         sessionId
       ];
-      
-      this.query(sql, params).then(result => {
+
+      this.query(sql, params, client).then(result => {
         const insertedRow = Array.isArray(result) ? result[0] : result.rows?.[0];
         resolve(insertedRow?.uuid || uuid);
       }).catch(reject);

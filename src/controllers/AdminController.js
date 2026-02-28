@@ -162,7 +162,7 @@ class AdminController {
 
     // Handle database errors gracefully
     if (!result || !result.data) {
-      console.error('AdminController.getRequests: Database returned no data', { result, filters });
+      logger.error('AdminController.getRequests: Database returned no data', { result, filters });
       throw new Error('Unable to fetch trading requests - database returned no data');
     }
 
@@ -254,7 +254,7 @@ class AdminController {
           }
         } catch (error) {
           // Keep original name if ISIN lookup fails
-          console.error('Error looking up ISIN', { ticker: stock.ticker, error: error.message });
+          logger.error('Error looking up ISIN', { ticker: stock.ticker, error: error.message });
         }
       }
     }
@@ -277,7 +277,7 @@ class AdminController {
           }
         } catch (error) {
           // Keep original name if ISIN lookup fails
-          console.error('Error looking up ISIN in changelog', { ticker: change.ticker, error: error.message });
+          logger.error('Error looking up ISIN in changelog', { ticker: change.ticker, error: error.message });
         }
       }
     }
@@ -333,7 +333,7 @@ csvContent += `"${sanitizeCsv(getDisplayId(request))}","${sanitizeCsv(createdDat
       res.send(csvContent);
 
     } catch (error) {
-      console.error('Export error:', error);
+      logger.error('Export error', { error: error.message });
       res.status(500).json({
         error: 'Failed to export trading requests',
         details: error.message
@@ -389,7 +389,7 @@ csvContent += `"${sanitizeCsv(getDisplayId(request))}","${sanitizeCsv(createdDat
       } catch (error) {
         // Session table might not exist or might be different structure
         backupData.active_sessions = [];
-        console.log('Session data not included in backup:', error.message);
+        logger.warn('Session data not included in backup', { error: error.message });
       }
 
       // Get database statistics for verification
@@ -418,7 +418,7 @@ csvContent += `"${sanitizeCsv(getDisplayId(request))}","${sanitizeCsv(createdDat
         backupData.statistics = stats;
       } catch (error) {
         backupData.statistics = [];
-        console.log('Statistics not included in backup:', error.message);
+        logger.warn('Statistics not included in backup', { error: error.message });
       }
 
       // Generate comprehensive JSON backup file
@@ -436,7 +436,7 @@ csvContent += `"${sanitizeCsv(getDisplayId(request))}","${sanitizeCsv(createdDat
         req.ip
       );
 
-      console.log('✅ Database backup created successfully', {
+      logger.info('Database backup created successfully', {
         filename,
         admin: req.session.admin.username,
         tables: Object.keys(backupData).filter(key => key !== 'metadata'),
@@ -448,7 +448,7 @@ csvContent += `"${sanitizeCsv(getDisplayId(request))}","${sanitizeCsv(createdDat
       res.send(jsonContent);
 
     } catch (error) {
-      console.error('❌ Database backup error:', error);
+      logger.error('Database backup error', { error: error.message });
 
       // Log the failed backup attempt
       try {
@@ -462,7 +462,7 @@ csvContent += `"${sanitizeCsv(getDisplayId(request))}","${sanitizeCsv(createdDat
           req.ip
         );
       } catch (logError) {
-        console.error('Failed to log backup error:', logError);
+        logger.error('Failed to log backup error', { error: logError.message });
       }
 
       res.status(500).json({
@@ -491,7 +491,7 @@ csvContent += `"${sanitizeCsv(getDisplayId(request))}","${sanitizeCsv(createdDat
         req.ip
       );
 
-      console.log('✅ SQL database backup created successfully', {
+      logger.info('SQL database backup created successfully', {
         filename: backup.filename,
         admin: req.session.admin.username,
         size: `${Math.round(backup.content.length / 1024)} KB`
@@ -503,7 +503,7 @@ csvContent += `"${sanitizeCsv(getDisplayId(request))}","${sanitizeCsv(createdDat
       res.send(backup.content);
 
     } catch (error) {
-      console.error('❌ SQL database backup error:', error);
+      logger.error('SQL database backup error', { error: error.message });
 
       await AuditLog.logActivity(
         req.session.admin.username,
@@ -561,7 +561,7 @@ csvContent += `"${sanitizeCsv(getDisplayId(request))}","${sanitizeCsv(createdDat
       res.redirect('/admin-backup-list?message=backup_stored');
 
     } catch (error) {
-      console.error('❌ Store backup error:', error);
+      logger.error('Store backup error', { error: error.message });
 
       await AuditLog.logActivity(
         req.session.admin.username,
@@ -682,7 +682,7 @@ csvContent += `"${sanitizeCsv(getDisplayId(request))}","${sanitizeCsv(createdDat
       res.send(content);
 
     } catch (error) {
-      console.error('Download backup error:', error);
+      logger.error('Download backup error', { error: error.message });
       res.status(404).send('Backup file not found');
     }
   });
@@ -733,17 +733,19 @@ csvContent += `"${sanitizeCsv(getDisplayId(request))}","${sanitizeCsv(createdDat
    */
   clearDatabase = catchAsync(async (req, res) => {
     try {
-      // Clear all data from all tables
-      await database.query('DELETE FROM audit_logs');
-      await database.query('DELETE FROM restricted_stock_changelog');
-      await database.query('DELETE FROM trading_requests');
-      await database.query('DELETE FROM restricted_stocks');
+      // Clear all data from all tables — atomic
+      await database.withTransaction(async (client) => {
+        await client.query('DELETE FROM audit_logs');
+        await client.query('DELETE FROM restricted_stock_changelog');
+        await client.query('DELETE FROM trading_requests');
+        await client.query('DELETE FROM restricted_stocks');
+      });
 
-      // Reset sequences to start from 1
-      await database.query('ALTER SEQUENCE audit_logs_id_seq RESTART WITH 1');
-      await database.query('ALTER SEQUENCE restricted_stock_changelog_id_seq RESTART WITH 1');
-      await database.query('ALTER SEQUENCE trading_requests_id_seq RESTART WITH 1');
-      await database.query('ALTER SEQUENCE restricted_stocks_id_seq RESTART WITH 1');
+      // Reset sequences (DDL auto-commits, runs outside transaction)
+      try { await database.query('ALTER SEQUENCE audit_logs_id_seq RESTART WITH 1'); } catch (_e) { /* no sequence */ }
+      try { await database.query('ALTER SEQUENCE restricted_stock_changelog_id_seq RESTART WITH 1'); } catch (_e) { /* no sequence */ }
+      try { await database.query('ALTER SEQUENCE trading_requests_id_seq RESTART WITH 1'); } catch (_e) { /* no sequence */ }
+      try { await database.query('ALTER SEQUENCE restricted_stocks_id_seq RESTART WITH 1'); } catch (_e) { /* no sequence */ }
 
       // Log this critical action
       await AuditLog.logActivity(
@@ -759,7 +761,7 @@ csvContent += `"${sanitizeCsv(getDisplayId(request))}","${sanitizeCsv(createdDat
       res.redirect('/admin-dashboard?message=database_cleared');
 
     } catch (error) {
-      console.error('Database clear error:', error);
+      logger.error('Database clear error', { error: error.message });
       res.status(500).json({
         error: 'Failed to clear database',
         details: error.message
@@ -815,7 +817,7 @@ csvContent += `"${sanitizeCsv(createdDate)}","${sanitizeCsv(createdTime)}","${sa
       res.send(csvContent);
 
     } catch (error) {
-      console.error('Audit log export error:', error);
+      logger.error('Audit log export error', { error: error.message });
       res.status(500).json({
         error: 'Failed to export audit log',
         details: error.message

@@ -188,14 +188,15 @@ describe('AdminService', () => {
         id: 1
       });
       expect(RestrictedStock.getByTicker).toHaveBeenCalledWith('aapl');
-      expect(RestrictedStock.add).toHaveBeenCalledWith('AAPL', 'Apple Inc.', null, 'equity');
+      expect(RestrictedStock.add).toHaveBeenCalledWith('AAPL', 'Apple Inc.', null, 'equity', expect.anything());
       expect(RestrictedStockChangelog.logChange).toHaveBeenCalledWith(
         expect.objectContaining({
           ticker: 'AAPL',
           action: 'added',
           admin_email: adminEmail,
           instrument_type: 'equity'
-        })
+        }),
+        expect.anything()
       );
       expect(AuditLog.logActivity).toHaveBeenCalledWith(
         adminEmail,
@@ -204,7 +205,10 @@ describe('AdminService', () => {
         'restricted_stock',
         'stock-uuid-123',
         expect.stringContaining('Added AAPL'),
-        ipAddress
+        ipAddress,
+        null,
+        null,
+        expect.anything()
       );
     });
 
@@ -250,7 +254,8 @@ describe('AdminService', () => {
         'US1234567890',
         'US Treasury',
         null,
-        'bond'
+        'bond',
+        expect.anything()
       );
     });
 
@@ -312,14 +317,15 @@ describe('AdminService', () => {
       const result = await adminService.removeRestrictedStock('AAPL', adminEmail, ipAddress);
 
       expect(result).toBe(true);
-      expect(RestrictedStock.remove).toHaveBeenCalledWith('AAPL');
+      expect(RestrictedStock.remove).toHaveBeenCalledWith('AAPL', expect.anything());
       expect(RestrictedStockChangelog.logChange).toHaveBeenCalledWith(
         expect.objectContaining({
           ticker: 'AAPL',
           action: 'removed',
           admin_email: adminEmail,
           instrument_type: 'equity'
-        })
+        }),
+        expect.anything()
       );
       expect(AuditLog.logActivity).toHaveBeenCalledWith(
         adminEmail,
@@ -328,7 +334,10 @@ describe('AdminService', () => {
         'restricted_stock',
         'stock-uuid-123',
         expect.stringContaining('Removed AAPL'),
-        ipAddress
+        ipAddress,
+        null,
+        null,
+        expect.anything()
       );
     });
 
@@ -394,7 +403,8 @@ describe('AdminService', () => {
       expect(RestrictedStockChangelog.logChange).toHaveBeenCalledWith(
         expect.objectContaining({
           instrument_type: 'equity'
-        })
+        }),
+        expect.anything()
       );
     });
   });
@@ -422,7 +432,7 @@ describe('AdminService', () => {
       const result = await adminService.approveRequest(requestUuid, adminEmail, ipAddress);
 
       expect(result).toBe(true);
-      expect(TradingRequest.updateStatus).toHaveBeenCalledWith(requestUuid, 'approved');
+      expect(TradingRequest.updateStatus).toHaveBeenCalledWith(requestUuid, 'approved', null, expect.anything());
       expect(AuditLog.logActivity).toHaveBeenCalledWith(
         adminEmail,
         'admin',
@@ -430,7 +440,10 @@ describe('AdminService', () => {
         'trading_request',
         requestUuid,
         expect.stringContaining('Approved buy request for 100 shares of AAPL'),
-        ipAddress
+        ipAddress,
+        null,
+        null,
+        expect.anything()
       );
     });
 
@@ -511,7 +524,7 @@ describe('AdminService', () => {
       const result = await adminService.rejectRequest(requestUuid, reason, adminEmail, ipAddress);
 
       expect(result).toBe(true);
-      expect(TradingRequest.updateStatus).toHaveBeenCalledWith(requestUuid, 'rejected', reason);
+      expect(TradingRequest.updateStatus).toHaveBeenCalledWith(requestUuid, 'rejected', reason, expect.anything());
       expect(AuditLog.logActivity).toHaveBeenCalledWith(
         adminEmail,
         'admin',
@@ -519,7 +532,10 @@ describe('AdminService', () => {
         'trading_request',
         requestUuid,
         expect.stringContaining('Reason: Compliance violation'),
-        ipAddress
+        ipAddress,
+        null,
+        null,
+        expect.anything()
       );
     });
 
@@ -542,7 +558,8 @@ describe('AdminService', () => {
       expect(TradingRequest.updateStatus).toHaveBeenCalledWith(
         requestUuid,
         'rejected',
-        'Administrative decision - Request rejected after review'
+        'Administrative decision - Request rejected after review',
+        expect.anything()
       );
     });
 
@@ -564,7 +581,8 @@ describe('AdminService', () => {
       expect(TradingRequest.updateStatus).toHaveBeenCalledWith(
         requestUuid,
         'rejected',
-        null
+        null,
+        expect.anything()
       );
     });
 

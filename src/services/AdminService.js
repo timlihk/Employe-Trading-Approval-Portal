@@ -2,6 +2,7 @@ const RestrictedStock = require('../models/RestrictedStock');
 const RestrictedStockChangelog = require('../models/RestrictedStockChangelog');
 const TradingRequest = require('../models/TradingRequest');
 const AuditLog = require('../models/AuditLog');
+const database = require('../models/database');
 const { AppError } = require('../middleware/errorHandler');
 const { logger } = require('../utils/logger');
 const bcrypt = require('bcryptjs');
@@ -130,30 +131,35 @@ class AdminService {
       const instrumentType = ISINServiceClass.detectISIN(ticker) ? 'bond' : 'equity';
       logger.info('Determined instrument type', { ticker, instrumentType });
 
-      // Add stock to restricted list
-      const stock = await RestrictedStock.add(ticker.toUpperCase(), companyName, null, instrumentType);
+      // Write: add stock, changelog, audit log — all atomic
+      const stock = await database.withTransaction(async (client) => {
+        const newStock = await RestrictedStock.add(ticker.toUpperCase(), companyName, null, instrumentType, client);
 
-      // Log the change in changelog
-      await RestrictedStockChangelog.logChange({
-        ticker: ticker.toUpperCase(),
-        company_name: companyName,
-        action: 'added',
-        admin_email: adminEmail,
-        reason: 'Added via admin panel',
-        ip_address: ipAddress,
-        instrument_type: instrumentType
+        await RestrictedStockChangelog.logChange({
+          ticker: ticker.toUpperCase(),
+          company_name: companyName,
+          action: 'added',
+          admin_email: adminEmail,
+          reason: 'Added via admin panel',
+          ip_address: ipAddress,
+          instrument_type: instrumentType
+        }, client);
+
+        await AuditLog.logActivity(
+          adminEmail,
+          'admin',
+          'add_restricted_stock',
+          'restricted_stock',
+          newStock.uuid,
+          `Added ${ticker.toUpperCase()} (${companyName}) to restricted list`,
+          ipAddress,
+          null,
+          null,
+          client
+        );
+
+        return newStock;
       });
-
-      // Log in audit log
-      await AuditLog.logActivity(
-        adminEmail,
-        'admin',
-        'add_restricted_stock',
-        'restricted_stock',
-        stock.uuid,
-        `Added ${ticker.toUpperCase()} (${companyName}) to restricted list`,
-        ipAddress
-      );
 
       logger.info('Restricted stock added', {
         ticker: ticker.toUpperCase(),
@@ -193,34 +199,37 @@ class AdminService {
         throw new AppError(`${ticker.toUpperCase()} is not in the restricted stocks list`, 404);
       }
 
-      // Remove stock
-      const result = await RestrictedStock.remove(ticker.toUpperCase());
+      // Write: remove stock, changelog, audit log — all atomic
+      await database.withTransaction(async (client) => {
+        const result = await RestrictedStock.remove(ticker.toUpperCase(), client);
 
-      if (result.changes === 0) {
-        throw new AppError('Stock not found or already removed', 404);
-      }
+        if (result.changes === 0) {
+          throw new AppError('Stock not found or already removed', 404);
+        }
 
-      // Log the change in changelog
-      await RestrictedStockChangelog.logChange({
-        ticker: ticker.toUpperCase(),
-        company_name: existingStock.company_name,
-        action: 'removed',
-        admin_email: adminEmail,
-        reason: 'Removed via admin panel',
-        ip_address: ipAddress,
-        instrument_type: existingStock.instrument_type || 'equity'
+        await RestrictedStockChangelog.logChange({
+          ticker: ticker.toUpperCase(),
+          company_name: existingStock.company_name,
+          action: 'removed',
+          admin_email: adminEmail,
+          reason: 'Removed via admin panel',
+          ip_address: ipAddress,
+          instrument_type: existingStock.instrument_type || 'equity'
+        }, client);
+
+        await AuditLog.logActivity(
+          adminEmail,
+          'admin',
+          'remove_restricted_stock',
+          'restricted_stock',
+          existingStock.uuid,
+          `Removed ${ticker.toUpperCase()} (${existingStock.company_name}) from restricted list`,
+          ipAddress,
+          null,
+          null,
+          client
+        );
       });
-
-      // Log in audit log
-      await AuditLog.logActivity(
-        adminEmail,
-        'admin',
-        'remove_restricted_stock',
-        'restricted_stock',
-        existingStock.uuid,
-        `Removed ${ticker.toUpperCase()} (${existingStock.company_name}) from restricted list`,
-        ipAddress
-      );
 
       logger.info('Restricted stock removed', {
         ticker: ticker.toUpperCase(),
@@ -259,19 +268,23 @@ class AdminService {
         throw new AppError('Only pending requests can be approved', 400);
       }
 
-      // Update status
-      await TradingRequest.updateStatus(requestUuid, 'approved');
+      // Write: update status + audit log — atomic
+      await database.withTransaction(async (client) => {
+        await TradingRequest.updateStatus(requestUuid, 'approved', null, client);
 
-      // Log the action
-      await AuditLog.logActivity(
-        adminEmail,
-        'admin',
-        'approve_trading_request',
-        'trading_request',
-        requestUuid,
-        `Approved ${request.trading_type} request for ${request.shares} shares of ${request.ticker} by ${request.employee_email}`,
-        ipAddress
-      );
+        await AuditLog.logActivity(
+          adminEmail,
+          'admin',
+          'approve_trading_request',
+          'trading_request',
+          requestUuid,
+          `Approved ${request.trading_type} request for ${request.shares} shares of ${request.ticker} by ${request.employee_email}`,
+          ipAddress,
+          null,
+          null,
+          client
+        );
+      });
 
       logger.info('Trading request approved', {
         requestUuid,
@@ -315,19 +328,23 @@ class AdminService {
       const finalReason = rejectionReason || 
         (request.escalated ? 'Administrative decision - Request rejected after review' : null);
       
-      // Update status with reason
-      await TradingRequest.updateStatus(requestUuid, 'rejected', finalReason);
+      // Write: update status + audit log — atomic
+      await database.withTransaction(async (client) => {
+        await TradingRequest.updateStatus(requestUuid, 'rejected', finalReason, client);
 
-      // Log the action
-      await AuditLog.logActivity(
-        adminEmail,
-        'admin',
-        'reject_trading_request',
-        'trading_request',
-        requestUuid,
-        `Rejected ${request.trading_type} request for ${request.shares} shares of ${request.ticker} by ${request.employee_email}.${finalReason ? ` Reason: ${finalReason}` : ''}`,
-        ipAddress
-      );
+        await AuditLog.logActivity(
+          adminEmail,
+          'admin',
+          'reject_trading_request',
+          'trading_request',
+          requestUuid,
+          `Rejected ${request.trading_type} request for ${request.shares} shares of ${request.ticker} by ${request.employee_email}.${finalReason ? ` Reason: ${finalReason}` : ''}`,
+          ipAddress,
+          null,
+          null,
+          client
+        );
+      });
 
       logger.info('Trading request rejected', {
         requestUuid,

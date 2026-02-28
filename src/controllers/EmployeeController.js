@@ -7,6 +7,7 @@ const { catchAsync } = require('../middleware/errorHandler');
 const { renderEmployeePage, generateNotificationBanner } = require('../utils/templates');
 const { getDisplayId } = require('../utils/formatters');
 const { formatHongKongTime } = require('../templates/shared/formatters');
+const { logger } = require('../utils/logger');
 
 // Template imports
 const { renderDashboard } = require('../templates/employee/dashboard');
@@ -284,7 +285,7 @@ class EmployeeController {
     const result = await TradingRequestService.getEmployeeRequests(employeeEmail, filters, sort_by, sort_order);
 
     if (!result || !result.data) {
-      console.error('EmployeeController.getHistory: Service returned no data', { result, employeeEmail, filters });
+      logger.error('EmployeeController.getHistory: Service returned no data', { employeeEmail, filters });
       throw new Error('Unable to fetch trading requests - service returned no data');
     }
 
@@ -373,7 +374,7 @@ class EmployeeController {
 
       const requests = result.data;
 
-      console.log('Export debug info:', {
+      logger.debug('Export debug info', {
         employeeEmail,
         filters,
         requestCount: requests ? requests.length : 0,
@@ -401,7 +402,7 @@ class EmployeeController {
       try {
         timestamp = formatHongKongTime(new Date(), true).replace(/[/:,\s]/g, '-');
       } catch (timeError) {
-        console.error('Error formatting timestamp:', timeError);
+        logger.error('Error formatting timestamp', { error: timeError.message });
         timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       }
       const filename = `my-trading-history${filterSuffix}-${timestamp}.csv`;
@@ -413,15 +414,11 @@ class EmployeeController {
       } else {
         requests.forEach((request, index) => {
           try {
-            console.log(`Processing request ${index}:`, {
+            logger.debug(`Processing export request ${index}`, {
               uuid: request.uuid,
-              created_at: request.created_at,
-              stock_name: request.stock_name,
               ticker: request.ticker,
               trading_type: request.trading_type,
-              shares: request.shares,
-              status: request.status,
-              keys: Object.keys(request)
+              status: request.status
             });
 
             let createdDate = 'N/A';
@@ -430,7 +427,7 @@ class EmployeeController {
                 createdDate = formatHongKongTime(new Date(request.created_at));
               }
             } catch (dateError) {
-              console.error('Date formatting error:', dateError);
+              logger.error('Date formatting error', { error: dateError.message });
               createdDate = request.created_at || 'N/A';
             }
 
@@ -438,7 +435,7 @@ class EmployeeController {
             try {
               stockName = (request.stock_name || 'N/A').toString().replace(/"/g, '""');
             } catch (nameError) {
-              console.error('Stock name error:', nameError);
+              logger.error('Stock name error', { error: nameError.message });
             }
 
             let estimatedValue = '0.00';
@@ -446,7 +443,7 @@ class EmployeeController {
               const value = request.total_value_usd || request.total_value || 0;
               estimatedValue = parseFloat(value || 0).toFixed(2);
             } catch (valueError) {
-              console.error('Value error:', valueError);
+              logger.error('Value error', { error: valueError.message });
             }
 
             const escalated = (request.escalated === true || request.escalated === 'true') ? 'Yes' : 'No';
@@ -460,8 +457,7 @@ class EmployeeController {
             csvContent += `"${requestId}","${createdDate}","${stockName}","${tickerVal}","${tradingType}","${shares}","$${estimatedValue}","${status}","${escalated}","${rejectionReason}"\n`;
 
           } catch (rowError) {
-            console.error('Error processing row:', rowError.message, 'Request keys:', request ? Object.keys(request) : 'null');
-            console.error('Full request object:', request);
+            logger.error('Error processing export row', { error: rowError.message, uuid: request?.uuid });
             csvContent += `"Error processing request ${request?.uuid || 'unknown'}: ${rowError.message}"\n`;
           }
         });
@@ -472,7 +468,7 @@ class EmployeeController {
       res.send(csvContent);
 
     } catch (error) {
-      console.error('Export history error:', error);
+      logger.error('Export history error', { error: error.message });
       return res.redirect('/employee-history?error=export_failed');
     }
   });

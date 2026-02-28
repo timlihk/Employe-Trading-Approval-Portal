@@ -72,7 +72,7 @@ describe('BaseModel', () => {
     test('should return default result when pool is null', async () => {
       database.getPool.mockReturnValueOnce(null);
       const result = await TestModel.run('DELETE FROM test_table WHERE id = $1', [1]);
-      expect(result).toEqual({ lastID: null, changes: 0 });
+      expect(result).toEqual({ uuid: null, changes: 0 });
       expect(database.run).not.toHaveBeenCalled();
     });
 
@@ -225,8 +225,7 @@ describe('BaseModel', () => {
         expect.stringContaining('INSERT INTO test_table'),
         ['Test', 'test@example.com']
       );
-      // mockRun returns { uuid, changes } but BaseModel.create reads result.lastID (undefined)
-      expect(result).toEqual({ id: undefined, name: 'Test', email: 'test@example.com' });
+      expect(result).toEqual({ uuid: null, name: 'Test', email: 'test@example.com' });
     });
 
     test('should build correct placeholders for multiple fields', async () => {
@@ -419,5 +418,35 @@ describe('BaseModel', () => {
       const result = await TestModel.exists({ status: 'nonexistent' });
       expect(result).toBe(false);
     });
+  });
+});
+
+describe('database.withTransaction', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  test('should run callback and return its result', async () => {
+    const result = await database.withTransaction(async (client) => {
+      return { success: true };
+    });
+    expect(result).toEqual({ success: true });
+  });
+
+  test('should re-throw when callback throws (simulating rollback)', async () => {
+    await expect(
+      database.withTransaction(async () => {
+        throw new Error('forced rollback');
+      })
+    ).rejects.toThrow('forced rollback');
+  });
+
+  test('should provide a mock client to the callback', async () => {
+    let capturedClient;
+    await database.withTransaction(async (client) => {
+      capturedClient = client;
+    });
+    expect(capturedClient).toBeDefined();
+    expect(typeof capturedClient.query).toBe('function');
   });
 });
